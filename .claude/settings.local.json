@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /s /b)",
+      "Bash(powershell:*)",
+      "Bash(cat:*)",
+      "WebSearch",
+      "WebFetch(domain:openrouter.ai)",
+      "Bash(npx create-expo-app@latest . --template expo-template-blank-typescript --yes)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(dir /b \"C:\\\\Users\\\\sethc\\\\dev\\\\llm-wod\")",
+      "Bash(npm run web:*)",
+      "Bash(dir /b \"C:\\\\Users\\\\sethc\\\\dev\\\\llm-wod\\\\app\")",
+      "Bash(dir:*)",
+      "Bash(npm run reset:*)",
+      "Bash(npx expo start:*)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}
