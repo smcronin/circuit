@@ -131,7 +131,7 @@ export default function HistoryScreen() {
           <View style={styles.notesPreview}>
             <Ionicons name="chatbubble-outline" size={14} color={colors.textMuted} />
             <Text style={styles.notesText} numberOfLines={2}>
-              {item.feedback.notes}
+              {item.feedback?.notes}
             </Text>
           </View>
         )}
