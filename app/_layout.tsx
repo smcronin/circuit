@@ -1,8 +1,16 @@
+import 'react-native-get-random-values'; // Must be first for uuid
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import { soundManager } from '@/services/audio/SoundManager';
 
 export default function RootLayout() {
+  // Initialize audio on app start
+  useEffect(() => {
+    soundManager.initialize();
+  }, []);
+
   return (
     <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
       <StatusBar style="light" />

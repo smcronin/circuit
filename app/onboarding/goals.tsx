@@ -13,6 +13,7 @@ export default function OnboardingGoals() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const setProfile = useUserStore((state) => state.setProfile);
+  const updateProfile = useUserStore((state) => state.updateProfile);
   const profile = useUserStore((state) => state.profile);
 
   const [goals, setGoals] = useState(profile?.fitnessGoals || '');
@@ -34,15 +35,22 @@ export default function OnboardingGoals() {
       .filter(Boolean)
       .join('. ');
 
-    setProfile({
-      id: profile?.id || uuid(),
-      createdAt: profile?.createdAt || new Date().toISOString(),
-      fitnessGoals: combinedGoals || 'General fitness',
-      equipmentSets: profile?.equipmentSets || [],
-      preferredWorkoutDuration: profile?.preferredWorkoutDuration || 30,
-      weightUnit: profile?.weightUnit || 'lbs',
-      hasCompletedOnboarding: false,
-    });
+    // If no profile exists, create one. Otherwise just update goals.
+    if (!profile) {
+      setProfile({
+        id: uuid(),
+        createdAt: new Date().toISOString(),
+        fitnessGoals: combinedGoals || 'General fitness',
+        equipmentSets: [],
+        preferredWorkoutDuration: 30,
+        weightUnit: 'lbs',
+        hasCompletedOnboarding: false,
+      });
+    } else {
+      updateProfile({
+        fitnessGoals: combinedGoals || 'General fitness',
+      });
+    }
 
     router.push('/onboarding/training');
   };
