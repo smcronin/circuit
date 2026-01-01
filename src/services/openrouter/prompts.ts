@@ -32,6 +32,7 @@ Guidelines for workout design:
 7. Provide progressive overload by varying from recent workouts
 8. Consider user's fitness goals when selecting exercises
 9. Use ONLY the equipment specified - if no equipment, use bodyweight only
+10. Write personalized workout descriptions that reference the user's goals and explain how this workout helps achieve them
 
 Calorie estimates should be reasonable:
 - Light workout (mostly stretching/mobility): 3-5 cal/min
@@ -102,7 +103,7 @@ Please adjust the workout based on this feedback. Generate a new workout that ad
 Return a JSON object with this exact structure:
 {
   "name": "string - creative workout name (e.g., 'Full Body Blitz', 'Core Crusher')",
-  "description": "string - brief motivating description (1-2 sentences)",
+  "description": "string - personalized description (2-3 sentences) that explains what muscle groups/areas the workout targets, how it connects to the user's specific fitness goals, and what benefits they'll gain from this session",
   "difficulty": "beginner" | "intermediate" | "advanced",
   "estimatedCalories": number,
   "calorieRange": { "low": number, "high": number },

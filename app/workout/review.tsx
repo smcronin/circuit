@@ -38,6 +38,7 @@ export default function WorkoutReviewScreen() {
   const getRecentSessions = useHistoryStore((state) => state.getRecentSessions);
 
   const [showFeedback, setShowFeedback] = useState(false);
+  const [expandAll, setExpandAll] = useState(false);
 
   if (!currentWorkout || !flattenedWorkout) {
     return (
@@ -113,7 +114,13 @@ export default function WorkoutReviewScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Review Workout</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity onPress={() => setExpandAll(!expandAll)} style={styles.expandAllButton}>
+          <Ionicons
+            name={expandAll ? 'chevron-up-circle' : 'information-circle'}
+            size={24}
+            color={expandAll ? colors.primary : colors.textSecondary}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -153,13 +160,15 @@ export default function WorkoutReviewScreen() {
             <View style={[styles.sectionIcon, { backgroundColor: colors.success + '20' }]}>
               <Ionicons name="sunny-outline" size={18} color={colors.success} />
             </View>
-            <Text style={styles.sectionTitle}>Warm Up</Text>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>Warm Up</Text>
+            </View>
             <Text style={styles.sectionDuration}>
               {formatTimeVerbose(currentWorkout.warmUp.totalDuration)}
             </Text>
           </View>
           {currentWorkout.warmUp.exercises.map((exercise, idx) => (
-            <ExerciseRow key={exercise.id} exercise={exercise} index={idx} />
+            <ExerciseRow key={exercise.id} exercise={exercise} index={idx} forceExpand={expandAll} />
           ))}
         </Card>
 
@@ -181,7 +190,7 @@ export default function WorkoutReviewScreen() {
               </Text>
             </View>
             {circuit.exercises.map((exercise, idx) => (
-              <ExerciseRow key={exercise.id} exercise={exercise} index={idx} showRest={idx < circuit.exercises.length - 1} restDuration={circuit.restBetweenExercises} />
+              <ExerciseRow key={exercise.id} exercise={exercise} index={idx} showRest={idx < circuit.exercises.length - 1} restDuration={circuit.restBetweenExercises} forceExpand={expandAll} />
             ))}
           </Card>
         ))}
@@ -192,13 +201,15 @@ export default function WorkoutReviewScreen() {
             <View style={[styles.sectionIcon, { backgroundColor: colors.timerRest + '20' }]}>
               <Ionicons name="moon-outline" size={18} color={colors.timerRest} />
             </View>
-            <Text style={styles.sectionTitle}>Cool Down</Text>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>Cool Down</Text>
+            </View>
             <Text style={styles.sectionDuration}>
               {formatTimeVerbose(currentWorkout.coolDown.totalDuration)}
             </Text>
           </View>
           {currentWorkout.coolDown.exercises.map((exercise, idx) => (
-            <ExerciseRow key={exercise.id} exercise={exercise} index={idx} />
+            <ExerciseRow key={exercise.id} exercise={exercise} index={idx} forceExpand={expandAll} />
           ))}
         </Card>
 
@@ -258,19 +269,22 @@ function ExerciseRow({
   index,
   showRest,
   restDuration,
+  forceExpand,
 }: {
   exercise: { name: string; duration: number; description: string; targetReps?: number; repRange?: string };
   index: number;
   showRest?: boolean;
   restDuration?: number;
+  forceExpand?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [localExpanded, setLocalExpanded] = useState(false);
+  const expanded = forceExpand || localExpanded;
 
   return (
     <>
       <TouchableOpacity
         style={styles.exerciseRow}
-        onPress={() => setExpanded(!expanded)}
+        onPress={() => setLocalExpanded(!localExpanded)}
         activeOpacity={0.7}
       >
         <View style={styles.exerciseIndex}>
@@ -329,8 +343,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
   },
-  headerSpacer: {
-    width: 40,
+  expandAllButton: {
+    padding: spacing.sm,
   },
   scrollView: {
     flex: 1,

@@ -53,12 +53,21 @@ export default function HistoryScreen() {
               )}
             </View>
           </View>
-          <View style={[styles.statusIcon, isCompleted ? styles.statusComplete : styles.statusIncomplete]}>
-            <Ionicons
-              name={isCompleted ? 'checkmark' : 'pause'}
-              size={16}
-              color={isCompleted ? colors.success : colors.warning}
-            />
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.replayButton}
+              onPress={() => handleReplay(item)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="refresh" size={18} color={colors.primary} />
+            </TouchableOpacity>
+            <View style={[styles.statusIcon, isCompleted ? styles.statusComplete : styles.statusIncomplete]}>
+              <Ionicons
+                name={isCompleted ? 'checkmark' : 'pause'}
+                size={16}
+                color={isCompleted ? colors.success : colors.warning}
+              />
+            </View>
           </View>
         </View>
 
@@ -90,15 +99,6 @@ export default function HistoryScreen() {
             ))}
           </View>
         )}
-
-        <TouchableOpacity
-          style={styles.replayButton}
-          onPress={() => handleReplay(item)}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="refresh" size={16} color={colors.primary} />
-          <Text style={styles.replayButtonText}>Replay Workout</Text>
-        </TouchableOpacity>
       </Card>
     );
   };
@@ -274,20 +274,18 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textTransform: 'capitalize',
   },
-  replayButton: {
+  headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    gap: spacing.sm,
   },
-  replayButtonText: {
-    fontSize: typography.sm,
-    color: colors.primary,
-    fontWeight: typography.medium,
+  replayButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   empty: {
     alignItems: 'center',

@@ -51,6 +51,8 @@ export default function TimerScreen() {
 
   const currentItem = items[currentItemIndex];
   const nextItem = items[currentItemIndex + 1];
+  const itemAfterNext = items[currentItemIndex + 2];
+  const nextIsRest = nextItem ? isRestItem(nextItem.type) : false;
   const progress = items.length > 0 ? (currentItemIndex + 1) / items.length : 0;
   const isRest = currentItem ? isRestItem(currentItem.type) : false;
 
@@ -282,14 +284,20 @@ export default function TimerScreen() {
         )}
 
         {currentItem.exercise?.description && (
-          <Text style={styles.exerciseDescription} numberOfLines={2}>
+          <Text style={styles.exerciseDescription} numberOfLines={4}>
             {currentItem.exercise.description}
           </Text>
         )}
       </View>
 
       {/* Up Next */}
-      {nextItem && (
+      {nextItem && nextIsRest && itemAfterNext && (
+        <View style={styles.upNext}>
+          <Text style={styles.upNextLabel}>UP NEXT</Text>
+          <Text style={styles.upNextName}>{nextItem.name} &bull; {itemAfterNext.name}</Text>
+        </View>
+      )}
+      {nextItem && !nextIsRest && (
         <View style={styles.upNext}>
           <Text style={styles.upNextLabel}>UP NEXT</Text>
           <Text style={styles.upNextName}>{nextItem.name}</Text>
