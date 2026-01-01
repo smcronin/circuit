@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +21,7 @@ export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const history = useHistoryStore((state) => state.history);
+  const removeSession = useHistoryStore((state) => state.removeSession);
   const { setCurrentWorkout, setFlattenedWorkout } = useWorkoutStore();
 
   const handleReplay = (session: WorkoutSession) => {
@@ -33,6 +34,21 @@ export default function HistoryScreen() {
 
   const handleEditFeedback = (sessionId: string) => {
     router.push(`/workout/edit-feedback?sessionId=${sessionId}`);
+  };
+
+  const handleDeleteSession = (session: WorkoutSession) => {
+    Alert.alert(
+      'Delete Workout',
+      `Are you sure you want to delete "${session.workout.name}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => removeSession(session.id),
+        },
+      ]
+    );
   };
 
   const stats = {
@@ -72,6 +88,13 @@ export default function HistoryScreen() {
               activeOpacity={0.7}
             >
               <Ionicons name="refresh" size={18} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteSession(item)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.error} />
             </TouchableOpacity>
             <View style={[styles.statusIcon, isCompleted ? styles.statusComplete : styles.statusIncomplete]}>
               <Ionicons
@@ -332,6 +355,14 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.error + '15',
     alignItems: 'center',
     justifyContent: 'center',
   },
