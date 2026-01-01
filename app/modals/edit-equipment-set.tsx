@@ -22,17 +22,30 @@ export default function EditEquipmentSetModal() {
   const updateEquipmentSet = useUserStore((state) => state.updateEquipmentSet);
   const setDefaultEquipmentSet = useUserStore((state) => state.setDefaultEquipmentSet);
 
-  // Convert equipment names back to IDs for selection
-  const getEquipmentIds = (equipmentNames: string[]) => {
-    return equipmentNames
-      .map((name) => ALL_EQUIPMENT.find((e) => e.name === name)?.id)
-      .filter((id): id is string => id !== undefined);
+  // Convert equipment names back to IDs for selection (standard equipment)
+  // and extract custom equipment (names not in ALL_EQUIPMENT)
+  const parseEquipment = (equipmentNames: string[]) => {
+    const standardIds: string[] = [];
+    const custom: string[] = [];
+
+    equipmentNames.forEach((name) => {
+      const found = ALL_EQUIPMENT.find((e) => e.name === name);
+      if (found) {
+        standardIds.push(found.id);
+      } else if (name.trim()) {
+        custom.push(name);
+      }
+    });
+
+    return { standardIds, custom };
   };
 
   const initialEquipment = params.equipment ? params.equipment.split(',').filter(Boolean) : [];
-  const initialEquipmentIds = getEquipmentIds(initialEquipment);
+  const { standardIds: initialEquipmentIds, custom: initialCustomEquipment } = parseEquipment(initialEquipment);
 
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>(initialEquipmentIds);
+  const [customEquipment, setCustomEquipment] = useState<string[]>(initialCustomEquipment);
+  const [customInput, setCustomInput] = useState('');
   const [setName, setSetName] = useState(params.name || '');
   const [notes, setNotes] = useState(params.notes || '');
   const [isDefault, setIsDefault] = useState(params.isDefault === 'true');
@@ -48,18 +61,31 @@ export default function EditEquipmentSetModal() {
   const applyPreset = (presetKey: keyof typeof EQUIPMENT_PRESETS) => {
     const preset = EQUIPMENT_PRESETS[presetKey];
     setSelectedEquipment(preset.equipment);
+    setCustomEquipment([]);
+  };
+
+  const addCustomEquipment = () => {
+    const trimmed = customInput.trim();
+    if (trimmed && !customEquipment.includes(trimmed)) {
+      setCustomEquipment([...customEquipment, trimmed]);
+      setCustomInput('');
+    }
+  };
+
+  const removeCustomEquipment = (name: string) => {
+    setCustomEquipment(customEquipment.filter((e) => e !== name));
   };
 
   const handleSave = () => {
     if (!params.id) return;
 
-    const equipmentNames = selectedEquipment.map(
+    const standardEquipment = selectedEquipment.map(
       (id) => ALL_EQUIPMENT.find((e) => e.id === id)?.name || id
     );
 
     updateEquipmentSet(params.id, {
       name: setName || 'My Equipment',
-      equipment: equipmentNames,
+      equipment: [...standardEquipment, ...customEquipment],
       notes: notes.trim() || undefined,
     });
 
@@ -186,14 +212,54 @@ export default function EditEquipmentSetModal() {
             </View>
           </View>
         ))}
+
+        {/* Custom Equipment Section */}
+        <View style={styles.category}>
+          <Text style={styles.categoryTitle}>Custom Equipment</Text>
+          <View style={styles.customInputRow}>
+            <Input
+              placeholder="Add your own equipment..."
+              value={customInput}
+              onChangeText={setCustomInput}
+              containerStyle={styles.customInput}
+              onSubmitEditing={addCustomEquipment}
+            />
+            <TouchableOpacity
+              style={[styles.addButton, !customInput.trim() && styles.addButtonDisabled]}
+              onPress={addCustomEquipment}
+              disabled={!customInput.trim()}
+            >
+              <Ionicons name="add" size={24} color={customInput.trim() ? colors.text : colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          {customEquipment.length > 0 && (
+            <View style={styles.equipmentGrid}>
+              {customEquipment.map((name) => (
+                <TouchableOpacity
+                  key={name}
+                  style={[styles.equipmentItem, styles.equipmentItemSelected]}
+                  onPress={() => removeCustomEquipment(name)}
+                >
+                  <Ionicons name="fitness-outline" size={24} color={colors.text} />
+                  <Text style={[styles.equipmentName, styles.equipmentNameSelected]}>
+                    {name}
+                  </Text>
+                  <View style={styles.removeIcon}>
+                    <Ionicons name="close" size={14} color={colors.text} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          {selectedEquipment.length === 0
+          {selectedEquipment.length + customEquipment.length === 0
             ? 'No equipment? No problem! Bodyweight workouts only.'
-            : `${selectedEquipment.length} item${selectedEquipment.length !== 1 ? 's' : ''} selected`}
+            : `${selectedEquipment.length + customEquipment.length} item${selectedEquipment.length + customEquipment.length !== 1 ? 's' : ''} selected`}
         </Text>
         <Button
           title="Save Changes"
@@ -355,6 +421,35 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  removeIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  customInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonDisabled: {
+    backgroundColor: colors.surface,
   },
   footer: {
     padding: spacing.lg,

@@ -38,23 +38,37 @@ export default function ProfileScreen() {
   const [newSetName, setNewSetName] = useState('');
   const [newSetNotes, setNewSetNotes] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+  const [customEquipment, setCustomEquipment] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState('');
   const [trainingNotes, setTrainingNotes] = useState(profile?.trainingNotes || '');
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [isEditingMemory, setIsEditingMemory] = useState(false);
   const [editedMemory, setEditedMemory] = useState('');
   const [isGeneratingMemory, setIsGeneratingMemory] = useState(false);
 
+  const addCustomEquipmentItem = () => {
+    const trimmed = customInput.trim();
+    if (trimmed && !customEquipment.includes(trimmed)) {
+      setCustomEquipment([...customEquipment, trimmed]);
+      setCustomInput('');
+    }
+  };
+
+  const removeCustomEquipment = (name: string) => {
+    setCustomEquipment(customEquipment.filter((e) => e !== name));
+  };
+
   const handleAddEquipmentSet = () => {
     if (!newSetName.trim()) return;
 
-    const equipmentNames = selectedEquipment.map(
+    const standardEquipment = selectedEquipment.map(
       (id) => ALL_EQUIPMENT.find((e) => e.id === id)?.name || id
     );
 
     addEquipmentSet({
       id: uuid(),
       name: newSetName.trim(),
-      equipment: equipmentNames,
+      equipment: [...standardEquipment, ...customEquipment],
       notes: newSetNotes.trim() || undefined,
       isDefault: false,
     });
@@ -62,6 +76,8 @@ export default function ProfileScreen() {
     setNewSetName('');
     setNewSetNotes('');
     setSelectedEquipment([]);
+    setCustomEquipment([]);
+    setCustomInput('');
     setShowAddEquipment(false);
   };
 
@@ -370,6 +386,42 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
+
+              {/* Custom Equipment */}
+              <Text style={styles.customLabel}>Custom Equipment</Text>
+              <View style={styles.customInputRow}>
+                <Input
+                  placeholder="Add your own..."
+                  value={customInput}
+                  onChangeText={setCustomInput}
+                  containerStyle={styles.customInputField}
+                  onSubmitEditing={addCustomEquipmentItem}
+                />
+                <TouchableOpacity
+                  style={[styles.addCustomButton, !customInput.trim() && styles.addCustomButtonDisabled]}
+                  onPress={addCustomEquipmentItem}
+                  disabled={!customInput.trim()}
+                >
+                  <Ionicons name="add" size={20} color={customInput.trim() ? colors.text : colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+              {customEquipment.length > 0 && (
+                <View style={styles.equipmentGrid}>
+                  {customEquipment.map((name) => (
+                    <TouchableOpacity
+                      key={name}
+                      style={[styles.equipmentChip, styles.equipmentChipSelected]}
+                      onPress={() => removeCustomEquipment(name)}
+                    >
+                      <Text style={[styles.equipmentChipText, styles.equipmentChipTextSelected]}>
+                        {name}
+                      </Text>
+                      <Ionicons name="close" size={12} color={colors.text} style={{ marginLeft: 4 }} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
               <Button
                 title="Add Equipment Set"
                 onPress={handleAddEquipmentSet}
@@ -530,6 +582,33 @@ const styles = StyleSheet.create({
   },
   equipmentChipTextSelected: {
     color: colors.text,
+  },
+  customLabel: {
+    fontSize: typography.xs,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  customInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  customInputField: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  addCustomButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addCustomButtonDisabled: {
+    backgroundColor: colors.surface,
   },
   equipmentSetItem: {
     flexDirection: 'row',

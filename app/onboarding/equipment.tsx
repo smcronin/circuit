@@ -17,6 +17,8 @@ export default function OnboardingEquipment() {
 
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [setName, setSetName] = useState('My Equipment');
+  const [customEquipment, setCustomEquipment] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState('');
 
   const toggleEquipment = (id: string) => {
     if (selectedEquipment.includes(id)) {
@@ -29,16 +31,30 @@ export default function OnboardingEquipment() {
   const applyPreset = (presetKey: keyof typeof EQUIPMENT_PRESETS) => {
     const preset = EQUIPMENT_PRESETS[presetKey];
     setSelectedEquipment(preset.equipment);
+    setCustomEquipment([]);
     setSetName(preset.name);
   };
 
+  const addCustomEquipment = () => {
+    const trimmed = customInput.trim();
+    if (trimmed && !customEquipment.includes(trimmed)) {
+      setCustomEquipment([...customEquipment, trimmed]);
+      setCustomInput('');
+    }
+  };
+
+  const removeCustomEquipment = (name: string) => {
+    setCustomEquipment(customEquipment.filter((e) => e !== name));
+  };
+
   const handleNext = () => {
+    const standardEquipment = selectedEquipment.map(
+      (id) => ALL_EQUIPMENT.find((e) => e.id === id)?.name || id
+    );
     const equipmentSet = {
       id: uuid(),
       name: setName || 'My Equipment',
-      equipment: selectedEquipment.map(
-        (id) => ALL_EQUIPMENT.find((e) => e.id === id)?.name || id
-      ),
+      equipment: [...standardEquipment, ...customEquipment],
       isDefault: true,
     };
 
@@ -138,13 +154,53 @@ export default function OnboardingEquipment() {
             </View>
           </View>
         ))}
+
+        {/* Custom Equipment Section */}
+        <View style={styles.category}>
+          <Text style={styles.categoryTitle}>Custom Equipment</Text>
+          <View style={styles.customInputRow}>
+            <Input
+              placeholder="Add your own equipment..."
+              value={customInput}
+              onChangeText={setCustomInput}
+              containerStyle={styles.customInput}
+              onSubmitEditing={addCustomEquipment}
+            />
+            <TouchableOpacity
+              style={[styles.addButton, !customInput.trim() && styles.addButtonDisabled]}
+              onPress={addCustomEquipment}
+              disabled={!customInput.trim()}
+            >
+              <Ionicons name="add" size={24} color={customInput.trim() ? colors.text : colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+          {customEquipment.length > 0 && (
+            <View style={styles.equipmentGrid}>
+              {customEquipment.map((name) => (
+                <TouchableOpacity
+                  key={name}
+                  style={[styles.equipmentItem, styles.equipmentItemSelected]}
+                  onPress={() => removeCustomEquipment(name)}
+                >
+                  <Ionicons name="fitness-outline" size={24} color={colors.text} />
+                  <Text style={[styles.equipmentName, styles.equipmentNameSelected]}>
+                    {name}
+                  </Text>
+                  <View style={styles.removeIcon}>
+                    <Ionicons name="close" size={14} color={colors.text} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          {selectedEquipment.length === 0
+          {selectedEquipment.length + customEquipment.length === 0
             ? 'No equipment? No problem! We\'ll create bodyweight workouts.'
-            : `${selectedEquipment.length} item${selectedEquipment.length !== 1 ? 's' : ''} selected`}
+            : `${selectedEquipment.length + customEquipment.length} item${selectedEquipment.length + customEquipment.length !== 1 ? 's' : ''} selected`}
         </Text>
         <Button title="Continue" onPress={handleNext} size="lg" fullWidth />
       </View>
@@ -269,6 +325,35 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  removeIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  customInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonDisabled: {
+    backgroundColor: colors.surface,
   },
   footer: {
     padding: spacing.lg,
