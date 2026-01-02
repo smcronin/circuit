@@ -7,7 +7,7 @@ const SVG_PATH = path.join(ASSETS_DIR, 'file (1).svg');
 
 // App theme colors
 const BACKGROUND_COLOR = '#0F172A';
-const LOGO_COLOR = '#38BDF8'; // Sky-400 - a nice cyan/blue that matches circuit theme
+const LOGO_COLOR = '#6366F1'; // Electric Indigo - matches app primary color
 
 async function generateIcons() {
   // Read the SVG and replace black with our logo color
