@@ -8,6 +8,8 @@ import {
   TextInput,
   Modal,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -370,6 +372,7 @@ export default function AnalyticsScreen() {
   const history = useHistoryStore((state) => state.history);
   const weightEntries = useWeightStore((state) => state.entries);
   const addWeightEntry = useWeightStore((state) => state.addEntry);
+  const getEntryForDate = useWeightStore((state) => state.getEntryForDate);
   const profile = useUserStore((state) => state.profile);
   const updateProfile = useUserStore((state) => state.updateProfile);
 
@@ -377,6 +380,10 @@ export default function AnalyticsScreen() {
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [newWeight, setNewWeight] = useState('');
   const [showFullWeightHistory, setShowFullWeightHistory] = useState(false);
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
+  const [existingWeight, setExistingWeight] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const weightUnit = profile?.weightUnit || 'lbs';
 
@@ -528,18 +535,78 @@ export default function AnalyticsScreen() {
     const weight = parseFloat(newWeight);
     if (isNaN(weight) || weight <= 0) return;
 
+    // Check if there's already an entry for the selected date
+    const existingEntry = getEntryForDate(selectedDate);
+
+    if (existingEntry && !showOverwriteConfirm) {
+      // Show confirmation modal
+      setExistingWeight(existingEntry.weight);
+      setShowOverwriteConfirm(true);
+      return;
+    }
+
     const entry: WeightEntry = {
       id: Date.now().toString(),
-      date: new Date().toISOString(),
+      date: selectedDate.toISOString(),
       weight,
       unit: weightUnit,
     };
 
     addWeightEntry(entry);
-    // Also update the user profile weight
-    updateProfile({ weight });
+    // Also update the user profile weight if logging for today
+    const today = new Date();
+    const isToday = getLocalDateString(selectedDate) === getLocalDateString(today);
+    if (isToday) {
+      updateProfile({ weight });
+    }
     setNewWeight('');
     setShowWeightModal(false);
+    setShowOverwriteConfirm(false);
+    setExistingWeight(null);
+    setSelectedDate(new Date());
+    setShowDatePicker(false);
+  };
+
+  const handleOpenWeightModal = () => {
+    setSelectedDate(new Date());
+    setNewWeight('');
+    setShowOverwriteConfirm(false);
+    setExistingWeight(null);
+    setShowDatePicker(false);
+    setShowWeightModal(true);
+  };
+
+  const handleCloseWeightModal = () => {
+    setNewWeight('');
+    setShowWeightModal(false);
+    setShowOverwriteConfirm(false);
+    setExistingWeight(null);
+    setSelectedDate(new Date());
+    setShowDatePicker(false);
+  };
+
+  const formatDisplayDate = (date: Date): string => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (getLocalDateString(date) === getLocalDateString(today)) {
+      return 'Today';
+    } else if (getLocalDateString(date) === getLocalDateString(yesterday)) {
+      return 'Yesterday';
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getRecentDates = (): Date[] => {
+    const dates: Date[] = [];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      dates.push(date);
+    }
+    return dates;
   };
 
   const handlePrevMonth = () => {
@@ -650,7 +717,7 @@ export default function AnalyticsScreen() {
             <Text style={styles.sectionTitle}>Weight Tracker</Text>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => setShowWeightModal(true)}
+              onPress={handleOpenWeightModal}
             >
               <Ionicons name="add" size={20} color={colors.primary} />
             </TouchableOpacity>
@@ -766,51 +833,111 @@ export default function AnalyticsScreen() {
         visible={showWeightModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowWeightModal(false)}
+        onRequestClose={handleCloseWeightModal}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => {
-            setNewWeight('');
-            setShowWeightModal(false);
-          }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
         >
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Log Weight</Text>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={handleCloseWeightModal}
+          >
+            <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Log Weight</Text>
 
-            <View style={styles.weightInputContainer}>
-              <TextInput
-                style={styles.weightInput}
-                value={newWeight}
-                onChangeText={setNewWeight}
-                keyboardType="decimal-pad"
-                placeholder="0"
-                placeholderTextColor={colors.textMuted}
-                autoFocus
-              />
-              <Text style={styles.weightInputUnit}>{weightUnit}</Text>
-            </View>
+              {/* Date Selector */}
+              <TouchableOpacity
+                style={styles.dateSelector}
+                onPress={() => setShowDatePicker(!showDatePicker)}
+              >
+                <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+                <Text style={styles.dateSelectorText}>{formatDisplayDate(selectedDate)}</Text>
+                <Ionicons
+                  name={showDatePicker ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalButtonCancel}
-                onPress={() => {
-                  setNewWeight('');
-                  setShowWeightModal(false);
-                }}
-              >
-                <Text style={styles.modalButtonCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalButtonSave}
-                onPress={handleAddWeight}
-              >
-                <Text style={styles.modalButtonSaveText}>Save</Text>
-              </TouchableOpacity>
-            </View>
+              {/* Date Picker Dropdown */}
+              {showDatePicker && (
+                <View style={styles.datePickerContainer}>
+                  {getRecentDates().map((date) => {
+                    const dateStr = getLocalDateString(date);
+                    const isSelected = getLocalDateString(selectedDate) === dateStr;
+                    const existingEntry = getEntryForDate(date);
+                    return (
+                      <TouchableOpacity
+                        key={dateStr}
+                        style={[styles.dateOption, isSelected && styles.dateOptionSelected]}
+                        onPress={() => {
+                          setSelectedDate(date);
+                          setShowDatePicker(false);
+                          setShowOverwriteConfirm(false);
+                          setExistingWeight(null);
+                        }}
+                      >
+                        <Text style={[styles.dateOptionText, isSelected && styles.dateOptionTextSelected]}>
+                          {formatDisplayDate(date)}
+                        </Text>
+                        {existingEntry && (
+                          <Text style={styles.dateOptionWeight}>
+                            {existingEntry.weight} {weightUnit}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              <View style={styles.weightInputContainer}>
+                <TextInput
+                  style={styles.weightInput}
+                  value={newWeight}
+                  onChangeText={(text) => {
+                    setNewWeight(text);
+                    setShowOverwriteConfirm(false);
+                    setExistingWeight(null);
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder="0"
+                  placeholderTextColor={colors.textMuted}
+                  autoFocus
+                />
+                <Text style={styles.weightInputUnit}>{weightUnit}</Text>
+              </View>
+
+              {showOverwriteConfirm && existingWeight !== null && (
+                <View style={styles.overwriteWarning}>
+                  <Ionicons name="warning" size={18} color={colors.warning} />
+                  <Text style={styles.overwriteWarningText}>
+                    You already logged {existingWeight} {weightUnit} for {formatDisplayDate(selectedDate).toLowerCase()}. Save to replace it.
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalButtonCancel}
+                  onPress={handleCloseWeightModal}
+                >
+                  <Text style={styles.modalButtonCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalButtonSave}
+                  onPress={handleAddWeight}
+                >
+                  <Text style={styles.modalButtonSaveText}>
+                    {showOverwriteConfirm ? 'Replace' : 'Save'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
           </TouchableOpacity>
-        </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -1156,12 +1283,16 @@ const styles = StyleSheet.create({
   },
 
   // Modal
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
+    paddingBottom: spacing.xxl,
   },
   modalContent: {
     backgroundColor: colors.surface,
@@ -1174,8 +1305,54 @@ const styles = StyleSheet.create({
     fontSize: typography.xl,
     fontWeight: typography.bold,
     color: colors.text,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     textAlign: 'center',
+  },
+  dateSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  dateSelectorText: {
+    fontSize: typography.base,
+    color: colors.primary,
+    fontWeight: typography.medium,
+  },
+  datePickerContainer: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+  },
+  dateOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dateOptionSelected: {
+    backgroundColor: colors.primary + '20',
+  },
+  dateOptionText: {
+    fontSize: typography.sm,
+    color: colors.text,
+  },
+  dateOptionTextSelected: {
+    color: colors.primary,
+    fontWeight: typography.semibold,
+  },
+  dateOptionWeight: {
+    fontSize: typography.sm,
+    color: colors.textMuted,
   },
   weightInputContainer: {
     flexDirection: 'row',
@@ -1200,6 +1377,20 @@ const styles = StyleSheet.create({
     fontSize: typography.xl,
     color: colors.textMuted,
     fontWeight: typography.medium,
+  },
+  overwriteWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.warning + '20',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  overwriteWarningText: {
+    flex: 1,
+    fontSize: typography.sm,
+    color: colors.warning,
   },
   modalButtons: {
     flexDirection: 'row',
