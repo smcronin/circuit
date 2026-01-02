@@ -91,8 +91,8 @@ Write a concise, actionable summary that captures the user's training tendencies
     headers: {
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://llm-wod.app',
-      'X-Title': 'LLM-WOD Workout Summarizer',
+      'HTTP-Referer': 'https://circuit.app',
+      'X-Title': 'Circuit Workout Summarizer',
     },
     body: JSON.stringify({
       model: SUMMARY_MODEL,

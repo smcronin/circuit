@@ -36,6 +36,12 @@ export default function RootLayout() {
             presentation: 'modal',
           }}
         />
+        <Stack.Screen
+          name="modals/edit-goals"
+          options={{
+            presentation: 'modal',
+          }}
+        />
       </Stack>
     </View>
   );

@@ -45,13 +45,14 @@ export default function OnboardingInfo() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <KeyboardAvoidingView
+        style={[styles.container, { paddingTop: insets.top }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView
           style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -79,7 +80,9 @@ export default function OnboardingInfo() {
             value={age}
             onChangeText={(text) => setAge(text.replace(/[^0-9]/g, ''))}
             keyboardType="numeric"
-            containerStyle={styles.inputContainer}
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
+              containerStyle={styles.inputContainer}
           />
 
           <View style={styles.weightRow}>
@@ -90,6 +93,11 @@ export default function OnboardingInfo() {
                 value={weight}
                 onChangeText={(text) => setWeight(text.replace(/[^0-9.]/g, ''))}
                 keyboardType="decimal-pad"
+
+                returnKeyType="done"
+
+                onSubmitEditing={Keyboard.dismiss}
+
               />
             </View>
             <View style={styles.unitToggle}>
@@ -152,16 +160,16 @@ export default function OnboardingInfo() {
             </View>
           </View>
         </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
 
-      <View style={styles.footer}>
-        <Button title="Start Training" onPress={handleComplete} size="lg" fullWidth />
-        <TouchableOpacity onPress={handleComplete} style={styles.skipButton}>
-          <Text style={styles.skipText}>Skip for now</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={[styles.footer, { paddingBottom: insets.bottom || spacing.lg }]}>
+            <Button title="Start Training" onPress={handleComplete} size="lg" fullWidth />
+            <TouchableOpacity onPress={handleComplete} style={styles.skipButton}>
+              <Text style={styles.skipText}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -172,6 +180,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
     padding: spacing.lg,
   },
   header: {
@@ -212,6 +223,7 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing.lg,
+    flex: 1,
   },
   inputContainer: {
     marginBottom: 0,
@@ -302,9 +314,8 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   footer: {
-    padding: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    marginTop: 'auto',
+    paddingTop: spacing.lg,
     gap: spacing.md,
   },
   skipButton: {
@@ -316,3 +327,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
 });
+

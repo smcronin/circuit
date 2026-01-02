@@ -226,7 +226,7 @@ export default function ProfileScreen() {
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Fitness Goals</Text>
-            <TouchableOpacity onPress={() => router.push('/onboarding/goals')}>
+            <TouchableOpacity onPress={() => router.push('/modals/edit-goals')}>
               <Ionicons name="pencil" size={18} color={colors.primary} />
             </TouchableOpacity>
           </View>

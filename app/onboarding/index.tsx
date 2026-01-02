@@ -21,7 +21,7 @@ export default function OnboardingWelcome() {
           <Ionicons name="flash" size={80} color={colors.primary} />
         </View>
 
-        <Text style={styles.title}>LLM-WOD</Text>
+        <Text style={styles.title}>Circuit</Text>
         <Text style={styles.subtitle}>AI-Powered Workouts</Text>
 
         <View style={styles.features}>

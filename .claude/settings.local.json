@@ -16,7 +16,15 @@
       "Bash(dir:*)",
       "Bash(npm run reset:*)",
       "Bash(npx expo start:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(cd:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git reset:*)",
+      "Bash(git push)",
+      "Bash(ls:*)",
+      "Bash(npx expo install:*)"
     ]
   }
 }

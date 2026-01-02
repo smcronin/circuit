@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "LLM-WOD",
-    "slug": "llm-wod",
+    "name": "Circuit",
+    "slug": "circuit",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "llm-wod",
+    "scheme": "circuit",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "runtimeVersion": {
@@ -18,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.llmwod.app",
+      "bundleIdentifier": "com.circuit.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0F172A"
       },
-      "package": "com.llmwod.app",
+      "package": "com.circuit.app",
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.MODIFY_AUDIO_SETTINGS"

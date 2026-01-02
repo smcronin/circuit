@@ -17,8 +17,8 @@ export async function generateWorkout(
     headers: {
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://llm-wod.app',
-      'X-Title': 'LLM-WOD Workout Generator',
+      'HTTP-Referer': 'https://circuit.app',
+      'X-Title': 'Circuit Workout Generator',
     },
     body: JSON.stringify({
       model: MODEL,

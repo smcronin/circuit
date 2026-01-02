@@ -31,7 +31,7 @@ export const exportAllData = async (): Promise<{ success: boolean; error?: strin
     };
 
     const jsonString = JSON.stringify(exportData, null, 2);
-    const fileName = `llm-wod-backup-${new Date().toISOString().split('T')[0]}.json`;
+    const fileName = `circuit-backup-${new Date().toISOString().split('T')[0]}.json`;
 
     if (Platform.OS === 'web') {
       // Web: trigger download
