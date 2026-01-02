@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -101,7 +101,11 @@ export default function EditEquipmentSetModal() {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingBottom: insets.bottom }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+    >
       {/* Modal Handle */}
       <View style={styles.handleContainer}>
         <View style={styles.handle} />
@@ -116,7 +120,7 @@ export default function EditEquipmentSetModal() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Edit your{'\n'}equipment</Text>
         <Text style={styles.subtitle}>
           Update your equipment selection and preferences.
@@ -269,7 +273,7 @@ export default function EditEquipmentSetModal() {
           disabled={!setName.trim()}
         />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

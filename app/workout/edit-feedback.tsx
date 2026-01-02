@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,8 +69,11 @@ export default function EditFeedbackScreen() {
   const workout = session.workout;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel} activeOpacity={0.7}>
@@ -167,7 +170,7 @@ export default function EditFeedbackScreen() {
           fullWidth
         />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

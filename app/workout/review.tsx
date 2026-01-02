@@ -5,6 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -114,7 +116,10 @@ export default function WorkoutReviewScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -129,7 +134,7 @@ export default function WorkoutReviewScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Workout Header */}
         <View style={styles.workoutHeader}>
           <Text style={styles.workoutName}>{currentWorkout.name}</Text>
@@ -266,7 +271,7 @@ export default function WorkoutReviewScreen() {
           icon={<Ionicons name="play" size={20} color={colors.text} />}
         />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

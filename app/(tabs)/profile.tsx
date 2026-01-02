@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -218,8 +220,11 @@ export default function ProfileScreen() {
   const dataStats = getDataStats();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Profile</Text>
 
         {/* Goals Section */}
@@ -580,7 +585,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </Card>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

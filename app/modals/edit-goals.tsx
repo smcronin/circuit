@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,6 +41,14 @@ export default function EditGoalsModal() {
   const { selected: initialSelected, customText: initialCustom } = parseExistingGoals();
   const [goals, setGoals] = useState(initialCustom);
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>(initialSelected);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const handleInputFocus = () => {
+    // Scroll to bottom when input is focused to ensure it's visible
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
 
   const toggleSuggestion = (suggestion: string) => {
     if (selectedSuggestions.includes(suggestion)) {
@@ -64,7 +74,11 @@ export default function EditGoalsModal() {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingBottom: insets.bottom }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+    >
         {/* Modal Handle */}
         <View style={styles.handleContainer}>
           <View style={styles.handle} />
@@ -80,6 +94,7 @@ export default function EditGoalsModal() {
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
           showsVerticalScrollIndicator={false}
@@ -118,6 +133,7 @@ export default function EditGoalsModal() {
           <Input
             label="Or describe your goals"
             placeholder="e.g., Train for a 5K, recover from knee surgery..."
+            onFocus={handleInputFocus}
             value={goals}
             onChangeText={setGoals}
             multiline
@@ -136,7 +152,7 @@ export default function EditGoalsModal() {
             disabled={selectedSuggestions.length === 0 && !goals.trim()}
           />
         </View>
-      </View>
+    </KeyboardAvoidingView>
   );
 }
 
