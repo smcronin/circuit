@@ -17,6 +17,7 @@ import { useUserStore, useHistoryStore } from '@/stores';
 import { ALL_EQUIPMENT } from '@/utils/constants';
 import { v4 as uuid } from 'uuid';
 import { summarizeWorkoutHistory } from '@/services/openrouter';
+import { exportAllData, importAllData, getDataStats } from '@/utils/dataTransfer';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -45,6 +46,8 @@ export default function ProfileScreen() {
   const [isEditingMemory, setIsEditingMemory] = useState(false);
   const [editedMemory, setEditedMemory] = useState('');
   const [isGeneratingMemory, setIsGeneratingMemory] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const addCustomEquipmentItem = () => {
     const trimmed = customInput.trim();
@@ -171,7 +174,48 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleExportData = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportAllData();
+      if (result.success) {
+        Alert.alert('Export Complete', 'Your data has been exported successfully.');
+      } else {
+        Alert.alert('Export Failed', result.error || 'An error occurred during export.');
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportData = () => {
+    Alert.alert(
+      'Import Data',
+      'This will replace all your current data with the imported data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          onPress: async () => {
+            setIsImporting(true);
+            try {
+              const result = await importAllData();
+              if (result.success) {
+                Alert.alert('Import Complete', 'Your data has been imported successfully.');
+              } else {
+                Alert.alert('Import Failed', result.error || 'An error occurred during import.');
+              }
+            } finally {
+              setIsImporting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const canGenerateMemory = getRecentSessions(50).slice(5).length >= 3;
+  const dataStats = getDataStats();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -482,6 +526,47 @@ export default function ProfileScreen() {
           ))}
         </Card>
 
+        {/* Data Backup Section */}
+        <Card style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Data Backup</Text>
+          </View>
+          <Text style={styles.backupDescription}>
+            Export your data to transfer between devices or create a backup.
+          </Text>
+          <View style={styles.backupStats}>
+            <Text style={styles.backupStatText}>
+              {dataStats.workoutSessions} workouts, {dataStats.weightEntries} weight entries, {dataStats.equipmentSets} equipment sets
+            </Text>
+          </View>
+          <View style={styles.backupButtons}>
+            <TouchableOpacity
+              style={styles.backupButton}
+              onPress={handleExportData}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="download-outline" size={20} color={colors.primary} />
+              )}
+              <Text style={styles.backupButtonText}>Export Data</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.backupButton}
+              onPress={handleImportData}
+              disabled={isImporting}
+            >
+              {isImporting ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} />
+              )}
+              <Text style={styles.backupButtonText}>Import Data</Text>
+            </TouchableOpacity>
+          </View>
+        </Card>
+
         {/* Danger Zone */}
         <Card style={styles.dangerSection}>
           <Text style={styles.dangerTitle}>Danger Zone</Text>
@@ -659,6 +744,42 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: spacing.sm,
+  },
+  backupDescription: {
+    fontSize: typography.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: spacing.sm,
+  },
+  backupStats: {
+    backgroundColor: colors.surfaceLight,
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.md,
+  },
+  backupStatText: {
+    fontSize: typography.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  backupButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  backupButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.primary + '15',
+    borderRadius: borderRadius.md,
+  },
+  backupButtonText: {
+    fontSize: typography.sm,
+    color: colors.primary,
+    fontWeight: typography.medium,
   },
   dangerSection: {
     marginBottom: spacing.xxl,
