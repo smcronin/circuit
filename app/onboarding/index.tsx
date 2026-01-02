@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { CircuitLogo } from '@/components/CircuitLogo';
 
 const colors = {
   background: '#0F172A',
@@ -18,7 +19,7 @@ export default function OnboardingWelcome() {
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Ionicons name="flash" size={80} color={colors.primary} />
+          <CircuitLogo size={100} />
         </View>
 
         <Text style={styles.title}>Circuit</Text>
