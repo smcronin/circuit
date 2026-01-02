@@ -11,6 +11,7 @@ export interface GenerationContext {
   userAge?: number;
   userWeight?: number;
   feedback?: string;
+  customInstructions?: string;
 }
 
 export function getSystemPrompt(): string {
@@ -41,9 +42,10 @@ Exercise difficulty progression:
 - Advanced: High intensity, complex movements, shorter rests
 
 Side-switching exercises:
-- For unilateral exercises (lunges, single-leg deadlifts, pistol squats, single-arm rows, etc.), set "switchSides": true
-- When switchSides is true, the UI will display "LEFT SIDE" for the first half of the exercise duration, then "RIGHT SIDE" for the second half
-- This applies to any exercise that works one side at a time and needs equal work on both sides`;
+- For exercises where the user needs to switch sides, create TWO independent exercises (with minimal rest in between)
+- Example: "Pistol Squat - Right Leg" with rest 5-10 seconds, then "Pistol Squat - Left Leg"
+- This ensures both sides are represented evenly in the circuit and allows proper tracking of each side
+- Apply this pattern to: lunges, single-leg deadlifts, pistol squats, single-arm rows, Bulgarian split squats, single-arm presses, etc.`;
 }
 
 export function buildPrompt(context: GenerationContext): string {
@@ -58,6 +60,7 @@ export function buildPrompt(context: GenerationContext): string {
     userAge,
     userWeight,
     feedback,
+    customInstructions,
   } = context;
 
   let prompt = `Create a ${requestedDuration}-minute workout with the following constraints:
@@ -121,6 +124,16 @@ Please adjust the workout based on this feedback. Generate a new workout that ad
 `;
   }
 
+  if (customInstructions) {
+    prompt += `
+## IMPORTANT INSTRUCTIONS
+The user has provided the following request for this specific workout:
+"${customInstructions}"
+
+You MUST follow these custom instructions when designing this workout.
+`;
+  }
+
   prompt += `
 Return a JSON object with this exact structure:
 {
@@ -139,8 +152,7 @@ Return a JSON object with this exact structure:
         "name": "string",
         "duration": number (seconds, typically 30-45),
         "description": "string - clear instructions on how to perform",
-        "muscleGroups": ["string"],
-        "switchSides": boolean (optional - true for unilateral exercises like lunges, single-leg moves)
+        "muscleGroups": ["string"]
       }
     ]
   },
@@ -160,7 +172,6 @@ Return a JSON object with this exact structure:
           "description": "string - clear form cues and instructions",
           "muscleGroups": ["string"],
           "equipment": ["string"] (optional, only if equipment needed),
-          "switchSides": boolean (optional - true for unilateral exercises like lunges, single-arm rows),
           "modifications": {
             "easier": "string - easier variation" (optional),
             "harder": "string - harder variation" (optional)
@@ -176,8 +187,7 @@ Return a JSON object with this exact structure:
         "name": "string",
         "duration": number (seconds, typically 30-45),
         "description": "string - stretching/breathing cues",
-        "muscleGroups": ["string"],
-        "switchSides": boolean (optional - true for unilateral stretches)
+        "muscleGroups": ["string"]
       }
     ]
   }

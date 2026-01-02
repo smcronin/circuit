@@ -9,6 +9,7 @@ interface WorkoutState {
   feedbackMessage: string;
   selectedEquipmentSetId: string | null;
   selectedDuration: number;
+  customInstructions: string;
 
   setCurrentWorkout: (workout: GeneratedWorkout) => void;
   setFlattenedWorkout: (workout: FlattenedWorkout) => void;
@@ -19,6 +20,7 @@ interface WorkoutState {
   clearFeedback: () => void;
   setSelectedEquipmentSetId: (id: string | null) => void;
   setSelectedDuration: (duration: number) => void;
+  setCustomInstructions: (instructions: string) => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>((set) => ({
@@ -29,6 +31,7 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
   feedbackMessage: '',
   selectedEquipmentSetId: null,
   selectedDuration: 30,
+  customInstructions: '',
 
   setCurrentWorkout: (workout) => set({ currentWorkout: workout }),
   setFlattenedWorkout: (workout) => set({ flattenedWorkout: workout }),
@@ -37,6 +40,7 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
       currentWorkout: null,
       flattenedWorkout: null,
       feedbackMessage: '',
+      customInstructions: '',
     }),
   setIsGenerating: (isGenerating) => set({ isGenerating }),
   setGenerationError: (error) => set({ generationError: error }),
@@ -44,4 +48,5 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
   clearFeedback: () => set({ feedbackMessage: '' }),
   setSelectedEquipmentSetId: (id) => set({ selectedEquipmentSetId: id }),
   setSelectedDuration: (duration) => set({ selectedDuration: duration }),
+  setCustomInstructions: (instructions) => set({ customInstructions: instructions }),
 }));

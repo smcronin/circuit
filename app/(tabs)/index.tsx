@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Chip } from '@/components/common';
+import { Button, Card, Chip, Input } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { DURATION_OPTIONS } from '@/utils/constants';
 import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
@@ -34,6 +34,8 @@ export default function HomeScreen() {
     setSelectedEquipmentSetId,
     selectedDuration,
     setSelectedDuration,
+    customInstructions,
+    setCustomInstructions,
   } = useWorkoutStore();
   const getRecentSessions = useHistoryStore((state) => state.getRecentSessions);
   const workoutSummary = useHistoryStore((state) => state.workoutSummary);
@@ -81,6 +83,7 @@ export default function HomeScreen() {
         olderWorkoutsSummary: workoutSummary,
         userAge: profile.age,
         userWeight: profile.weight,
+        customInstructions: customInstructions || undefined,
       });
 
       const flattened = flattenWorkout(workout);
@@ -195,6 +198,22 @@ export default function HomeScreen() {
           </Text>
         </Card>
 
+        {/* Custom Instructions */}
+        <Card style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
+            <Text style={styles.sectionTitle}>Custom Instructions</Text>
+            <Text style={styles.optionalLabel}>(Optional)</Text>
+          </View>
+          <Input
+            placeholder="e.g., Focus on upper body, include pull-ups, no jumping..."
+            value={customInstructions}
+            onChangeText={setCustomInstructions}
+            multiline
+            numberOfLines={3}
+          />
+        </Card>
+
         {generationError && (
           <Card style={styles.errorCard}>
             <Ionicons name="warning-outline" size={24} color={colors.error} />
@@ -259,6 +278,11 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     fontWeight: typography.semibold,
     color: colors.text,
+  },
+  optionalLabel: {
+    fontSize: typography.sm,
+    color: colors.textMuted,
+    marginLeft: 'auto',
   },
   chipRow: {
     flexDirection: 'row',
