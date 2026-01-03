@@ -6,3 +6,4 @@ export { ProgressBar } from './ProgressBar';
 export { SegmentedProgressBar } from './SegmentedProgressBar';
 export { Header } from './Header';
 export { MarqueeText } from './MarqueeText';
+export { VerticalAutoScroll } from './VerticalAutoScroll';

@@ -6,12 +6,13 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { Button, SegmentedProgressBar, MarqueeText } from '@/components/common';
+import { Button, SegmentedProgressBar, MarqueeText, VerticalAutoScroll } from '@/components/common';
 import { colors, spacing, typography } from '@/theme';
 import { useTimerStore, useHistoryStore } from '@/stores';
 import { formatTime, isRestItem, getItemTypeLabel } from '@/utils';
@@ -30,6 +31,7 @@ export default function TimerScreen() {
     session,
     countdownValue,
     showCountdown,
+    justCompletedItem,
     startCountdown,
     startTimer,
     pauseTimer,
@@ -39,7 +41,7 @@ export default function TimerScreen() {
     skipToNext,
     goToPrevious,
     setCountdownValue,
-    finishTransition,
+    clearJustCompletedItem,
     reset,
   } = useTimerStore();
 
@@ -78,9 +80,9 @@ export default function TimerScreen() {
     }
   }, []);
 
-  // Countdown timer - plays 3, 2, 1, GO! (for both initial and transitions)
+  // Initial countdown timer - plays 3, 2, 1, GO! before workout starts
   useEffect(() => {
-    if (status === 'countdown' || status === 'transition') {
+    if (status === 'countdown') {
       if (countdownValue > 0) {
         // Play distinct tone for each number (3, 2, 1)
         soundManager.playCountdownNumber(countdownValue);
@@ -90,11 +92,7 @@ export default function TimerScreen() {
       } else {
         // Play GO! sound then start
         soundManager.playGo();
-        if (status === 'countdown') {
-          startTimer();
-        } else {
-          finishTransition();
-        }
+        startTimer();
       }
     }
 
@@ -120,14 +118,31 @@ export default function TimerScreen() {
     };
   }, [status]);
 
-  // Note: Sound on item change is now handled by the transition countdown
-
-  // Warning sound at 3 seconds
+  // Halfway warning tone (work only, not rests)
+  // Only play if the midpoint is > 3 to avoid overlap with the ending countdown
   useEffect(() => {
-    if (status === 'running' && timeRemaining === 3) {
-      soundManager.playWarning();
+    if (status === 'running' && !isRest && currentItem) {
+      const itemMidpoint = Math.floor(currentItem.duration / 2);
+      if (timeRemaining === itemMidpoint && itemMidpoint > 3) {
+        soundManager.playWarning();
+      }
     }
-  }, [timeRemaining]);
+  }, [timeRemaining, status, isRest, currentItem]);
+
+  // Countdown sounds during last 3 seconds of each item
+  useEffect(() => {
+    if (status === 'running' && timeRemaining <= 3 && timeRemaining >= 1) {
+      soundManager.playCountdownNumber(timeRemaining);
+    }
+  }, [timeRemaining, status]);
+
+  // GO sound when an item completes naturally
+  useEffect(() => {
+    if (justCompletedItem) {
+      soundManager.playGo();
+      clearJustCompletedItem();
+    }
+  }, [justCompletedItem, clearJustCompletedItem]);
 
   // Side switch sound - plays when crossing the midpoint
   useEffect(() => {
@@ -142,9 +157,10 @@ export default function TimerScreen() {
     prevTimeRef.current = timeRemaining;
   }, [timeRemaining, status, hasSideSwitching, midpoint]);
 
-  // Pulse animation for countdown
+  // Pulse animation for countdown (both initial and ending countdown)
+  const isEndingCountdownActive = status === 'running' && timeRemaining <= 3 && timeRemaining >= 1;
   useEffect(() => {
-    if (showCountdown) {
+    if (showCountdown || isEndingCountdownActive) {
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.2,
@@ -158,7 +174,7 @@ export default function TimerScreen() {
         }),
       ]).start();
     }
-  }, [countdownValue]);
+  }, [countdownValue, timeRemaining, isEndingCountdownActive]);
 
   // Handle completion
   useEffect(() => {
@@ -211,23 +227,30 @@ export default function TimerScreen() {
 
   const backgroundColor = isRest ? colors.timerRest : colors.timerActive;
 
-  if (showCountdown && (status === 'countdown' || status === 'transition')) {
-    const isTransition = status === 'transition';
-    const upcomingItem = items[currentItemIndex];
+  // Show countdown overlay: during initial countdown OR during last 3 seconds of any item
+  const isEndingCountdown = status === 'running' && timeRemaining <= 3 && timeRemaining >= 1;
+  const isInitialCountdown = showCountdown && status === 'countdown';
+
+  if (isInitialCountdown || isEndingCountdown) {
+    const upcomingItem = nextItem;
+    const displayValue = isEndingCountdown ? timeRemaining : (countdownValue || 'GO!');
+    const headerText = isEndingCountdown
+      ? (isRest ? 'REST ENDING' : 'FINISHING')
+      : 'GET READY';
+    const subText = isEndingCountdown
+      ? (upcomingItem ? `Next: ${upcomingItem.name}` : 'Final stretch!')
+      : `First up: ${items[0]?.name}`;
+
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.countdownContainer}>
-          <Text style={styles.getReady}>
-            {isTransition ? 'NEXT UP' : 'GET READY'}
-          </Text>
+          <Text style={styles.getReady}>{headerText}</Text>
           <Animated.Text
             style={[styles.countdownNumber, { transform: [{ scale: pulseAnim }] }]}
           >
-            {countdownValue || 'GO!'}
+            {displayValue}
           </Animated.Text>
-          <Text style={styles.firstExercise}>
-            {isTransition ? upcomingItem?.name : `First up: ${items[0]?.name}`}
-          </Text>
+          <Text style={styles.firstExercise}>{subText}</Text>
         </View>
       </View>
     );
@@ -282,9 +305,13 @@ export default function TimerScreen() {
         )}
 
         {currentItem.exercise?.description && (
-          <Text style={styles.exerciseDescription} numberOfLines={4}>
-            {currentItem.exercise.description}
-          </Text>
+          <VerticalAutoScroll
+            text={currentItem.exercise.description}
+            style={styles.exerciseDescription}
+            containerHeight={88}
+            lineHeight={22}
+            pauseDuration={3000}
+          />
         )}
       </View>
 
@@ -345,17 +372,33 @@ export default function TimerScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Paused Overlay */}
+      {/* Paused Overlay - positioned below header */}
       {status === 'paused' && (
-        <View style={[styles.pausedOverlay, { paddingTop: insets.top }]}>
-          <TouchableOpacity
-            onPress={handleStop}
-            style={[styles.closeButton, styles.pausedCloseButton]}
-          >
-            <Ionicons name="close" size={28} color={colors.text} />
-          </TouchableOpacity>
+        <View style={styles.pausedOverlay}>
           <View style={styles.pausedContent}>
             <Text style={styles.pausedText}>PAUSED</Text>
+
+            {/* Exercise name with horizontal scroll if long */}
+            <View style={styles.pausedExerciseNameContainer}>
+              <MarqueeText
+                text={currentItem.name}
+                style={styles.pausedExerciseName}
+              />
+            </View>
+
+            {/* Full instructions - user can scroll manually */}
+            {currentItem.exercise?.description && (
+              <ScrollView
+                style={styles.pausedInstructions}
+                contentContainerStyle={styles.pausedInstructionsContent}
+                showsVerticalScrollIndicator={true}
+              >
+                <Text style={styles.pausedInstructionsText}>
+                  {currentItem.exercise.description}
+                </Text>
+              </ScrollView>
+            )}
+
             <Text style={styles.pausedSubtext}>Tap play to resume</Text>
           </View>
         </View>
@@ -507,28 +550,55 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxl,
   },
   pausedOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    zIndex: 5,
-  },
-  pausedCloseButton: {
     position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
+    top: 76, // header height (44 button + 16 padding top + 16 padding bottom)
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    zIndex: 5,
   },
   pausedContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: spacing.lg,
   },
   pausedText: {
     fontSize: typography['4xl'],
     fontWeight: typography.bold,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  pausedExerciseNameContainer: {
+    width: '100%',
+    marginBottom: spacing.md,
+  },
+  pausedExerciseName: {
+    fontSize: typography['2xl'],
+    fontWeight: typography.semibold,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  pausedInstructions: {
+    maxHeight: 200,
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    marginBottom: spacing.lg,
+  },
+  pausedInstructionsContent: {
+    padding: spacing.md,
+  },
+  pausedInstructionsText: {
+    fontSize: typography.base,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 22,
+    textAlign: 'center',
   },
   pausedSubtext: {
     fontSize: typography.base,
     color: colors.textSecondary,
+    marginTop: spacing.md,
   },
 });
