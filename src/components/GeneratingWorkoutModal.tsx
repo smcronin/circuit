@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Modal, Animated as RNAnimated, Platform } from 'react-native';
-import Svg, { Path, Defs, RadialGradient, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Defs, RadialGradient, LinearGradient, Stop, G } from 'react-native-svg';
+
+const AnimatedPath = RNAnimated.createAnimatedComponent(Path);
+const AnimatedG = RNAnimated.createAnimatedComponent(G);
 import { colors, spacing, typography } from '@/theme';
 
 const MESSAGES = [
@@ -249,6 +252,8 @@ export function GeneratingWorkoutModal({ visible }: GeneratingWorkoutModalProps)
 
   const fadeAnim = useRef(new RNAnimated.Value(1)).current;
   const glowAnim = useRef(new RNAnimated.Value(0)).current;
+  const fillPulseAnim = useRef(new RNAnimated.Value(0)).current;
+  const shimmerAnim = useRef(new RNAnimated.Value(0)).current;
   const energyRingAnims = useRef([
     new RNAnimated.Value(0),
     new RNAnimated.Value(0),
@@ -418,6 +423,44 @@ export function GeneratingWorkoutModal({ visible }: GeneratingWorkoutModalProps)
     setShowEnergyRings(true);
     setShowOrbitParticles(true);
 
+    // Start fill pulse animation (gentle brightness oscillation)
+    const animateFillPulse = () => {
+      if (!animationRunning.current) return;
+      RNAnimated.sequence([
+        RNAnimated.timing(fillPulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: false,
+        }),
+        RNAnimated.timing(fillPulseAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        if (animationRunning.current) {
+          animateFillPulse();
+        }
+      });
+    };
+    animateFillPulse();
+
+    // Start shimmer animation (shiny gradient sweep)
+    const animateShimmer = () => {
+      if (!animationRunning.current) return;
+      shimmerAnim.setValue(0);
+      RNAnimated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: false,
+      }).start(() => {
+        if (animationRunning.current) {
+          animateShimmer();
+        }
+      });
+    };
+    animateShimmer();
+
     // Animate energy rings
     energyRingAnims.forEach((anim, index) => {
       const delay = index * 500;
@@ -455,7 +498,7 @@ export function GeneratingWorkoutModal({ visible }: GeneratingWorkoutModalProps)
       };
       animateOrbit();
     });
-  }, [visible, animatePathWithLaser, glowAnim, energyRingAnims, orbitAnims]);
+  }, [visible, animatePathWithLaser, glowAnim, fillPulseAnim, shimmerAnim, energyRingAnims, orbitAnims]);
 
   // Reset and start animation when modal becomes visible
   useEffect(() => {
@@ -464,6 +507,8 @@ export function GeneratingWorkoutModal({ visible }: GeneratingWorkoutModalProps)
       setAnimationKey(prev => prev + 1);
       setMessageIndex(0);
       glowAnim.setValue(0);
+      fillPulseAnim.setValue(0);
+      shimmerAnim.setValue(0);
 
       // Give time for component to mount
       setTimeout(() => {
@@ -605,11 +650,26 @@ export function GeneratingWorkoutModal({ visible }: GeneratingWorkoutModalProps)
               style={styles.svg}
             >
               <Defs>
+                {/* Base gradient for the fill */}
                 <RadialGradient id="logoGradient" cx="50%" cy="50%" r="50%">
                   <Stop offset="0%" stopColor="#818CF8" />
                   <Stop offset="70%" stopColor="#6366F1" />
                   <Stop offset="100%" stopColor="#4F46E5" />
                 </RadialGradient>
+                {/* Brighter gradient for pulse glow effect */}
+                <RadialGradient id="logoGradientBright" cx="50%" cy="50%" r="50%">
+                  <Stop offset="0%" stopColor="#A5B4FC" />
+                  <Stop offset="50%" stopColor="#818CF8" />
+                  <Stop offset="100%" stopColor="#6366F1" />
+                </RadialGradient>
+                {/* Shimmer/shiny gradient overlay */}
+                <LinearGradient id="shimmerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <Stop offset="0%" stopColor="transparent" />
+                  <Stop offset="40%" stopColor="transparent" />
+                  <Stop offset="50%" stopColor="rgba(255,255,255,0.4)" />
+                  <Stop offset="60%" stopColor="transparent" />
+                  <Stop offset="100%" stopColor="transparent" />
+                </LinearGradient>
                 <LinearGradient id="strokeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                   <Stop offset="0%" stopColor="#A5B4FC" />
                   <Stop offset="50%" stopColor="#818CF8" />
@@ -617,7 +677,7 @@ export function GeneratingWorkoutModal({ visible }: GeneratingWorkoutModalProps)
                 </LinearGradient>
               </Defs>
 
-              {/* Fill paths */}
+              {/* Fill paths - base layer */}
               {Object.entries(PATHS).map(([key, d]) => (
                 <Path
                   key={`fill-${key}`}
@@ -626,6 +686,42 @@ export function GeneratingWorkoutModal({ visible }: GeneratingWorkoutModalProps)
                   opacity={fillOpacities[key] ?? 0}
                 />
               ))}
+
+              {/* Fill paths - bright pulse layer */}
+              {Object.entries(PATHS).map(([key, d]) => {
+                const baseOpacity = fillOpacities[key] ?? 0;
+                // Create animated opacity for the bright layer
+                const pulseOpacity = fillPulseAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0.6],
+                });
+                return (
+                  <AnimatedPath
+                    key={`fill-pulse-${key}`}
+                    d={d}
+                    fill="url(#logoGradientBright)"
+                    opacity={baseOpacity > 0 ? pulseOpacity : 0}
+                  />
+                );
+              })}
+
+              {/* Shimmer overlay layer */}
+              {Object.entries(PATHS).map(([key, d]) => {
+                const baseOpacity = fillOpacities[key] ?? 0;
+                // Animate shimmer sweep across the logo
+                const shimmerOpacity = shimmerAnim.interpolate({
+                  inputRange: [0, 0.3, 0.5, 0.7, 1],
+                  outputRange: [0, 0.5, 1, 0.5, 0],
+                });
+                return (
+                  <AnimatedPath
+                    key={`fill-shimmer-${key}`}
+                    d={d}
+                    fill="url(#shimmerGradient)"
+                    opacity={baseOpacity > 0 ? shimmerOpacity : 0}
+                  />
+                );
+              })}
 
               {/* Stroke paths */}
               {Object.entries(PATHS).map(([key, d]) => {
