@@ -1,6 +1,6 @@
 const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
 import { LLMWorkoutResponse, ManualWorkoutMetadataResponse } from '@/types/llm';
-import { GeneratedWorkout, Exercise, Circuit, WarmUpSection, CoolDownSection } from '@/types/workout';
+import { GeneratedWorkout, Exercise, Circuit, WarmUpSection, CoolDownSection, EquipmentItem } from '@/types/workout';
 import { buildPrompt, getSystemPrompt, GenerationContext, getManualWorkoutSystemPrompt, buildManualWorkoutPrompt, ManualWorkoutPromptInput } from './prompts';
 import { uuid } from '@/utils/uuid';
 
@@ -175,6 +175,14 @@ function transformToGeneratedWorkout(
     circuitRestTotal +
     coolDown.totalDuration;
 
+  // Transform equipment list (or derive from equipmentRequired)
+  const equipment: EquipmentItem[] = llm.equipment?.length
+    ? llm.equipment.map(e => ({ name: e.name, notes: e.notes }))
+    : (llm.equipmentRequired || []).map(name => ({ name }));
+
+  // Default parting words if not provided
+  const defaultPartingWords = "Great work completing this workout! Your body is adapting and growing stronger with every session. Keep showing up and trust the process.";
+
   return {
     id: workoutId,
     createdAt: new Date().toISOString(),
@@ -185,6 +193,7 @@ function transformToGeneratedWorkout(
     actualDuration,
     equipmentSetUsed: context.equipmentAvailable.join(', ') || 'Bodyweight',
     equipmentRequired: llm.equipmentRequired || [],
+    equipment,
     warmUp,
     circuits,
     coolDown,
@@ -196,6 +205,7 @@ function transformToGeneratedWorkout(
     },
     focusAreas: llm.focusAreas || [],
     muscleGroupsTargeted: llm.muscleGroupsTargeted || [],
+    partingWords: llm.partingWords || defaultPartingWords,
   };
 }
 

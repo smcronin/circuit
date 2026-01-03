@@ -1,12 +1,88 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Button, Card, Input } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useTimerStore, useHistoryStore } from '@/stores';
 import { formatDuration } from '@/utils';
+
+// Shiny trophy with animated shimmer effect
+function ShimmerTrophy({ size = 64 }: { size?: number }) {
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const shimmer = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    shimmer.start();
+    return () => shimmer.stop();
+  }, [shimmerAnim]);
+
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-size * 2, size * 2],
+  });
+
+  const shimmerOpacity = shimmerAnim.interpolate({
+    inputRange: [0, 0.3, 0.5, 0.7, 1],
+    outputRange: [0, 0.3, 0.6, 0.3, 0],
+  });
+
+  return (
+    <View style={{ width: size, height: size, position: 'relative' }}>
+      {/* Base trophy icon */}
+      <Ionicons name="trophy" size={size} color={colors.warning} />
+
+      {/* Shimmer overlay */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: 'hidden',
+          opacity: shimmerOpacity,
+        }}
+      >
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: -size,
+            left: 0,
+            width: size * 0.4,
+            height: size * 3,
+            transform: [
+              { translateX: shimmerTranslate },
+              { rotate: '20deg' },
+            ],
+          }}
+        >
+          <LinearGradient
+            colors={['transparent', 'rgba(255,255,255,0.8)', 'transparent']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ flex: 1 }}
+          />
+        </Animated.View>
+      </Animated.View>
+    </View>
+  );
+}
 
 function getRpeColor(value: number): string {
   if (value <= 3) return colors.success;
@@ -30,13 +106,19 @@ export default function WorkoutCompleteScreen() {
   const [rpe, setRpe] = useState<number | undefined>(undefined);
   const [notes, setNotes] = useState('');
 
-  // Memoize the quote so it doesn't change on every keystroke
-  const motivationalQuote = useMemo(() => getMotivationalQuote(), []);
-
   const session = useTimerStore((state) => state.session);
   const reset = useTimerStore((state) => state.reset);
   const history = useHistoryStore((state) => state.history);
   const updateSession = useHistoryStore((state) => state.updateSession);
+
+  // Use parting words from workout, fall back to random quote for older workouts
+  const motivationalQuote = useMemo(
+    () => session?.workout?.partingWords || getMotivationalQuote(),
+    [session?.workout?.partingWords]
+  );
+
+  // Random completion message - memoized so it doesn't change on re-renders
+  const completionMessage = useMemo(() => getCompletionMessage(), []);
 
   const handleDone = () => {
     if (session && (rpe !== undefined || notes.trim())) {
@@ -75,19 +157,27 @@ export default function WorkoutCompleteScreen() {
         {/* Celebration Header */}
         <View style={styles.celebrationHeader}>
           <View style={styles.iconContainer}>
-            <Ionicons
-              name={isComplete ? 'trophy' : 'fitness'}
-              size={64}
-              color={isComplete ? colors.warning : colors.primary}
-            />
+            {isComplete ? (
+              <ShimmerTrophy size={64} />
+            ) : (
+              <Ionicons name="fitness" size={64} color={colors.primary} />
+            )}
           </View>
           <Text style={styles.title}>
             {isComplete ? 'Workout Complete!' : 'Great Effort!'}
           </Text>
           <Text style={styles.subtitle}>
             {isComplete
-              ? 'You crushed it! Keep up the momentum.'
-              : `You completed ${session.percentComplete}% of your workout.`}
+              ? completionMessage
+              : `You completed ${session.percentComplete}% of your workout. Still awesome!`}
+          </Text>
+        </View>
+
+        {/* Parting Words */}
+        <View style={styles.quoteContainer}>
+          <Ionicons name="chatbubble-outline" size={20} color={colors.textMuted} />
+          <Text style={styles.quote}>
+            {motivationalQuote}
           </Text>
         </View>
 
@@ -213,14 +303,6 @@ export default function WorkoutCompleteScreen() {
             containerStyle={styles.notesInput}
           />
         </Card>
-
-        {/* Motivational Quote */}
-        <View style={styles.quoteContainer}>
-          <Ionicons name="chatbubble-outline" size={20} color={colors.textMuted} />
-          <Text style={styles.quote}>
-            {motivationalQuote}
-          </Text>
-        </View>
       </ScrollView>
 
       {/* Footer Actions */}
@@ -255,6 +337,64 @@ function getMotivationalQuote(): string {
     "Your body can do it, it's your mind you have to convince.",
   ];
   return quotes[Math.floor(Math.random() * quotes.length)];
+}
+
+function getCompletionMessage(): string {
+  const messages = [
+    // Classic encouragement
+    "You crushed it! Keep up the momentum.",
+    "Absolutely demolished that workout!",
+    "Another one in the books. Legend status.",
+    "That's how it's done! Pure dedication.",
+
+    // Gym bro energy
+    "Gains: secured. Excuses: rejected.",
+    "The weights feared you today. As they should.",
+    "Somewhere, a treadmill just told its friends about you.",
+    "You didn't come this far to only come this far.",
+    "Beast mode: activated and completed.",
+    "The gym just filed a noise complaint. Too much crushing it.",
+
+    // Playful & funny
+    "Your muscles are writing you a thank you note.",
+    "Plot twist: you're the main character.",
+    "Netflix asked if you're still watching. You said no, you're busy winning.",
+    "Couch potatoes everywhere are shaking.",
+    "Your future self just sent a thank you text.",
+    "Sweat is just your fat crying. Let it out.",
+    "You just made your bed jealous—it wanted to keep you longer.",
+
+    // Hype & motivation
+    "Champions don't hit snooze. And neither did you.",
+    "One more workout closer to the best version of you.",
+    "You showed up. That's already more than most.",
+    "Discipline: 1, Excuses: 0.",
+    "The only thing getting crushed today was that workout.",
+    "You're not just building muscle, you're building character.",
+
+    // Light-hearted
+    "Workout complete. Snack earned.",
+    "You vs. You, and you won again.",
+    "Your gym clothes are proud of you.",
+    "High five! ...Okay, maybe after your arms recover.",
+    "You're officially allowed to say 'I worked out today' with smugness.",
+    "Remember this feeling next time the couch calls.",
+
+    // Wholesome
+    "Every drop of sweat was worth it.",
+    "Your body thanks you. Your mind thanks you. We thank you.",
+    "Progress isn't always visible, but it's always happening.",
+    "You just invested in yourself. Best ROI there is.",
+    "Small steps, big changes. You're living proof.",
+
+    // Silly gym bro
+    "Do you even lift? Yes. Yes you do.",
+    "Somewhere, Arnold is nodding approvingly.",
+    "The iron never lies. And today it said you're awesome.",
+    "You came, you saw, you conquered... then stretched.",
+    "Protein shake unlocked.",
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
 }
 
 const styles = StyleSheet.create({

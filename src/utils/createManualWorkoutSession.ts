@@ -26,6 +26,7 @@ export function createManualWorkoutSession(params: CreateManualSessionParams): W
     actualDuration: durationSeconds,
     equipmentSetUsed: 'Manual Entry',
     equipmentRequired: [],
+    equipment: [], // No equipment details for manual entries
     warmUp: { type: 'warmup', exercises: [], totalDuration: 0 },
     circuits: [], // Empty circuits for manual workouts
     coolDown: { type: 'cooldown', exercises: [], totalDuration: 0 },
@@ -34,6 +35,7 @@ export function createManualWorkoutSession(params: CreateManualSessionParams): W
     calorieRange: params.metadata.calorieRange,
     focusAreas: params.metadata.focusAreas,
     muscleGroupsTargeted: params.metadata.muscleGroupsTargeted,
+    partingWords: "Great job logging your workout! Every session counts toward your goals.",
     isManual: true,
   };
 

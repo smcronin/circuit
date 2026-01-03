@@ -55,6 +55,11 @@ export interface LLMWorkoutResponse {
   focusAreas: string[];
   muscleGroupsTargeted: string[];
   equipmentRequired: string[];
+  equipment?: Array<{
+    name: string;
+    notes?: string;
+  }>;
+  partingWords?: string;
   restBetweenCircuits?: number; // seconds, transition time between circuits
 
   warmUp?: {

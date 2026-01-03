@@ -169,6 +169,34 @@ export default function WorkoutReviewScreen() {
           )}
         </View>
 
+        {/* Equipment Section - only show if equipment exists */}
+        {currentWorkout.equipment && currentWorkout.equipment.length > 0 && (
+          <Card style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="barbell-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>Equipment Needed</Text>
+                <Text style={styles.sectionSubtitle}>Gather these items before starting</Text>
+              </View>
+            </View>
+            {currentWorkout.equipment.map((item, idx) => (
+              <View key={idx} style={styles.equipmentRow}>
+                <View style={styles.equipmentBullet}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                </View>
+                <View style={styles.equipmentInfo}>
+                  <Text style={styles.equipmentName}>{item.name}</Text>
+                  {item.notes && (
+                    <Text style={styles.equipmentNotes}>{item.notes}</Text>
+                  )}
+                </View>
+              </View>
+            ))}
+          </Card>
+        )}
+
         {/* Warm Up - only show if exercises exist */}
         {currentWorkout.warmUp.exercises.length > 0 && (
           <Card style={styles.section}>
@@ -495,6 +523,28 @@ const styles = StyleSheet.create({
   restText: {
     fontSize: typography.xs,
     color: colors.textMuted,
+  },
+  equipmentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: spacing.sm,
+  },
+  equipmentBullet: {
+    marginRight: spacing.sm,
+    marginTop: 2,
+  },
+  equipmentInfo: {
+    flex: 1,
+  },
+  equipmentName: {
+    fontSize: typography.sm,
+    fontWeight: typography.medium,
+    color: colors.text,
+  },
+  equipmentNotes: {
+    fontSize: typography.xs,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   feedbackSection: {
     marginBottom: spacing.xxl,

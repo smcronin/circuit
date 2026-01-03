@@ -206,6 +206,13 @@ Return a JSON object with this exact structure:
   "focusAreas": ["strength", "cardio", "flexibility", "core", "upper body", "lower body", etc.],
   "muscleGroupsTargeted": ["chest", "back", "shoulders", "biceps", "triceps", "core", "quads", "hamstrings", "glutes", "calves"],
   "equipmentRequired": ["dumbbell", etc. or empty array for bodyweight],
+  "equipment": [
+    {
+      "name": "string - equipment name (e.g., 'Dumbbells')",
+      "notes": "string - optional details (e.g., 'Medium weight, 10-15 lbs', 'Have a light and heavy pair ready')"
+    }
+  ],
+  "partingWords": "string - motivational closing message (2-3 sentences) for after workout completion. Affirm what they accomplished, how their body benefited, and connect to their fitness goals. Be encouraging and specific to the workout. E.g., 'Your core is stronger and your endurance is building. Every rep brought you closer to your goal of increased strength. Keep showing up—your body thanks you.'",
   "restBetweenCircuits": number (seconds, typically 30-60, allows transition between circuits),
 ${warmupSchema}
   "circuits": [

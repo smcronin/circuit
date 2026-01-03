@@ -58,6 +58,7 @@ export interface GeneratedWorkout {
   actualDuration: number;
   equipmentSetUsed: string;
   equipmentRequired: string[];
+  equipment: EquipmentItem[]; // Detailed equipment list with descriptions for preparation
   warmUp: WarmUpSection;
   circuits: Circuit[];
   coolDown: CoolDownSection;
@@ -66,7 +67,13 @@ export interface GeneratedWorkout {
   calorieRange: { low: number; high: number };
   focusAreas: string[];
   muscleGroupsTargeted: string[];
+  partingWords: string; // Motivational message displayed after workout completion
   isManual?: boolean; // True for manually logged workouts (no exercises, just metadata)
+}
+
+export interface EquipmentItem {
+  name: string;
+  notes?: string; // e.g., "Medium weight (10-15 lbs)", "Optional but recommended"
 }
 
 // ============================================
