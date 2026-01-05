@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Input } from '@/components/common';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { useUserStore, useHistoryStore } from '@/stores';
-import { ALL_EQUIPMENT } from '@/utils/constants';
+import { ALL_EQUIPMENT, DURATION_OPTIONS } from '@/utils/constants';
 import { uuid } from '@/utils/uuid';
 import { summarizeWorkoutHistory } from '@/services/openrouter';
 import { exportAllData, importAllData, getDataStats } from '@/utils/dataTransfer';
@@ -50,6 +50,12 @@ export default function ProfileScreen() {
   const [isGeneratingMemory, setIsGeneratingMemory] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isEditingPersonalInfo, setIsEditingPersonalInfo] = useState(false);
+  const [editAge, setEditAge] = useState(profile?.age?.toString() || '');
+  const [editWeight, setEditWeight] = useState(profile?.weight?.toString() || '');
+  const [editGoalWeight, setEditGoalWeight] = useState(profile?.goalWeight?.toString() || '');
+  const [editWeightUnit, setEditWeightUnit] = useState<'lbs' | 'kg'>(profile?.weightUnit || 'lbs');
+  const [editPreferredDuration, setEditPreferredDuration] = useState(profile?.preferredWorkoutDuration || 30);
 
   const addCustomEquipmentItem = () => {
     const trimmed = customInput.trim();
@@ -89,6 +95,26 @@ export default function ProfileScreen() {
   const handleSaveTrainingNotes = () => {
     updateProfile({ trainingNotes: trainingNotes.trim() || undefined });
     setIsEditingNotes(false);
+  };
+
+  const handleStartEditingPersonalInfo = () => {
+    setEditAge(profile?.age?.toString() || '');
+    setEditWeight(profile?.weight?.toString() || '');
+    setEditGoalWeight(profile?.goalWeight?.toString() || '');
+    setEditWeightUnit(profile?.weightUnit || 'lbs');
+    setEditPreferredDuration(profile?.preferredWorkoutDuration || 30);
+    setIsEditingPersonalInfo(true);
+  };
+
+  const handleSavePersonalInfo = () => {
+    updateProfile({
+      age: editAge ? parseInt(editAge, 10) : undefined,
+      weight: editWeight ? parseFloat(editWeight) : undefined,
+      goalWeight: editGoalWeight ? parseFloat(editGoalWeight) : undefined,
+      weightUnit: editWeightUnit,
+      preferredWorkoutDuration: editPreferredDuration,
+    });
+    setIsEditingPersonalInfo(false);
   };
 
   const handleDeleteSet = (id: string) => {
@@ -375,21 +401,110 @@ export default function ProfileScreen() {
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Personal Info</Text>
+            <TouchableOpacity onPress={isEditingPersonalInfo ? () => setIsEditingPersonalInfo(false) : handleStartEditingPersonalInfo}>
+              <Ionicons
+                name={isEditingPersonalInfo ? 'close' : 'pencil'}
+                size={18}
+                color={colors.primary}
+              />
+            </TouchableOpacity>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Age</Text>
-            <Text style={styles.infoValue}>{profile?.age || 'Not set'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Weight</Text>
-            <Text style={styles.infoValue}>
-              {profile?.weight ? `${profile.weight} ${profile.weightUnit}` : 'Not set'}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Preferred Duration</Text>
-            <Text style={styles.infoValue}>{profile?.preferredWorkoutDuration} min</Text>
-          </View>
+          {isEditingPersonalInfo ? (
+            <View>
+              <Input
+                label="Age"
+                placeholder="Enter your age"
+                value={editAge}
+                onChangeText={(text) => setEditAge(text.replace(/[^0-9]/g, ''))}
+                keyboardType="numeric"
+                containerStyle={styles.input}
+              />
+              <View style={styles.weightRow}>
+                <View style={styles.weightInputContainer}>
+                  <Input
+                    label="Current Weight"
+                    placeholder="Enter weight"
+                    value={editWeight}
+                    onChangeText={(text) => setEditWeight(text.replace(/[^0-9.]/g, ''))}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <View style={styles.unitToggle}>
+                  <Text style={styles.unitLabel}>Unit</Text>
+                  <View style={styles.unitButtons}>
+                    <TouchableOpacity
+                      style={[styles.unitButton, editWeightUnit === 'lbs' && styles.unitButtonActive]}
+                      onPress={() => setEditWeightUnit('lbs')}
+                    >
+                      <Text style={[styles.unitText, editWeightUnit === 'lbs' && styles.unitTextActive]}>lbs</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.unitButton, editWeightUnit === 'kg' && styles.unitButtonActive]}
+                      onPress={() => setEditWeightUnit('kg')}
+                    >
+                      <Text style={[styles.unitText, editWeightUnit === 'kg' && styles.unitTextActive]}>kg</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              <Input
+                label={`Goal Weight (${editWeightUnit})`}
+                placeholder="Enter your goal weight"
+                value={editGoalWeight}
+                onChangeText={(text) => setEditGoalWeight(text.replace(/[^0-9.]/g, ''))}
+                keyboardType="decimal-pad"
+                containerStyle={styles.input}
+              />
+              <View style={styles.durationSection}>
+                <Text style={styles.durationLabel}>Preferred workout duration</Text>
+                <View style={styles.durationGrid}>
+                  {DURATION_OPTIONS.map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.durationOption,
+                        editPreferredDuration === option.value && styles.durationOptionSelected,
+                      ]}
+                      onPress={() => setEditPreferredDuration(option.value)}
+                    >
+                      <Text
+                        style={[
+                          styles.durationValue,
+                          editPreferredDuration === option.value && styles.durationValueSelected,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <Button title="Save" onPress={handleSavePersonalInfo} size="sm" style={{ marginTop: spacing.md }} />
+            </View>
+          ) : (
+            <View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Age</Text>
+                <Text style={styles.infoValue}>{profile?.age || 'Not set'}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Weight</Text>
+                <Text style={styles.infoValue}>
+                  {profile?.weight ? `${profile.weight} ${profile.weightUnit}` : 'Not set'}
+                </Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Goal Weight</Text>
+                <Text style={styles.infoValue}>
+                  {profile?.goalWeight ? `${profile.goalWeight} ${profile.weightUnit}` : 'Not set'}
+                </Text>
+              </View>
+              <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+                <Text style={styles.infoLabel}>Preferred Duration</Text>
+                <Text style={styles.infoValue}>{profile?.preferredWorkoutDuration} min</Text>
+              </View>
+            </View>
+          )}
         </Card>
 
         {/* Equipment Sets Section */}
@@ -662,6 +777,83 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: spacing.md,
+  },
+  weightRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  weightInputContainer: {
+    flex: 1,
+  },
+  unitToggle: {
+    width: 100,
+  },
+  unitLabel: {
+    fontSize: typography.sm,
+    fontWeight: typography.medium,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  unitButtons: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  unitButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  unitButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  unitText: {
+    fontSize: typography.sm,
+    fontWeight: typography.semibold,
+    color: colors.textSecondary,
+  },
+  unitTextActive: {
+    color: colors.text,
+  },
+  durationSection: {
+    marginTop: spacing.sm,
+  },
+  durationLabel: {
+    fontSize: typography.sm,
+    fontWeight: typography.medium,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  durationGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  durationOption: {
+    width: '23%',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  durationOptionSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  durationValue: {
+    fontSize: typography.sm,
+    fontWeight: typography.semibold,
+    color: colors.text,
+  },
+  durationValueSelected: {
+    color: colors.text,
   },
   equipmentGrid: {
     flexDirection: 'row',

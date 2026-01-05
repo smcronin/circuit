@@ -1,5 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { Platform, Share } from 'react-native';
+import { File, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { Platform } from 'react-native';
 import { useUserStore } from '@/stores/useUserStore';
 import { useHistoryStore } from '@/stores/useHistoryStore';
 import { useWeightStore } from '@/stores/useWeightStore';
@@ -49,11 +51,12 @@ export const exportAllData = async (): Promise<{ success: boolean; error?: strin
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } else {
-      // Native (Expo Go): Use Share API with the data as text
-      // User can copy/paste or share to Notes/Files app
-      await Share.share({
-        message: jsonString,
-        title: fileName,
+      // Native: Write to temp file and share as .json
+      const file = new File(Paths.cache, fileName);
+      await file.write(jsonString);
+      await Sharing.shareAsync(file.uri, {
+        mimeType: 'application/json',
+        dialogTitle: 'Export Circuit Backup',
       });
     }
 
