@@ -30,6 +30,11 @@ export default function Root({ children }: PropsWithChildren) {
           html, body {
             background-color: #0F172A;
           }
+          /* Ensure content extends into safe areas with proper padding */
+          #root {
+            padding-bottom: env(safe-area-inset-bottom);
+            background-color: #1E293B; /* surface color for tab bar area */
+          }
         `}} />
       </head>
       <body style={{ backgroundColor: '#0F172A' }}>{children}</body>
