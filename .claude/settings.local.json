@@ -31,7 +31,10 @@
       "Bash(python:*)",
       "Bash(del \"C:\\\\Users\\\\sethc\\\\dev\\\\llm-wod\\\\src\\\\utils\\\\polyfills\\\\worklets.web.js\")",
       "Bash(del \"C:\\\\Users\\\\sethc\\\\dev\\\\llm-wod\\\\src\\\\utils\\\\polyfills\\\\validate-worklets-version.web.js\")",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(npx vercel:*)",
+      "WebFetch(domain:vercel.com)",
+      "Bash(npx expo export:*)"
     ]
   }
 }
