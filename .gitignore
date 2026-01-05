@@ -58,3 +58,4 @@ expo-env.d.ts
 
 # Windows reserved names
 nul
+.vercel
