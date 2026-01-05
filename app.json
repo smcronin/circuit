@@ -37,7 +37,15 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Circuit",
+      "shortName": "Circuit",
+      "description": "AI-powered workout generator",
+      "themeColor": "#0F172A",
+      "backgroundColor": "#0F172A",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "/"
     },
     "plugins": [
       "expo-router",
