@@ -26,8 +26,13 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="icon" href="/favicon.ico" />
 
         <ScrollViewStyleReset />
+        <style dangerouslySetInnerHTML={{ __html: `
+          html, body {
+            background-color: #0F172A;
+          }
+        `}} />
       </head>
-      <body>{children}</body>
+      <body style={{ backgroundColor: '#0F172A' }}>{children}</body>
     </html>
   );
 }

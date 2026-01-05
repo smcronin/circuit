@@ -13,6 +13,8 @@ interface ExportedData {
   workoutHistory: ReturnType<typeof useHistoryStore.getState>['history'];
   workoutSummary: ReturnType<typeof useHistoryStore.getState>['workoutSummary'];
   weightEntries: ReturnType<typeof useWeightStore.getState>['entries'];
+  savedCustomInstructions?: ReturnType<typeof useUserStore.getState>['savedCustomInstructions'];
+  isAudioMuted?: ReturnType<typeof useUserStore.getState>['isAudioMuted'];
 }
 
 export const exportAllData = async (): Promise<{ success: boolean; error?: string }> => {
@@ -28,6 +30,8 @@ export const exportAllData = async (): Promise<{ success: boolean; error?: strin
       workoutHistory: historyState.history,
       workoutSummary: historyState.workoutSummary,
       weightEntries: weightState.entries,
+      savedCustomInstructions: userState.savedCustomInstructions,
+      isAudioMuted: userState.isAudioMuted,
     };
 
     const jsonString = JSON.stringify(exportData, null, 2);
@@ -110,6 +114,16 @@ export const importAllData = async (): Promise<{ success: boolean; error?: strin
       useUserStore.getState().setProfile(importedData.userProfile);
     }
 
+    // Restore saved custom instructions
+    if (importedData.savedCustomInstructions) {
+      useUserStore.setState({ savedCustomInstructions: importedData.savedCustomInstructions });
+    }
+
+    // Restore audio mute preference
+    if (importedData.isAudioMuted !== undefined) {
+      useUserStore.setState({ isAudioMuted: importedData.isAudioMuted });
+    }
+
     // Restore workout history
     if (importedData.workoutHistory) {
       useHistoryStore.setState({
@@ -142,5 +156,6 @@ export const getDataStats = () => {
     equipmentSets: userState.profile?.equipmentSets?.length || 0,
     workoutSessions: historyState.history.sessions.length,
     weightEntries: weightState.entries.length,
+    savedCustomInstructions: userState.savedCustomInstructions.length,
   };
 };
