@@ -115,12 +115,16 @@ const WeightGraph = ({
   onToggleHistory,
   goalWeight,
   weightUnit,
+  sevenDayAvg,
+  previousSevenDayAvg,
 }: {
   entries: WeightEntry[];
   showFullHistory: boolean;
   onToggleHistory: () => void;
   goalWeight?: number;
   weightUnit: string;
+  sevenDayAvg?: number | null;
+  previousSevenDayAvg?: number | null;
 }) => {
   // Deduplicate entries by date - keep only last entry per day
   const entriesByDate = useMemo(() => {
@@ -170,8 +174,13 @@ const WeightGraph = ({
   }
 
   const weights = pointsWithData.map((p) => p.weight);
-  // Include goal weight in min/max so it's always visible on the graph
-  const allWeights = goalWeight ? [...weights, goalWeight] : weights;
+  // Include goal weight and averages in min/max so they're always visible on the graph
+  const allWeights = [
+    ...weights,
+    ...(goalWeight ? [goalWeight] : []),
+    ...(sevenDayAvg ? [sevenDayAvg] : []),
+    ...(previousSevenDayAvg ? [previousSevenDayAvg] : []),
+  ];
   const minWeight = Math.min(...allWeights) - 2;
   const maxWeight = Math.max(...allWeights) + 2;
   const range = maxWeight - minWeight || 1;
@@ -182,6 +191,15 @@ const WeightGraph = ({
   // Calculate goal weight line position
   const goalWeightY = goalWeight
     ? graphHeight - ((goalWeight - minWeight) / range) * graphHeight
+    : null;
+
+  // Calculate 7-day average line positions
+  const sevenDayAvgY = sevenDayAvg
+    ? graphHeight - ((sevenDayAvg - minWeight) / range) * graphHeight
+    : null;
+
+  const previousSevenDayAvgY = previousSevenDayAvg
+    ? graphHeight - ((previousSevenDayAvg - minWeight) / range) * graphHeight
     : null;
 
   return (
@@ -208,6 +226,23 @@ const WeightGraph = ({
               <View style={styles.goalWeightLabel}>
                 <Text style={styles.goalWeightLabelText}>Goal: {goalWeight}</Text>
               </View>
+            </View>
+          )}
+
+          {/* 7-day average trendline */}
+          {sevenDayAvgY !== null && sevenDayAvgY >= 0 && sevenDayAvgY <= graphHeight && (
+            <View style={[styles.avgWeightLine, { top: sevenDayAvgY }]}>
+              <View style={styles.avgWeightSolidLine} />
+              <View style={styles.avgWeightLabel}>
+                <Text style={styles.avgWeightLabelText}>7d: {sevenDayAvg?.toFixed(1)}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Previous 7-day average line (dimmer) */}
+          {previousSevenDayAvgY !== null && previousSevenDayAvgY >= 0 && previousSevenDayAvgY <= graphHeight && (
+            <View style={[styles.prevAvgWeightLine, { top: previousSevenDayAvgY }]}>
+              <View style={styles.prevAvgWeightDashes} />
             </View>
           )}
 
@@ -536,13 +571,77 @@ export default function AnalyticsScreen() {
     return { change, days };
   }, [allWeightEntries]);
 
-  // Muscle group distribution
+  // 7-day rolling average calculation
+  const sevenDayAvgStats = useMemo(() => {
+    if (allWeightEntries.length === 0) return null;
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const fourteenDaysAgo = new Date(today);
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    fourteenDaysAgo.setHours(0, 0, 0, 0);
+
+    // Get entries for current 7-day period
+    const currentWeekEntries = allWeightEntries.filter((entry) => {
+      const entryDate = new Date(entry.date);
+      return entryDate >= sevenDaysAgo && entryDate <= today;
+    });
+
+    // Get entries for previous 7-day period
+    const previousWeekEntries = allWeightEntries.filter((entry) => {
+      const entryDate = new Date(entry.date);
+      return entryDate >= fourteenDaysAgo && entryDate < sevenDaysAgo;
+    });
+
+    // Calculate averages
+    const currentAvg = currentWeekEntries.length > 0
+      ? currentWeekEntries.reduce((sum, e) => sum + e.weight, 0) / currentWeekEntries.length
+      : null;
+
+    const previousAvg = previousWeekEntries.length > 0
+      ? previousWeekEntries.reduce((sum, e) => sum + e.weight, 0) / previousWeekEntries.length
+      : null;
+
+    // Calculate trend
+    let trend: 'up' | 'down' | 'flat' | null = null;
+    let trendAmount: number | null = null;
+    if (currentAvg !== null && previousAvg !== null) {
+      trendAmount = currentAvg - previousAvg;
+      if (Math.abs(trendAmount) < 0.1) {
+        trend = 'flat';
+      } else {
+        trend = trendAmount > 0 ? 'up' : 'down';
+      }
+    }
+
+    return {
+      currentAvg,
+      previousAvg,
+      trend,
+      trendAmount,
+      currentWeekCount: currentWeekEntries.length,
+      previousWeekCount: previousWeekEntries.length,
+    };
+  }, [allWeightEntries]);
+
+  // Muscle group distribution (rolling 7-day count)
   const muscleGroupStats = useMemo(() => {
     const groups: Record<string, number> = {};
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
 
     history.sessions
-      .filter((s) => s.status === 'completed')
-      .slice(0, 20) // Last 20 workouts
+      .filter((s) => {
+        if (s.status !== 'completed' && s.status !== 'stopped_early') return false;
+        const sessionDate = new Date(s.completedAt || s.startedAt || s.workout.createdAt);
+        return sessionDate >= sevenDaysAgo;
+      })
       .forEach((session) => {
         session.workout.muscleGroupsTargeted.forEach((group) => {
           groups[group] = (groups[group] || 0) + 1;
@@ -550,8 +649,30 @@ export default function AnalyticsScreen() {
       });
 
     return Object.entries(groups)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .sort((a, b) => b[1] - a[1]);
+  }, [history.sessions]);
+
+  // Focus areas distribution (rolling 7-day count)
+  const focusAreaStats = useMemo(() => {
+    const areas: Record<string, number> = {};
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    history.sessions
+      .filter((s) => {
+        if (s.status !== 'completed' && s.status !== 'stopped_early') return false;
+        const sessionDate = new Date(s.completedAt || s.startedAt || s.workout.createdAt);
+        return sessionDate >= sevenDaysAgo;
+      })
+      .forEach((session) => {
+        session.workout.focusAreas?.forEach((area) => {
+          areas[area] = (areas[area] || 0) + 1;
+        });
+      });
+
+    return Object.entries(areas)
+      .sort((a, b) => b[1] - a[1]);
   }, [history.sessions]);
 
   const handleAddWeight = () => {
@@ -763,7 +884,7 @@ export default function AnalyticsScreen() {
             </TouchableOpacity>
           </View>
 
-          {(currentWeight || profile?.goalWeight) && (
+          {(currentWeight || profile?.goalWeight || sevenDayAvgStats?.currentAvg) && (
             <View style={styles.weightSummary}>
               {currentWeight && (
                 <View style={styles.weightCurrent}>
@@ -771,6 +892,34 @@ export default function AnalyticsScreen() {
                     {currentWeight} {weightUnit}
                   </Text>
                   <Text style={styles.weightCurrentLabel}>Current</Text>
+                </View>
+              )}
+              {sevenDayAvgStats?.currentAvg && (
+                <View style={styles.weightAvgContainer}>
+                  <View style={styles.weightAvgRow}>
+                    <Text style={styles.weightAvgValue}>
+                      {sevenDayAvgStats.currentAvg.toFixed(1)}
+                    </Text>
+                    {sevenDayAvgStats.trend && sevenDayAvgStats.trend !== 'flat' && (
+                      <Ionicons
+                        name={sevenDayAvgStats.trend === 'up' ? 'trending-up' : 'trending-down'}
+                        size={16}
+                        color={sevenDayAvgStats.trend === 'up' ? colors.error : colors.success}
+                      />
+                    )}
+                    {sevenDayAvgStats.trend === 'flat' && (
+                      <Ionicons name="remove" size={16} color={colors.textMuted} />
+                    )}
+                  </View>
+                  <Text style={styles.weightAvgLabel}>7-day avg</Text>
+                  {sevenDayAvgStats.trendAmount !== null && sevenDayAvgStats.previousAvg !== null && (
+                    <Text style={[
+                      styles.weightAvgTrend,
+                      { color: sevenDayAvgStats.trend === 'up' ? colors.error : sevenDayAvgStats.trend === 'down' ? colors.success : colors.textMuted }
+                    ]}>
+                      {sevenDayAvgStats.trendAmount > 0 ? '+' : ''}{sevenDayAvgStats.trendAmount.toFixed(1)} vs prev
+                    </Text>
+                  )}
                 </View>
               )}
               <TouchableOpacity style={styles.weightGoal} onPress={handleOpenGoalWeightModal}>
@@ -782,28 +931,6 @@ export default function AnalyticsScreen() {
                 </View>
                 <Ionicons name="pencil" size={14} color={colors.textMuted} />
               </TouchableOpacity>
-              {weightChange && (
-                <View style={styles.weightChange}>
-                  <View style={styles.weightChangeRow}>
-                    <Ionicons
-                      name={weightChange.change > 0 ? 'arrow-up' : 'arrow-down'}
-                      size={16}
-                      color={weightChange.change > 0 ? colors.error : colors.success}
-                    />
-                    <Text
-                      style={[
-                        styles.weightChangeValue,
-                        { color: weightChange.change > 0 ? colors.error : colors.success },
-                      ]}
-                    >
-                      {Math.abs(weightChange.change).toFixed(1)} {weightUnit}
-                    </Text>
-                  </View>
-                  <Text style={styles.weightChangeLabel}>
-                    over {weightChange.days} days
-                  </Text>
-                </View>
-              )}
             </View>
           )}
 
@@ -813,6 +940,8 @@ export default function AnalyticsScreen() {
             onToggleHistory={() => setShowFullWeightHistory(!showFullWeightHistory)}
             goalWeight={profile?.goalWeight}
             weightUnit={weightUnit}
+            sevenDayAvg={sevenDayAvgStats?.currentAvg}
+            previousSevenDayAvg={sevenDayAvgStats?.previousAvg}
           />
         </Card>
 
@@ -823,7 +952,7 @@ export default function AnalyticsScreen() {
               <Ionicons name="body-outline" size={20} color={colors.primaryLight} />
               <Text style={styles.sectionTitle}>Muscle Groups</Text>
             </View>
-            <Text style={styles.sectionSubtitle}>Last 20 workouts</Text>
+            <Text style={styles.sectionSubtitle}>Last 7 days</Text>
 
             <View style={styles.muscleGroupList}>
               {muscleGroupStats.map(([group, count]) => {
@@ -841,6 +970,44 @@ export default function AnalyticsScreen() {
                         style={[
                           styles.muscleGroupBar,
                           { width: `${percentage}%` },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </Card>
+        )}
+
+        {/* Focus Areas Distribution */}
+        {focusAreaStats.length > 0 && (
+          <Card style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="fitness-outline" size={20} color={colors.accent} />
+              <Text style={styles.sectionTitle}>Focus Areas</Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>Last 7 days</Text>
+
+            <View style={styles.muscleGroupList}>
+              {focusAreaStats.map(([area, count]) => {
+                const maxCount = focusAreaStats[0][1];
+                const percentage = (count / maxCount) * 100;
+
+                return (
+                  <View key={area} style={styles.muscleGroupItem}>
+                    <View style={styles.muscleGroupHeader}>
+                      <Text style={styles.muscleGroupName}>{area}</Text>
+                      <Text style={styles.muscleGroupCount}>{count}x</Text>
+                    </View>
+                    <View style={styles.muscleGroupBarBg}>
+                      <View
+                        style={[
+                          styles.muscleGroupBar,
+                          {
+                            width: `${percentage}%`,
+                            backgroundColor: colors.accent,
+                          },
                         ]}
                       />
                     </View>
@@ -1238,6 +1405,28 @@ const styles = StyleSheet.create({
     fontSize: typography.xs,
     color: colors.textMuted,
   },
+  weightAvgContainer: {
+    alignItems: 'center',
+  },
+  weightAvgRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  weightAvgValue: {
+    fontSize: typography.lg,
+    fontWeight: typography.semibold,
+    color: colors.text,
+  },
+  weightAvgLabel: {
+    fontSize: typography.xs,
+    color: colors.textMuted,
+  },
+  weightAvgTrend: {
+    fontSize: typography.xs,
+    fontWeight: typography.medium,
+    marginTop: 2,
+  },
   weightChange: {
     alignItems: 'flex-end',
   },
@@ -1346,6 +1535,46 @@ const styles = StyleSheet.create({
     fontSize: typography.xs,
     color: colors.primary,
     fontWeight: typography.medium,
+  },
+  avgWeightLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avgWeightSolidLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: colors.accent,
+  },
+  avgWeightLabel: {
+    backgroundColor: colors.accent + '30',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: borderRadius.xs,
+    marginLeft: spacing.xs,
+  },
+  avgWeightLabelText: {
+    fontSize: typography.xs,
+    color: colors.accent,
+    fontWeight: typography.medium,
+  },
+  prevAvgWeightLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  prevAvgWeightDashes: {
+    flex: 1,
+    height: 1,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: colors.textMuted,
+    borderRadius: 1,
+    opacity: 0.5,
   },
   xAxisLabels: {
     flexDirection: 'row',
