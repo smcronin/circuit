@@ -229,20 +229,46 @@ const WeightGraph = ({
             </View>
           )}
 
-          {/* 7-day average trendline */}
-          {sevenDayAvgY !== null && sevenDayAvgY >= 0 && sevenDayAvgY <= graphHeight && (
+          {/* 7-day average trendline (diagonal from previous avg to current avg) */}
+          {sevenDayAvgY !== null && previousSevenDayAvgY !== null && (
+            (() => {
+              // Draw diagonal trendline from previous 7-day avg to current 7-day avg
+              const x1 = 0;
+              const y1 = previousSevenDayAvgY;
+              const x2 = graphWidth;
+              const y2 = sevenDayAvgY;
+              const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+              const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+              return (
+                <>
+                  <View
+                    style={[
+                      styles.trendLine,
+                      {
+                        left: x1,
+                        top: y1,
+                        width: length,
+                        transform: [{ rotate: `${angle}deg` }],
+                      },
+                    ]}
+                  />
+                  {/* Label at the end showing current 7-day avg */}
+                  <View style={[styles.avgWeightLabel, { top: sevenDayAvgY - 10, right: 0 }]}>
+                    <Text style={styles.avgWeightLabelText}>7d: {sevenDayAvg?.toFixed(1)}</Text>
+                  </View>
+                </>
+              );
+            })()
+          )}
+
+          {/* If only current avg (no previous), show flat dashed line */}
+          {sevenDayAvgY !== null && previousSevenDayAvgY === null && (
             <View style={[styles.avgWeightLine, { top: sevenDayAvgY }]}>
-              <View style={styles.avgWeightSolidLine} />
+              <View style={styles.trendLineFlatDashed} />
               <View style={styles.avgWeightLabel}>
                 <Text style={styles.avgWeightLabelText}>7d: {sevenDayAvg?.toFixed(1)}</Text>
               </View>
-            </View>
-          )}
-
-          {/* Previous 7-day average line (dimmer) */}
-          {previousSevenDayAvgY !== null && previousSevenDayAvgY >= 0 && previousSevenDayAvgY <= graphHeight && (
-            <View style={[styles.prevAvgWeightLine, { top: previousSevenDayAvgY }]}>
-              <View style={styles.prevAvgWeightDashes} />
             </View>
           )}
 
@@ -1536,6 +1562,21 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: typography.medium,
   },
+  trendLine: {
+    position: 'absolute',
+    height: 2,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: colors.accent,
+    transformOrigin: 'left center',
+  },
+  trendLineFlatDashed: {
+    flex: 1,
+    height: 2,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
   avgWeightLine: {
     position: 'absolute',
     left: 0,
@@ -1543,38 +1584,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avgWeightSolidLine: {
-    flex: 1,
-    height: 2,
-    backgroundColor: colors.accent,
-  },
   avgWeightLabel: {
+    position: 'absolute',
     backgroundColor: colors.accent + '30',
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
     borderRadius: borderRadius.xs,
-    marginLeft: spacing.xs,
   },
   avgWeightLabelText: {
     fontSize: typography.xs,
     color: colors.accent,
     fontWeight: typography.medium,
-  },
-  prevAvgWeightLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  prevAvgWeightDashes: {
-    flex: 1,
-    height: 1,
-    borderStyle: 'dashed',
-    borderWidth: 1,
-    borderColor: colors.textMuted,
-    borderRadius: 1,
-    opacity: 0.5,
   },
   xAxisLabels: {
     flexDirection: 'row',
