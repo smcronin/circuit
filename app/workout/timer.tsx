@@ -4,9 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
+  AppState,
   Animated,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,9 +55,13 @@ export default function TimerScreen() {
     soundManager.setAudioEnabled(!isAudioMuted);
   }, [isAudioMuted]);
 
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  // Prevents double-saving when auto-save fires AND the user manually stops
+  const autoSavedRef = useRef(false);
 
   const currentItem = items[currentItemIndex];
   const nextItem = items[currentItemIndex + 1];
@@ -220,6 +225,71 @@ export default function TimerScreen() {
     }
   }, [status]);
 
+  // Auto-save partial workout when the user closes the tab (web) or backgrounds
+  // the app (native) mid-workout, so the session isn't silently lost.
+  // We read directly from the store (not the closure) to get the latest values.
+  useEffect(() => {
+    const saveOnClose = () => {
+      if (autoSavedRef.current) return;
+      const {
+        status: currentStatus,
+        session: currentSession,
+        currentItemIndex: idx,
+        items: storeItems,
+        totalElapsed: elapsed,
+      } = useTimerStore.getState();
+
+      if (!currentSession || currentStatus === 'idle' || currentStatus === 'completed') return;
+
+      autoSavedRef.current = true;
+      const closingItem = storeItems[idx];
+      addSession({
+        ...currentSession,
+        status: 'stopped_early',
+        stoppedAt: new Date().toISOString(),
+        completedItems: idx,
+        actualDurationWorked: elapsed,
+        percentComplete: Math.round((idx / storeItems.length) * 100),
+        estimatedCaloriesBurned: Math.round(
+          (currentSession.workout.estimatedCalories * idx) / storeItems.length
+        ),
+        stoppedAtItem: closingItem
+          ? {
+              circuitIndex: closingItem.circuitIndex,
+              roundIndex: closingItem.roundIndex,
+              exerciseIndex: closingItem.exerciseIndex,
+              itemName: closingItem.name,
+            }
+          : undefined,
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      // visibilitychange fires reliably when a tab is hidden or closed.
+      // beforeunload is a belt-and-suspenders fallback for hard closes.
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'hidden') {
+          saveOnClose();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('beforeunload', saveOnClose);
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('beforeunload', saveOnClose);
+      };
+    } else {
+      const subscription = AppState.addEventListener('change', (nextAppState) => {
+        if (nextAppState === 'background' || nextAppState === 'inactive') {
+          saveOnClose();
+        }
+      });
+      return () => subscription.remove();
+    }
+  // addSession is a stable zustand selector; no other deps needed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addSession]);
+
   const handlePauseResume = () => {
     if (status === 'running') {
       pauseTimer();
@@ -228,36 +298,27 @@ export default function TimerScreen() {
     }
   };
 
+  // Show the in-component confirmation overlay instead of Alert.alert.
+  // Alert.alert maps to window.confirm() on web (React Native Web), which can
+  // be blocked by popup blockers or silently swallowed in certain environments,
+  // making the X button appear to do nothing.
   const handleStop = () => {
-    Alert.alert(
-      'End Workout',
-      'Are you sure you want to end this workout early?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'End Workout',
-          style: 'destructive',
-          onPress: () => {
-            stopTimer();
-            if (session) {
-              addSession({
-                ...session,
-                status: 'stopped_early',
-                stoppedAt: new Date().toISOString(),
-                completedItems: currentItemIndex,
-                actualDurationWorked: totalElapsed,
-                percentComplete: Math.round((currentItemIndex / items.length) * 100),
-                estimatedCaloriesBurned: Math.round(
-                  (session.workout.estimatedCalories * currentItemIndex) / items.length
-                ),
-              });
-            }
-            reset();
-            router.replace('/(tabs)');
-          },
-        },
-      ]
-    );
+    setShowExitConfirm(true);
+  };
+
+  // Called when the user confirms "End Workout" in our custom overlay.
+  // stopTimer() updates the store's session with stopped_early + stoppedAtItem;
+  // we read from the store post-call so we get the complete data instead of the
+  // stale closure value that was missing stoppedAtItem.
+  const handleConfirmStop = () => {
+    setShowExitConfirm(false);
+    stopTimer();
+    const updatedSession = useTimerStore.getState().session;
+    if (updatedSession) {
+      addSession(updatedSession);
+    }
+    reset();
+    router.replace('/(tabs)');
   };
 
   const backgroundColor = isRest ? colors.timerRest : colors.timerActive;
@@ -460,6 +521,33 @@ export default function TimerScreen() {
           </View>
         </View>
       )}
+
+      {/* Exit Confirmation Overlay — replaces Alert.alert, which falls back to
+          window.confirm() on web and can be blocked or silently ignored. */}
+      {showExitConfirm && (
+        <View style={styles.exitConfirmOverlay}>
+          <View style={styles.exitConfirmCard}>
+            <Text style={styles.exitConfirmTitle}>End Workout?</Text>
+            <Text style={styles.exitConfirmMessage}>
+              Your progress will be saved to history.
+            </Text>
+            <View style={styles.exitConfirmButtons}>
+              <TouchableOpacity
+                style={styles.exitKeepGoingButton}
+                onPress={() => setShowExitConfirm(false)}
+              >
+                <Text style={styles.exitKeepGoingText}>Keep Going</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.exitEndButton}
+                onPress={handleConfirmStop}
+              >
+                <Text style={styles.exitEndText}>End Workout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -657,5 +745,70 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     color: colors.textSecondary,
     marginTop: spacing.md,
+  },
+  exitConfirmOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  exitConfirmCard: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: spacing.xl,
+    marginHorizontal: spacing.xl,
+    width: '80%',
+    maxWidth: 340,
+    alignItems: 'center',
+  },
+  exitConfirmTitle: {
+    fontSize: typography['2xl'],
+    fontWeight: typography.bold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  exitConfirmMessage: {
+    fontSize: typography.base,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 22,
+  },
+  exitConfirmButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    width: '100%',
+  },
+  exitKeepGoingButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: 10,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  exitKeepGoingText: {
+    fontSize: typography.base,
+    fontWeight: typography.medium,
+    color: colors.text,
+  },
+  exitEndButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: 10,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+  },
+  exitEndText: {
+    fontSize: typography.base,
+    fontWeight: typography.semibold,
+    color: colors.text,
   },
 });
