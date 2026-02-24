@@ -138,9 +138,19 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
   };
 
   const handleDateChange = (_event: unknown, selectedDate?: Date) => {
+    // Keep the picker open on iOS (it's inline); close on Android after selection
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setFormData({ ...formData, date: selectedDate });
+    }
+  };
+
+  const handleWebDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Parse as local date (YYYY-MM-DD) so we don't get UTC midnight offset issues
+    const [year, month, day] = e.target.value.split('-').map(Number);
+    if (year && month && day) {
+      const selected = new Date(year, month - 1, day);
+      setFormData({ ...formData, date: selected });
     }
   };
 
@@ -191,20 +201,50 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
 
       <View style={styles.inputSpacing}>
         <Text style={styles.label}>Date</Text>
-        <TouchableOpacity
-          style={styles.dateButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
-          <Text style={styles.dateButtonText}>{formatDate(formData.date.toISOString())}</Text>
-        </TouchableOpacity>
+        {Platform.OS === 'web' ? (
+          // On web, @react-native-community/datetimepicker renders behind Modal overlays.
+          // Use a native HTML date input instead — it reliably opens the browser's
+          // calendar picker regardless of stacking context.
+          <View style={styles.dateButton}>
+            <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+            <input
+              type="date"
+              value={formData.date.toISOString().split('T')[0]}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={handleWebDateChange}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: colors.text,
+                fontSize: 16,
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                outline: 'none',
+                flex: 1,
+              }}
+            />
+          </View>
+        ) : (
+          // On native, tap to reveal an inline spinner-style picker so it renders
+          // inside the Modal rather than launching a dialog that stacks behind it.
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowDatePicker((prev) => !prev)}
+          >
+            <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+            <Text style={styles.dateButtonText}>{formatDate(formData.date.toISOString())}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {showDatePicker && (
+      {showDatePicker && Platform.OS !== 'web' && (
         <DateTimePicker
           value={formData.date}
           mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          // Use 'spinner' on both iOS and Android so the picker renders inline
+          // within the Modal scroll view. The default Android 'calendar' dialog
+          // appears on a separate window layer and gets hidden behind the Modal.
+          display="spinner"
           maximumDate={new Date()}
           onChange={handleDateChange}
           themeVariant="dark"
