@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   TextStyle,
-  LayoutChangeEvent,
 } from 'react-native';
 
 interface VerticalAutoScrollProps {
@@ -24,6 +23,11 @@ export function VerticalAutoScroll({
   pauseDuration = 3000,
 }: VerticalAutoScrollProps) {
   const scrollViewRef = useRef<ScrollView>(null);
+  // Use ScrollView.onContentSizeChange instead of Text.onLayout.
+  // onLayout on a Text element excludes its own margin from the reported height,
+  // so overflow and totalLines would be wrong whenever the caller passes a style
+  // with marginTop/marginBottom. onContentSizeChange gives the true scrollable
+  // content height (all children + their margins) and is always accurate.
   const [contentHeight, setContentHeight] = useState(0);
   const animationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentLineRef = useRef(0);
@@ -83,21 +87,15 @@ export function VerticalAutoScroll({
     };
   }, [shouldScroll, overflow, totalLines, lineHeight, pauseDuration, text]);
 
-  const onContentLayout = (event: LayoutChangeEvent) => {
-    setContentHeight(event.nativeEvent.layout.height);
-  };
-
   return (
     <View style={[styles.container, { height: containerHeight }]}>
       <ScrollView
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         scrollEnabled={false}
+        onContentSizeChange={(_w, h) => setContentHeight(h)}
       >
-        <Text
-          style={[style, { lineHeight }]}
-          onLayout={onContentLayout}
-        >
+        <Text style={[style, { lineHeight }]}>
           {text}
         </Text>
       </ScrollView>

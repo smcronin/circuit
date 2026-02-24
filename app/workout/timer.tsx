@@ -423,13 +423,19 @@ export default function TimerScreen() {
         )}
 
         {currentItem.exercise?.description && (
-          <VerticalAutoScroll
-            text={currentItem.exercise.description}
-            style={styles.exerciseDescription}
-            containerHeight={88}
-            lineHeight={22}
-            pauseDuration={3000}
-          />
+          // Wrap with a View for vertical spacing so marginTop lives OUTSIDE
+          // the ScrollView. If marginTop is on the Text inside the scroll
+          // container it creates blank space at y=0, making the first scroll
+          // step remove blank rather than reveal new text (looks reversed).
+          <View style={styles.exerciseDescriptionWrapper}>
+            <VerticalAutoScroll
+              text={currentItem.exercise.description}
+              style={styles.exerciseDescriptionText}
+              containerHeight={88}
+              lineHeight={22}
+              pauseDuration={3000}
+            />
+          </View>
         )}
       </View>
 
@@ -623,11 +629,15 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     marginTop: spacing.md,
   },
-  exerciseDescription: {
+  exerciseDescriptionWrapper: {
+    // marginTop lives here, OUTSIDE the VerticalAutoScroll container, so it
+    // doesn't create blank space inside the scrollable area.
+    marginTop: spacing.lg,
+  },
+  exerciseDescriptionText: {
     fontSize: typography.base,
     color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
-    marginTop: spacing.lg,
     paddingHorizontal: spacing.xl,
     lineHeight: 22,
   },
