@@ -53,6 +53,8 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Custom duration — text input value shown when user selects the "Custom" chip
+  const [customDurationText, setCustomDurationText] = useState('');
 
   const profile = useUserStore((state) => state.profile);
   const addSession = useHistoryStore((state) => state.addSession);
@@ -69,6 +71,7 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
     setError(null);
     setShowDatePicker(false);
     setSaving(false);
+    setCustomDurationText('');
   }, []);
 
   const handleClose = () => {
@@ -145,6 +148,13 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
     }
   };
 
+  // True when the current durationMinutes value isn't one of the preset chips.
+  // Used to keep the "Custom" chip highlighted and show the numeric input.
+  const PRESET_VALUES = MANUAL_DURATION_OPTIONS.map((o) => o.value);
+  const isCustomDuration =
+    customDurationText !== '' ||
+    (formData.durationMinutes > 0 && !PRESET_VALUES.includes(formData.durationMinutes as typeof PRESET_VALUES[number]));
+
   const handleWebDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Parse as local date (YYYY-MM-DD) so we don't get UTC midnight offset issues
     const [year, month, day] = e.target.value.split('-').map(Number);
@@ -177,26 +187,79 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
       <View style={styles.inputSpacing}>
         <Text style={styles.label}>Duration</Text>
         <View style={styles.durationGrid}>
-          {MANUAL_DURATION_OPTIONS.map((option) => (
-            <Pressable
-              key={option.value}
-              style={[
-                styles.durationButton,
-                formData.durationMinutes === option.value && styles.durationButtonSelected,
-              ]}
-              onPress={() => setFormData({ ...formData, durationMinutes: option.value })}
-            >
-              <Text
+          {MANUAL_DURATION_OPTIONS.map((option) => {
+            const isSelected =
+              formData.durationMinutes === option.value && !isCustomDuration;
+            return (
+              <Pressable
+                key={option.value}
                 style={[
-                  styles.durationButtonText,
-                  formData.durationMinutes === option.value && styles.durationButtonTextSelected,
+                  styles.durationButton,
+                  isSelected && styles.durationButtonSelected,
                 ]}
+                onPress={() => {
+                  setCustomDurationText('');
+                  setFormData({ ...formData, durationMinutes: option.value });
+                }}
               >
-                {option.label}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={[
+                    styles.durationButtonText,
+                    isSelected && styles.durationButtonTextSelected,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+
+          {/* Custom duration chip */}
+          <Pressable
+            style={[
+              styles.durationButton,
+              isCustomDuration && styles.durationButtonSelected,
+            ]}
+            onPress={() => {
+              // Activate custom mode; seed the input with the current value
+              // if it's already a non-preset number so the user can refine it
+              setCustomDurationText(
+                isCustomDuration ? String(formData.durationMinutes) : ''
+              );
+              // Use 0 as a sentinel so no preset chip appears selected
+              setFormData({ ...formData, durationMinutes: 0 });
+            }}
+          >
+            <Text
+              style={[
+                styles.durationButtonText,
+                isCustomDuration && styles.durationButtonTextSelected,
+              ]}
+            >
+              Custom
+            </Text>
+          </Pressable>
         </View>
+
+        {/* Numeric input revealed when the Custom chip is active */}
+        {isCustomDuration && (
+          <View style={styles.customDurationRow}>
+            <Input
+              placeholder="e.g. 75"
+              value={customDurationText}
+              onChangeText={(val) => {
+                setCustomDurationText(val);
+                const parsed = parseInt(val, 10);
+                if (!isNaN(parsed) && parsed > 0) {
+                  setFormData({ ...formData, durationMinutes: parsed });
+                }
+              }}
+              keyboardType="numeric"
+              containerStyle={styles.customDurationInput}
+            />
+            <Text style={styles.customDurationLabel}>min</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.inputSpacing}>
@@ -481,6 +544,20 @@ const styles = StyleSheet.create({
   },
   durationButtonTextSelected: {
     color: colors.text,
+  },
+  customDurationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  customDurationInput: {
+    flex: 1,
+  },
+  customDurationLabel: {
+    fontSize: typography.base,
+    color: colors.textSecondary,
+    minWidth: 28,
   },
   dateButton: {
     flexDirection: 'row',
