@@ -140,6 +140,78 @@ function generateArpeggio(frequencies, noteDuration = 0.12, volume = 0.5) {
   return buffer;
 }
 
+// Generate a multi-note fanfare with variable durations and chiptune waveform.
+// notes = [{ freq, duration }, ...]
+// waveType: 'sine' | 'square' | 'soft-square' (blended)
+function generateFanfare(notes, volume = 0.5, waveType = 'soft-square') {
+  const sampleRate = 44100;
+  const noteGap = 0.018; // 18ms silence between notes for articulation
+
+  const totalSamples = notes.reduce((acc, note) => {
+    return acc + Math.floor(sampleRate * note.duration) + Math.floor(sampleRate * noteGap);
+  }, 0);
+
+  const buffer = Buffer.alloc(44 + totalSamples * 2);
+
+  // WAV header
+  buffer.write('RIFF', 0);
+  buffer.writeUInt32LE(36 + totalSamples * 2, 4);
+  buffer.write('WAVE', 8);
+  buffer.write('fmt ', 12);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20);
+  buffer.writeUInt16LE(1, 22);
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(sampleRate * 2, 28);
+  buffer.writeUInt16LE(2, 32);
+  buffer.writeUInt16LE(16, 34);
+  buffer.write('data', 36);
+  buffer.writeUInt32LE(totalSamples * 2, 40);
+
+  let offset = 44;
+
+  for (const note of notes) {
+    const noteSamples = Math.floor(sampleRate * note.duration);
+    const gapSamples = Math.floor(sampleRate * noteGap);
+    const attackTime = 0.008;
+    const releaseTime = Math.min(0.04, note.duration * 0.2);
+
+    for (let i = 0; i < noteSamples; i++) {
+      const t = i / sampleRate;
+      let envelope = 1;
+      if (t < attackTime) {
+        envelope = t / attackTime;
+      } else if (t > note.duration - releaseTime) {
+        envelope = (note.duration - t) / releaseTime;
+      }
+
+      let sample;
+      if (waveType === 'square') {
+        sample = Math.sign(Math.sin(2 * Math.PI * note.freq * t)) * volume * envelope;
+      } else if (waveType === 'soft-square') {
+        // Blend square (70%) + sine (30%) for chiptune bite without harsh clipping
+        sample = (
+          Math.sign(Math.sin(2 * Math.PI * note.freq * t)) * 0.7 +
+          Math.sin(2 * Math.PI * note.freq * t) * 0.3
+        ) * volume * envelope;
+      } else {
+        sample = Math.sin(2 * Math.PI * note.freq * t) * volume * envelope;
+      }
+
+      buffer.writeInt16LE(Math.max(-32768, Math.min(32767, Math.floor(sample * 32767))), offset);
+      offset += 2;
+    }
+
+    // Short silence gap between notes
+    for (let i = 0; i < gapSamples; i++) {
+      buffer.writeInt16LE(0, offset);
+      offset += 2;
+    }
+  }
+
+  return buffer;
+}
+
 const soundsDir = path.join(__dirname, '..', 'assets', 'sounds');
 
 // Generate all sound files
@@ -170,8 +242,16 @@ const sounds = {
   // Side switch - distinctive pattern
   'side-switch.wav': generateArpeggio([784, 523, 784], 0.08, 0.5),
 
-  // Workout complete - victory fanfare
-  'complete.wav': generateArpeggio([523, 659, 784, 1047], 0.15, 0.6),
+  // Workout complete - triumphant chiptune fanfare
+  // E5 → G5 → A5 → C6 (ascending build), quick A5 dip, then triumphant C6 hold
+  'complete.wav': generateFanfare([
+    { freq: 659,  duration: 0.08 },  // E5  - first step up
+    { freq: 784,  duration: 0.08 },  // G5  - climbing
+    { freq: 880,  duration: 0.08 },  // A5  - almost there
+    { freq: 1047, duration: 0.08 },  // C6  - peak hit
+    { freq: 880,  duration: 0.06 },  // A5  - quick flourish dip
+    { freq: 1047, duration: 0.42 },  // C6  - triumphant hold
+  ], 0.55, 'soft-square'),
 };
 
 // Write all files

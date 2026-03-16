@@ -149,6 +149,60 @@ class SoundManager {
     }
   }
 
+  // Schedule a single tone at a specific point in the audio timeline (for sequences)
+  private scheduleTone(frequency: number, duration: number, type: OscillatorType, startTime: number): void {
+    if (!this.audioContext) return;
+
+    try {
+      const oscillator = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      oscillator.frequency.value = frequency;
+      oscillator.type = type;
+
+      gainNode.gain.setValueAtTime(0, startTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.008);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration);
+    } catch (error) {
+      console.warn('Web audio scheduling failed:', error);
+    }
+  }
+
+  // Triumphant chiptune fanfare for workout complete (web only)
+  // Mirrors the notes in generate-sounds.js complete.wav
+  private async playWebFanfare(): Promise<void> {
+    if (!this.audioContext) {
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
+
+    const notes: { freq: number; duration: number }[] = [
+      { freq: 659,  duration: 0.08 },  // E5
+      { freq: 784,  duration: 0.08 },  // G5
+      { freq: 880,  duration: 0.08 },  // A5
+      { freq: 1047, duration: 0.08 },  // C6 - peak
+      { freq: 880,  duration: 0.06 },  // A5 - dip
+      { freq: 1047, duration: 0.42 },  // C6 - hold
+    ];
+
+    const gap = 0.018; // same gap as in generate-sounds.js
+    let time = this.audioContext.currentTime;
+
+    for (const note of notes) {
+      this.scheduleTone(note.freq, note.duration, 'square', time);
+      time += note.duration + gap;
+    }
+  }
+
   private async playHaptic(style: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'selection'): Promise<void> {
     if (Platform.OS === 'web') return;
 
@@ -227,10 +281,17 @@ class SoundManager {
   }
 
   async playWorkoutComplete(): Promise<void> {
-    await Promise.all([
-      this.playSound('complete'),
-      this.playHaptic('success'),
-    ]);
+    if (Platform.OS === 'web') {
+      await Promise.all([
+        this.playWebFanfare(),
+        this.playHaptic('success'),
+      ]);
+    } else {
+      await Promise.all([
+        this.playSound('complete'),
+        this.playHaptic('success'),
+      ]);
+    }
   }
 
   async playButtonPress(): Promise<void> {
