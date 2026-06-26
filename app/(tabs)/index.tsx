@@ -19,11 +19,14 @@ import { Button, Card, Chip, Input } from '@/components/common';
 import { CircuitLogo } from '@/components/CircuitLogo';
 import { GeneratingWorkoutModal } from '@/components/GeneratingWorkoutModal';
 import { CustomInstructionsHistoryModal } from '@/components/home/CustomInstructionsHistoryModal';
+import { ProgrammedWorkoutsCard } from '@/components/home/ProgrammedWorkoutsCard';
 import { colors, spacing, typography, borderRadius } from '@/theme';
 import { DURATION_OPTIONS, WARMUP_COOLDOWN_THRESHOLD } from '@/utils/constants';
 import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
 import { generateWorkout, WorkoutSummary } from '@/services/openrouter';
 import { flattenWorkout } from '@/utils';
+import { getProgrammedWorkoutsForHome } from '@/data/programmedWorkouts';
+import type { ProgrammedWorkout } from '@/data/programmedWorkouts';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -74,12 +77,22 @@ export default function HomeScreen() {
   const selectedSet = equipmentSets.find((s) => s.id === selectedEquipmentSetId) ||
     equipmentSets.find((s) => s.isDefault) ||
     equipmentSets[0];
+  const programmedHome = getProgrammedWorkoutsForHome();
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setGenerationError(null);
     setTimeout(() => setRefreshing(false), 500);
   }, []);
+
+  const handleOpenProgrammedWorkout = useCallback((programmedWorkout: ProgrammedWorkout) => {
+    const workout = programmedWorkout.workout;
+    const flattened = flattenWorkout(workout);
+
+    setCurrentWorkout(workout);
+    setFlattenedWorkout(flattened);
+    router.push('/workout/review');
+  }, [router, setCurrentWorkout, setFlattenedWorkout]);
 
   const handleGenerateWorkout = async () => {
     if (!profile) return;
@@ -167,6 +180,16 @@ export default function HomeScreen() {
             <Ionicons name="person-circle-outline" size={36} color={colors.text} />
           </TouchableOpacity>
         </View>
+
+        {programmedHome && (
+          <ProgrammedWorkoutsCard
+            title={programmedHome.title}
+            dateLabel={programmedHome.dateLabel}
+            isToday={programmedHome.isToday}
+            workouts={programmedHome.workouts}
+            onSelectWorkout={handleOpenProgrammedWorkout}
+          />
+        )}
 
         {/* Equipment Selection */}
         <Card style={styles.section}>
