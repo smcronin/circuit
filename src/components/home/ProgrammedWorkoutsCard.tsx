@@ -29,9 +29,12 @@ export function ProgrammedWorkoutsCard({
     workouts.every((programmedWorkout) => completedWorkoutIds?.has(programmedWorkout.id));
 
   return (
-    <Card style={allWorkoutsCompleted ? styles.completedCard : styles.card}>
-      <View style={styles.header}>
-        <View style={[styles.iconBox, allWorkoutsCompleted && styles.completedIconBox]}>
+    <Card
+      padding={allWorkoutsCompleted ? 'sm' : 'md'}
+      style={allWorkoutsCompleted ? styles.completedCard : styles.card}
+    >
+      <View style={[styles.header, allWorkoutsCompleted && styles.compactHeader]}>
+        <View style={allWorkoutsCompleted ? styles.completedIconBox : styles.iconBox}>
           <Ionicons
             name={allWorkoutsCompleted ? 'checkmark-circle' : 'calendar-outline'}
             size={20}
@@ -40,90 +43,94 @@ export function ProgrammedWorkoutsCard({
         </View>
         <View style={styles.headerText}>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>{title}</Text>
-            <View
-              style={[
-                styles.statusPill,
-                allWorkoutsCompleted ? styles.completePill : isToday ? styles.todayPill : styles.nextPill,
-              ]}
-            >
-              <Text style={[styles.statusPillText, allWorkoutsCompleted && styles.completePillText]}>
-                {allWorkoutsCompleted ? 'Complete' : isToday ? 'Today' : 'Upcoming'}
-              </Text>
-            </View>
+            <Text style={[styles.title, allWorkoutsCompleted && styles.compactTitle]}>
+              {title}
+            </Text>
+            {!allWorkoutsCompleted && (
+              <View style={[styles.statusPill, isToday ? styles.todayPill : styles.nextPill]}>
+                <Text style={styles.statusPillText}>{isToday ? 'Today' : 'Upcoming'}</Text>
+              </View>
+            )}
           </View>
-          <Text style={styles.dateLabel}>
-            {allWorkoutsCompleted ? `${dateLabel} program completed` : dateLabel}
-          </Text>
+          <Text style={styles.dateLabel}>{dateLabel}</Text>
         </View>
       </View>
 
-      <View style={styles.workoutList}>
+      <View style={allWorkoutsCompleted ? styles.compactWorkoutList : styles.workoutList}>
         {workouts.map((programmedWorkout, index) => {
           const workout = programmedWorkout.workout;
           const focusAreas = workout.focusAreas.slice(0, 3);
           const isCompleted = completedWorkoutIds?.has(programmedWorkout.id) ?? false;
 
+          if (isCompleted) {
+            return (
+              <TouchableOpacity
+                key={programmedWorkout.id}
+                style={[
+                  styles.compactWorkoutRow,
+                  index > 0 && styles.compactWorkoutRowBorder,
+                ]}
+                activeOpacity={0.75}
+                onPress={() => onSelectWorkout(programmedWorkout)}
+              >
+                <View style={styles.compactWorkoutContent}>
+                  <View style={styles.compactWorkoutTitleArea}>
+                    {!allWorkoutsCompleted && (
+                      <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                    )}
+                    <Text style={styles.compactSlot}>{programmedWorkout.slot}</Text>
+                    <Text style={styles.compactWorkoutName} numberOfLines={1}>
+                      {workout.name}
+                    </Text>
+                  </View>
+                  <View style={styles.compactRedo}>
+                    <Text style={styles.compactRedoText}>Redo</Text>
+                    <Ionicons name="chevron-forward" size={17} color={colors.successLight} />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          }
+
           return (
             <TouchableOpacity
               key={programmedWorkout.id}
-              style={[
-                styles.workoutRow,
-                isCompleted && styles.completedWorkoutRow,
-                index > 0 && styles.workoutRowBorder,
-              ]}
+              style={[styles.workoutRow, index > 0 && styles.workoutRowBorder]}
               activeOpacity={0.75}
               onPress={() => onSelectWorkout(programmedWorkout)}
             >
               <View style={styles.workoutHeader}>
                 <Chip label={programmedWorkout.slot} size="sm" selected />
-                {isCompleted ? (
-                  <View style={styles.completedBadge}>
-                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                    <Text style={styles.completedBadgeText}>Completed</Text>
-                  </View>
-                ) : (
-                  <View style={styles.duration}>
-                    <Ionicons name="time-outline" size={14} color={colors.textMuted} />
-                    <Text style={styles.durationText}>{formatDuration(workout.actualDuration)}</Text>
-                  </View>
-                )}
+                <View style={styles.duration}>
+                  <Ionicons name="time-outline" size={14} color={colors.textMuted} />
+                  <Text style={styles.durationText}>{formatDuration(workout.actualDuration)}</Text>
+                </View>
               </View>
 
-              <View style={styles.workoutTitleRow}>
-                {isCompleted && <Ionicons name="checkmark-circle" size={18} color={colors.success} />}
-                <Text style={[styles.workoutName, isCompleted && styles.completedWorkoutName]} numberOfLines={1}>
-                  {workout.name}
+              <Text style={styles.workoutName} numberOfLines={1}>
+                {workout.name}
+              </Text>
+              <Text style={styles.workoutDescription} numberOfLines={2}>
+                {workout.description}
+              </Text>
+
+              <View style={styles.focusRow}>
+                {focusAreas.map((area) => (
+                  <Text key={area} style={styles.focusText} numberOfLines={1}>
+                    {area}
+                  </Text>
+                ))}
+              </View>
+
+              <View style={styles.coachRow}>
+                <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
+                <Text style={styles.coachNotes} numberOfLines={2}>
+                  {programmedWorkout.coachNotes}
                 </Text>
               </View>
-
-              {!isCompleted && (
-                <>
-                  <Text style={styles.workoutDescription} numberOfLines={2}>
-                    {workout.description}
-                  </Text>
-
-                  <View style={styles.focusRow}>
-                    {focusAreas.map((area) => (
-                      <Text key={area} style={styles.focusText} numberOfLines={1}>
-                        {area}
-                      </Text>
-                    ))}
-                  </View>
-
-                  <View style={styles.coachRow}>
-                    <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
-                    <Text style={styles.coachNotes} numberOfLines={2}>
-                      {programmedWorkout.coachNotes}
-                    </Text>
-                  </View>
-                </>
-              )}
 
               <View style={styles.openRow}>
-                <Text style={[styles.openText, isCompleted && styles.redoText]}>
-                  {isCompleted ? 'Redo workout' : 'Open workout'}
-                </Text>
+                <Text style={styles.openText}>Open workout</Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.primary} />
               </View>
             </TouchableOpacity>
@@ -141,7 +148,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primaryDark,
   },
   completedCard: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.success,
   },
@@ -150,6 +157,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     marginBottom: spacing.md,
+  },
+  compactHeader: {
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   iconBox: {
     width: 38,
@@ -160,7 +171,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   completedIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: borderRadius.md,
     backgroundColor: colors.success + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerText: {
     flex: 1,
@@ -176,6 +192,9 @@ const styles = StyleSheet.create({
     fontWeight: typography.semibold,
     color: colors.text,
   },
+  compactTitle: {
+    fontSize: typography.base,
+  },
   statusPill: {
     borderRadius: borderRadius.full,
     paddingHorizontal: spacing.sm,
@@ -187,16 +206,10 @@ const styles = StyleSheet.create({
   nextPill: {
     backgroundColor: colors.surfaceLight,
   },
-  completePill: {
-    backgroundColor: colors.success + '25',
-  },
   statusPillText: {
     fontSize: typography.xs,
     fontWeight: typography.semibold,
     color: colors.textSecondary,
-  },
-  completePillText: {
-    color: colors.successLight,
   },
   dateLabel: {
     fontSize: typography.sm,
@@ -207,16 +220,68 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
+  compactWorkoutList: {
+    borderTopWidth: 1,
+    borderTopColor: colors.success + '30',
+    paddingTop: spacing.xs,
+  },
   workoutRow: {
     paddingTop: spacing.md,
-  },
-  completedWorkoutRow: {
-    paddingBottom: spacing.xs,
   },
   workoutRowBorder: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
     marginTop: spacing.md,
+  },
+  compactWorkoutRow: {
+    paddingVertical: spacing.xs,
+  },
+  compactWorkoutRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginTop: spacing.xs,
+    paddingTop: spacing.sm,
+  },
+  compactWorkoutContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  compactWorkoutTitleArea: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    minWidth: 0,
+  },
+  compactSlot: {
+    flexShrink: 0,
+    fontSize: typography.xs,
+    fontWeight: typography.semibold,
+    color: colors.successLight,
+    backgroundColor: colors.success + '20',
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    overflow: 'hidden',
+  },
+  compactWorkoutName: {
+    flex: 1,
+    fontSize: typography.sm,
+    fontWeight: typography.semibold,
+    color: colors.text,
+  },
+  compactRedo: {
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  compactRedoText: {
+    fontSize: typography.sm,
+    fontWeight: typography.semibold,
+    color: colors.successLight,
   },
   workoutHeader: {
     flexDirection: 'row',
@@ -235,31 +300,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontWeight: typography.medium,
   },
-  completedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  completedBadgeText: {
-    fontSize: typography.xs,
-    color: colors.successLight,
-    fontWeight: typography.semibold,
-  },
-  workoutTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
   workoutName: {
-    flex: 1,
     fontSize: typography.base,
     fontWeight: typography.semibold,
     color: colors.text,
     marginBottom: spacing.xs,
-  },
-  completedWorkoutName: {
-    color: colors.successLight,
-    marginBottom: 0,
   },
   workoutDescription: {
     fontSize: typography.sm,
@@ -305,8 +350,5 @@ const styles = StyleSheet.create({
     fontSize: typography.sm,
     color: colors.primary,
     fontWeight: typography.semibold,
-  },
-  redoText: {
-    color: colors.successLight,
   },
 });
