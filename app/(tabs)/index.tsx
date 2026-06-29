@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,8 +25,22 @@ import { DURATION_OPTIONS, WARMUP_COOLDOWN_THRESHOLD } from '@/utils/constants';
 import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
 import { generateWorkout, WorkoutSummary } from '@/services/openrouter';
 import { flattenWorkout } from '@/utils';
-import { getProgrammedWorkoutsForHome } from '@/data/programmedWorkouts';
+import { getLocalDateKey, getProgrammedWorkoutsForHome } from '@/data/programmedWorkouts';
 import type { ProgrammedWorkout } from '@/data/programmedWorkouts';
+import type { WorkoutSession } from '@/types/workout';
+
+function completedSessionDateKey(session: WorkoutSession): string | null {
+  if (!session.completedAt) {
+    return null;
+  }
+
+  const completedAt = new Date(session.completedAt);
+  if (Number.isNaN(completedAt.getTime())) {
+    return null;
+  }
+
+  return getLocalDateKey(completedAt);
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -57,6 +71,7 @@ export default function HomeScreen() {
     setIsCustomDuration,
   } = useWorkoutStore();
   const getRecentSessions = useHistoryStore((state) => state.getRecentSessions);
+  const historySessions = useHistoryStore((state) => state.history.sessions);
   const workoutSummary = useHistoryStore((state) => state.workoutSummary);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -78,6 +93,37 @@ export default function HomeScreen() {
     equipmentSets.find((s) => s.isDefault) ||
     equipmentSets[0];
   const programmedHome = getProgrammedWorkoutsForHome();
+  const completedProgrammedWorkoutIds = useMemo(() => {
+    if (!programmedHome?.isToday) {
+      return new Set<string>();
+    }
+
+    const completedIds = new Set<string>();
+
+    programmedHome.workouts.forEach((programmedWorkout) => {
+      const hasCompletedSession = historySessions.some((session) => {
+        if (session.status !== 'completed') {
+          return false;
+        }
+
+        if (completedSessionDateKey(session) !== programmedWorkout.date) {
+          return false;
+        }
+
+        return (
+          session.workoutId === programmedWorkout.workout.id ||
+          session.workout.id === programmedWorkout.workout.id ||
+          session.workout.name === programmedWorkout.workout.name
+        );
+      });
+
+      if (hasCompletedSession) {
+        completedIds.add(programmedWorkout.id);
+      }
+    });
+
+    return completedIds;
+  }, [historySessions, programmedHome]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -187,6 +233,7 @@ export default function HomeScreen() {
             dateLabel={programmedHome.dateLabel}
             isToday={programmedHome.isToday}
             workouts={programmedHome.workouts}
+            completedWorkoutIds={completedProgrammedWorkoutIds}
             onSelectWorkout={handleOpenProgrammedWorkout}
           />
         )}
