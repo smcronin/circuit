@@ -238,118 +238,350 @@ function programmedWorkout(seed: ProgramSeed): ProgrammedWorkout {
   };
 }
 
-const strengthWarmUp = (): ExerciseSeed[] => [
-  ex(
-    'Jump Rope Easy Bounce',
-    45,
-    'Keep the bounce relaxed and quiet. Breathe through the nose if possible and let ankles, calves, and shoulders wake up gradually.',
+type StrengthDay = 'monday' | 'tuesday' | 'friday';
+type ClimbingWarmUpStyle = 'weekday' | 'long';
+
+const strengthWarmUp = (day: StrengthDay, phase: Phase): ExerciseSeed[] => {
+  const commonRamp = ex(
+    day === 'friday' ? 'Jump Rope Boxer Step' : 'Jump Rope Easy Bounce',
+    phase === 4 ? 35 : 45,
+    phase === 4
+      ? 'Keep this deliberately easy: relaxed rhythm, soft feet, and no conditioning intent. The goal is just to get moving.'
+      : 'Keep the bounce relaxed and quiet. Breathe through the nose if possible and let ankles, calves, and shoulders wake up gradually.',
     ['calves', 'shoulders', 'core'],
     ['Jump Rope']
-  ),
-  ex(
-    'Band Over-and-Backs',
-    45,
-    'Hold a light band wide, pass it overhead and behind the body, then return. Keep ribs down and avoid forcing the shoulders.',
-    ['shoulders', 'chest', 'upper back'],
-    ['Resistance Bands']
-  ),
-  ex(
-    'Scapular Pull-ups',
-    45,
-    'Hang from the bar and move only through the shoulder blades. Pull shoulders down and away from the ears, then return under control.',
-    ['back', 'lats', 'forearms'],
-    ['Pull-up Bar']
-  ),
-  ex(
-    "World's Greatest Stretch",
-    60,
-    'Step into a long lunge, rotate toward the front leg, then switch sides halfway. Keep the back leg active and hips low.',
-    ['hips', 'hamstrings', 'thoracic spine', 'core'],
-    ['Yoga Mat']
-  ),
-];
+  );
 
-const climbingWarmUp = (phase: Phase): ExerciseSeed[] => [
-  ex(
-    'Wrist Pulses and Finger Flicks',
-    45,
-    'Open and close the hands quickly, then make gentle wrist circles. Keep this easy and restorative.',
-    ['forearms', 'wrists']
-  ),
-  ex(
-    phase === 4 ? 'Band Face Pulls' : 'Band Face Pulls with External Rotation',
-    60,
-    'Pull the band toward eye level, pause, and rotate the knuckles slightly back. Move slowly enough to feel mid-back control.',
-    ['upper back', 'rear delts', 'rotator cuff'],
-    ['Resistance Bands']
-  ),
-  ex(
-    'Scapular Pull-ups',
-    45,
-    'Use the pull-up bar for small shoulder blade reps. This is a primer, not a strength test.',
-    ['lats', 'lower traps', 'forearms'],
-    ['Pull-up Bar']
-  ),
-  ex(
-    phase === 2 || phase === 5 ? 'Hangboard Large Edge Active Hang' : 'Pull-up Bar Active Hang',
-    60,
-    'Use a comfortable grip, pull shoulders lightly down, and alternate gentle knee lifts. Stop well before finger fatigue.',
-    ['forearms', 'lats', 'core'],
-    phase === 2 || phase === 5 ? ['Hangboard'] : ['Pull-up Bar']
-  ),
-  ex(
-    'Cossack Squat Flow',
-    60,
-    'Shift side to side with a tall chest. Keep the range smooth and use hands on the floor if needed.',
-    ['adductors', 'quads', 'glutes', 'hips'],
-    ['Yoga Mat']
-  ),
-  ex(
-    'Hollow to Dead Bug Switch',
-    60,
-    'Alternate a short hollow hold with slow dead bugs. Keep the low back gently pressed toward the floor.',
-    ['core', 'hip flexors'],
-    ['Yoga Mat']
-  ),
-  ex(
-    'Easy Squat-to-Reach',
-    60,
-    'Sit into a relaxed squat, then stand and reach overhead. Make the movement fluid and climbing-ready.',
-    ['quads', 'glutes', 'thoracic spine'],
-    ['Yoga Mat']
-  ),
-];
+  if (day === 'monday') {
+    return [
+      commonRamp,
+      ex(
+        'Wrist Tendon Glides',
+        40,
+        'Move through open hand, hook fist, full fist, and straight fist positions. Keep it gentle and precise.',
+        ['wrists', 'forearms']
+      ),
+      ex(
+        phase === 2 || phase === 5 ? 'Hangboard Large Edge Shoulder Set' : 'Scapular Pull-ups',
+        45,
+        phase === 2 || phase === 5
+          ? 'Use a large edge, set shoulders down, and add tiny knee lifts. This is a primer, not a hang workout.'
+          : 'Hang from the bar and move only through the shoulder blades. Pull shoulders down and away from the ears, then return under control.',
+        ['back', 'lats', 'forearms'],
+        phase === 2 || phase === 5 ? ['Hangboard'] : ['Pull-up Bar']
+      ),
+      ex(
+        'Hip Hinge Sweep',
+        50,
+        'Sweep hands down the legs as hips move back, then stand tall and squeeze glutes. Keep shins mostly vertical.',
+        ['hamstrings', 'glutes', 'back']
+      ),
+      ex(
+        'Dead Bug Lat Press',
+        45,
+        'Press hands gently into the floor or a band overhead while alternating slow dead bugs.',
+        ['core', 'lats', 'hip flexors'],
+        ['Yoga Mat']
+      ),
+    ];
+  }
 
-const shortCoolDown = (): ExerciseSeed[] => [
-  ex(
-    'Lat Prayer Stretch',
-    45,
-    'Kneel with hands forward, sink hips back, and breathe into the sides of the ribs.',
-    ['lats', 'shoulders'],
-    ['Yoga Mat']
-  ),
-  ex(
-    'Hip Flexor Stretch - Right',
-    45,
-    'Half-kneel and gently tuck the pelvis. Reach the right-side arm overhead if it feels good.',
-    ['hip flexors', 'quads'],
-    ['Yoga Mat']
-  ),
-  ex(
-    'Hip Flexor Stretch - Left',
-    45,
-    'Repeat on the left side with steady breathing and no pinching in the front hip.',
-    ['hip flexors', 'quads'],
-    ['Yoga Mat']
-  ),
-  ex(
-    'Yoga Wheel Thoracic Opener',
-    45,
-    'Rest the upper back on the yoga wheel and breathe slowly. Keep the neck supported and comfortable.',
-    ['thoracic spine', 'chest'],
-    ['Yoga wheel']
-  ),
-];
+  if (day === 'tuesday') {
+    return [
+      commonRamp,
+      ex(
+        'Ankle Rockers',
+        45,
+        'Drive the knee forward over the toes without the heel lifting, alternating sides smoothly.',
+        ['ankles', 'calves', 'quads'],
+        ['Yoga Mat']
+      ),
+      ex(
+        '90/90 Hip Switches',
+        50,
+        'Rotate between 90/90 positions with tall posture. Use hands for support if needed.',
+        ['hips', 'glutes', 'adductors'],
+        ['Yoga Mat']
+      ),
+      ex(
+        phase === 5 ? 'Wall Handstand Line Drill' : 'Band Wall Slides',
+        45,
+        phase === 5
+          ? 'Face the wall or use a pike setup and find a straight overhead line without fatigue.'
+          : 'Slide arms up the wall against light band tension, keeping ribs down and shoulder blades moving.',
+        ['shoulders', 'serratus', 'upper back'],
+        phase === 5 ? ['Yoga Mat'] : ['Resistance Bands']
+      ),
+      ex(
+        'Cossack Squat Flow',
+        45,
+        'Shift side to side with a tall chest. Stay in a range that feels like preparation, not work.',
+        ['adductors', 'quads', 'glutes', 'hips'],
+        ['Yoga Mat']
+      ),
+    ];
+  }
+
+  return [
+    commonRamp,
+    ex(
+      'Cat-Cow to Thread the Needle',
+      55,
+      'Move through two cat-cow reps, then thread one arm through and rotate. Switch sides halfway.',
+      ['thoracic spine', 'shoulders', 'back'],
+      ['Yoga Mat']
+    ),
+    ex(
+      'Ring Support Scap Shrugs',
+      40,
+      'Hold an easy ring support or foot-assisted support and move only through the shoulder blades.',
+      ['shoulders', 'chest', 'triceps', 'upper back'],
+      ['Gymnastic Rings']
+    ),
+    ex(
+      'Inchworm to Cobra',
+      55,
+      'Walk hands out, briefly open the front body, then walk back with soft knees.',
+      ['hamstrings', 'core', 'chest', 'shoulders'],
+      ['Yoga Mat']
+    ),
+    ex(
+      phase === 3 ? 'Beast Hover Rock' : 'Bear Crawl Patterning',
+      45,
+      phase === 3
+        ? 'Hover knees one inch and rock slightly forward and back with quiet hips.'
+        : 'Crawl slowly forward and back, keeping hips quiet and hands active.',
+      ['core', 'shoulders', 'quads', 'wrists'],
+      ['Yoga Mat']
+    ),
+  ];
+};
+
+const climbingWarmUp = (phase: Phase, style: ClimbingWarmUpStyle = 'weekday'): ExerciseSeed[] => {
+  const activeHang =
+    phase === 2 || phase === 5
+      ? ex(
+          'Hangboard Large Edge Active Hang',
+          55,
+          'Use a comfortable edge, pull shoulders lightly down, and stop well before finger fatigue.',
+          ['forearms', 'lats', 'core'],
+          ['Hangboard']
+        )
+      : ex(
+          'Pull-up Bar Active Hang',
+          55,
+          'Use a comfortable grip, pull shoulders lightly down, and alternate gentle knee lifts.',
+          ['forearms', 'lats', 'core'],
+          ['Pull-up Bar']
+        );
+
+  const base: ExerciseSeed[] = [
+    ex(
+      style === 'long' ? 'Jump Rope Boxer Step' : 'Jump Rope Easy Bounce',
+      45,
+      'Use a relaxed rhythm to raise temperature without fatigue. If a rope is inconvenient before climbing, substitute quiet fast feet.',
+      ['calves', 'shoulders', 'core'],
+      ['Jump Rope']
+    ),
+    ex(
+      style === 'long' ? 'Finger Waves and Wrist CARs' : 'Wrist Pulses and Finger Flicks',
+      45,
+      'Open and close the hands, then make gentle wrist circles. Keep this easy and restorative.',
+      ['forearms', 'wrists']
+    ),
+    ex(
+      phase === 4 ? 'Band Face Pulls' : 'Band Face Pulls with External Rotation',
+      55,
+      'Pull the band toward eye level, pause, and rotate the knuckles slightly back. Move slowly enough to feel mid-back control.',
+      ['upper back', 'rear delts', 'rotator cuff'],
+      ['Resistance Bands']
+    ),
+    activeHang,
+    ex(
+      style === 'long' ? 'High-Step Rockbacks' : 'Hip CARs Standing',
+      55,
+      style === 'long'
+        ? 'Set one foot high on a stable surface or floor position and rock in and out of the hip slowly.'
+        : 'Draw controlled circles with one knee, switching sides halfway. Hold the wall or rings lightly if needed.',
+      ['hips', 'glutes', 'adductors'],
+      ['Yoga Mat']
+    ),
+    ex(
+      style === 'long' ? 'Cross-Body Dead Bug' : 'Hollow to Dead Bug Switch',
+      55,
+      style === 'long'
+        ? 'Reach opposite elbow and knee toward each other, then extend slowly without losing rib position.'
+        : 'Alternate a short hollow hold with slow dead bugs. Keep the low back gently pressed toward the floor.',
+      ['core', 'hip flexors', 'obliques'],
+      ['Yoga Mat']
+    ),
+  ];
+
+  if (style === 'long') {
+    return [
+      ...base,
+      ex(
+        'Easy Ring Row Acceleration',
+        45,
+        'Do a few smooth rows with slightly faster intent on the way up and full control on the way down.',
+        ['lats', 'back', 'biceps'],
+        ['Gymnastic Rings']
+      ),
+      ex(
+        'Quiet Feet Squat-to-Reach',
+        50,
+        'Move from a relaxed squat to an overhead reach, staying light through the feet.',
+        ['quads', 'glutes', 'thoracic spine'],
+        ['Yoga Mat']
+      ),
+    ];
+  }
+
+  return [
+    ...base,
+    ex(
+      'Easy Squat-to-Reach',
+      50,
+      'Sit into a relaxed squat, then stand and reach overhead. Make the movement fluid and climbing-ready.',
+      ['quads', 'glutes', 'thoracic spine'],
+      ['Yoga Mat']
+    ),
+  ];
+};
+
+const strengthCoolDown = (day: StrengthDay, phase: Phase): ExerciseSeed[] => {
+  if (day === 'monday') {
+    return [
+      ex(
+        'Forearm Extensor Stretch - Right',
+        35,
+        'Extend the right arm, palm down, and gently flex the wrist until the top of the forearm eases.',
+        ['forearms', 'wrists']
+      ),
+      ex(
+        'Forearm Extensor Stretch - Left',
+        35,
+        'Match the right side with light pressure and slow breathing.',
+        ['forearms', 'wrists']
+      ),
+      ex(
+        phase === 4 ? 'Supine Hamstring Strapless Floss' : 'Hamstring Doorway Stretch - Alternating',
+        60,
+        'Alternate legs with a soft knee and calm breath. Keep the stretch mild enough to relax into.',
+        ['hamstrings', 'calves'],
+        ['Yoga Mat']
+      ),
+      ex(
+        'Lat Prayer Stretch',
+        45,
+        'Kneel with hands forward, sink hips back, and breathe into the sides of the ribs.',
+        ['lats', 'shoulders'],
+        ['Yoga Mat']
+      ),
+    ];
+  }
+
+  if (day === 'tuesday') {
+    return [
+      ex(
+        'Couch Stretch - Right',
+        45,
+        'Set the right knee on the mat and gently tuck the pelvis. Keep the front ribs quiet.',
+        ['hip flexors', 'quads'],
+        ['Yoga Mat']
+      ),
+      ex(
+        'Couch Stretch - Left',
+        45,
+        'Repeat on the left side with the same easy breathing standard.',
+        ['hip flexors', 'quads'],
+        ['Yoga Mat']
+      ),
+      ex(
+        'Yoga Wheel Pec Opener',
+        45,
+        'Rest over the wheel or mat and let the chest open without forcing the shoulders.',
+        ['chest', 'shoulders', 'thoracic spine'],
+        ['Yoga wheel']
+      ),
+      ex(
+        'Wrist Flexor Stretch - Alternating',
+        45,
+        'Gently stretch each palm and finger line after pressing work.',
+        ['forearms', 'wrists']
+      ),
+    ];
+  }
+
+  return [
+    ex(
+      'Pigeon Pose - Right',
+      45,
+      'Set the front shin at a comfortable angle and breathe into the outside hip.',
+      ['glutes', 'hips'],
+      ['Yoga Mat']
+    ),
+    ex(
+      'Pigeon Pose - Left',
+      45,
+      'Match the right side without forcing range.',
+      ['glutes', 'hips'],
+      ['Yoga Mat']
+    ),
+    ex(
+      'Supine Twist - Right',
+      40,
+      'Let the right knee cross the body and keep shoulders heavy.',
+      ['back', 'obliques'],
+      ['Yoga Mat']
+    ),
+    ex(
+      'Supine Twist - Left',
+      40,
+      'Repeat left and slow the breath down.',
+      ['back', 'obliques'],
+      ['Yoga Mat']
+    ),
+    ex(
+      'Box Breathing',
+      45,
+      'Inhale, hold, exhale, and hold for an even count. Let the session downshift.',
+      ['diaphragm', 'nervous system']
+    ),
+  ];
+};
+
+const cardioCoolDown = (phase: Phase): ExerciseSeed[] => {
+  const shared = [
+    ex('Easy Spin Downshift', 240, 'Back off to an easy spin and let heart rate drift down gradually.', ['cardiovascular system'], ['Road Bike']),
+  ];
+
+  if (phase === 1 || phase === 5) {
+    return [
+      ...shared,
+      ex('Calf Stretch - Right', 45, 'Long exhale and easy pressure through the heel.', ['calves']),
+      ex('Calf Stretch - Left', 45, 'Match the right side.', ['calves']),
+      ex('Figure-4 Stretch - Right', 45, 'Cross the right ankle over the left thigh and breathe into the outside hip.', ['glutes', 'hips'], ['Yoga Mat']),
+      ex('Figure-4 Stretch - Left', 45, 'Repeat on the left side with relaxed breathing.', ['glutes', 'hips'], ['Yoga Mat']),
+    ];
+  }
+
+  if (phase === 2 || phase === 3) {
+    return [
+      ...shared,
+      ex('Half-Kneeling Hip Flexor Rock - Right', 45, 'Rock gently forward and back without pinching the front hip.', ['hip flexors', 'quads'], ['Yoga Mat']),
+      ex('Half-Kneeling Hip Flexor Rock - Left', 45, 'Repeat on the left side and keep ribs stacked over pelvis.', ['hip flexors', 'quads'], ['Yoga Mat']),
+      ex('Thoracic Open Book - Right', 45, 'Lie on the side and rotate the top arm open with a long exhale.', ['thoracic spine', 'chest'], ['Yoga Mat']),
+      ex('Thoracic Open Book - Left', 45, 'Repeat left and keep hips stacked.', ['thoracic spine', 'chest'], ['Yoga Mat']),
+    ];
+  }
+
+  return [
+    ...shared,
+    ex('Legs-Up Breathing', 90, 'Lie on the back with legs elevated on a wall or chair and let the breath slow.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ex('Ankle Circles Easy', 60, 'Circle both ankles slowly in each direction to downshift the calves after riding.', ['ankles', 'calves']),
+  ];
+};
 
 const fingerByPhase: Record<Phase, ExerciseSeed> = {
   1: ex(
@@ -807,7 +1039,7 @@ function mondayStrength(date: string, phase: Phase): ProgrammedWorkout {
     calorieRange: phase === 4 ? { low: 160, high: 220 } : { low: 205, high: 275 },
     focusAreas: ['strength', 'body composition', 'upper body', 'lower body', 'core'],
     muscleGroupsTargeted: ['forearms', 'back', 'lats', 'hamstrings', 'glutes', 'chest', 'quads', 'core'],
-    warmUp: strengthWarmUp(),
+    warmUp: strengthWarmUp('monday', phase),
     circuits: [
       {
         name: 'Finger and Hinge Primer',
@@ -834,7 +1066,7 @@ function mondayStrength(date: string, phase: Phase): ProgrammedWorkout {
         exercises: ringCircuitExercises,
       },
     ],
-    coolDown: shortCoolDown(),
+    coolDown: strengthCoolDown('monday', phase),
     partingWords:
       'You gave the week a precise opening signal: fingers, back, hinge, push, legs, and core all got useful work. That is the kind of deliberate volume that compounds without wasting time.',
   });
@@ -868,7 +1100,7 @@ function tuesdayStrength(date: string, phase: Phase): ProgrammedWorkout {
     calorieRange: phase === 4 ? { low: 150, high: 215 } : { low: 195, high: 265 },
     focusAreas: ['strength', 'lower body', 'upper body', 'core', 'mobility'],
     muscleGroupsTargeted: ['quads', 'glutes', 'shoulders', 'chest', 'upper back', 'core', 'obliques'],
-    warmUp: strengthWarmUp(),
+    warmUp: strengthWarmUp('tuesday', phase),
     circuits: [
       {
         name: 'Squat and Press Block',
@@ -933,7 +1165,7 @@ function tuesdayStrength(date: string, phase: Phase): ProgrammedWorkout {
         ],
       },
     ],
-    coolDown: shortCoolDown(),
+    coolDown: strengthCoolDown('tuesday', phase),
     partingWords:
       'That was useful strength without piling more of the exact same stress onto yesterday. Your knees, shoulders, trunk, and scapular control all got a clean signal.',
   });
@@ -1085,13 +1317,7 @@ function thursdayCardio(date: string, phase: Phase): ProgrammedWorkout {
         ],
       },
     ],
-    coolDown: [
-      ex('Easy Spin Downshift', 240, 'Back off to an easy spin and let heart rate drift down gradually.', ['cardiovascular system'], ['Road Bike']),
-      ex('Calf Stretch - Right', 45, 'Long exhale and easy pressure through the heel.', ['calves']),
-      ex('Calf Stretch - Left', 45, 'Match the right side.', ['calves']),
-      ex('Hip Flexor Stretch - Right', 45, 'Half-kneel and breathe into the front of the hip.', ['hip flexors', 'quads'], ['Yoga Mat']),
-      ex('Hip Flexor Stretch - Left', 45, 'Repeat on the left side with relaxed breathing.', ['hip flexors', 'quads'], ['Yoga Mat']),
-    ],
+    coolDown: cardioCoolDown(phase),
     restBetweenCircuits: 60,
     partingWords:
       'That was the kind of quiet aerobic work that pays rent: heart health, metabolic fitness, recovery capacity, and body composition all get a useful signal.',
@@ -1167,7 +1393,7 @@ function fridayStrength(date: string, phase: Phase): ProgrammedWorkout {
     calorieRange: phase === 4 ? { low: 155, high: 220 } : { low: 205, high: 285 },
     focusAreas: ['strength', 'body composition', 'upper body', 'posterior chain', 'core'],
     muscleGroupsTargeted: ['chest', 'lats', 'back', 'forearms', 'glutes', 'hamstrings', 'shoulders', 'core'],
-    warmUp: strengthWarmUp(),
+    warmUp: strengthWarmUp('friday', phase),
     circuits: [
       {
         name: 'Power Pull and Push',
@@ -1222,7 +1448,7 @@ function fridayStrength(date: string, phase: Phase): ProgrammedWorkout {
         ],
       },
     ],
-    coolDown: shortCoolDown(),
+    coolDown: strengthCoolDown('friday', phase),
     partingWords:
       'Strong finish. You touched power, tendon capacity, posterior chain, and trunk stiffness without just replaying the same workout again.',
   });
@@ -1295,7 +1521,7 @@ function sundayClimbingWarmup(date: string, phase: Phase): ProgrammedWorkout {
     focusAreas: ['mobility', 'sports performance', 'upper body', 'core'],
     muscleGroupsTargeted: ['forearms', 'shoulders', 'lats', 'back', 'hips', 'core', 'glutes'],
     warmUp: [
-      ...climbingWarmUp(phase),
+      ...climbingWarmUp(phase, 'long'),
       ex(
         phase === 4 ? 'Easy Ring Row' : 'Explosive Ring Row Primer',
         45,

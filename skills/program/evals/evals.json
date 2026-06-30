@@ -1,0 +1,23 @@
+{
+  "skill_name": "program",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use my July Circuit export and build the August program. Keep Monday/Tuesday/Friday as strength days, Thursday Zone 2, Wednesday/Sunday climbing, and avoid repeating demanding movement patterns on adjacent days.",
+      "expected_output": "A valid update to src/data/programmedWorkouts.ts with a complete August calendar, multiple workouts per day where useful, no adjacent exact main-session collisions, and successful audit/type/build checks.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Audit the current Circuit programmed workouts like a calisthenics coach. Find any places where the warm-ups, cooldowns, or main circuits are too repetitive or poorly sequenced for body composition, longevity, and climbing.",
+      "expected_output": "A coach-style findings list plus targeted code changes when appropriate, using scripts/audit-programming.js and preserving the existing review/timer/history app flow.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I have no pain warnings, but I want next month to keep jump rope as the warm-up opener and vary joint mobility through the week. Program the month and push it to Vercel.",
+      "expected_output": "A shipped monthly program that keeps rope-first warm-ups, varies day-specific mobility prep and cooldowns, runs the audit plus npx tsc --noEmit and npx expo export --platform web, then commits and pushes to master.",
+      "files": []
+    }
+  ]
+}
