@@ -629,6 +629,27 @@ const squatByPhase: Record<Phase, ExerciseSeed[]> = {
   ],
 };
 
+const tuesdayLowerByPhase: Record<Phase, ExerciseSeed[]> = {
+  ...squatByPhase,
+  1: [
+    ex(
+      'Tempo Dumbbell Goblet Squat',
+      45,
+      'Hold one dumbbell at the chest, lower for three seconds, pause lightly, and stand with clean knee tracking. This is controlled quad work, not another pistol squat day.',
+      ['quads', 'glutes', 'core'],
+      ['Dumbbells'],
+      { targetReps: 10 }
+    ),
+    ex(
+      'Glute Bridge March',
+      35,
+      'Keep hips level, ribs down, and alternate slow marches without letting the pelvis roll.',
+      ['glutes', 'hamstrings', 'core'],
+      ['Yoga Mat']
+    ),
+  ],
+};
+
 function mondayStrength(date: string, phase: Phase): ProgrammedWorkout {
   const phaseLabel = PHASE_LABELS[phase];
   const rounds = phase === 4 ? 2 : 3;
@@ -733,7 +754,7 @@ function tuesdayStrength(date: string, phase: Phase): ProgrammedWorkout {
         restBetweenRounds: phase === 4 ? 75 : 60,
         restBetweenExercises: 12,
         exercises: [
-          ...squatByPhase[phase],
+          ...tuesdayLowerByPhase[phase],
           shoulderExercise,
           ex(
             'Ring Face Pulls',
