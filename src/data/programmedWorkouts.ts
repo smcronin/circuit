@@ -648,6 +648,128 @@ const tuesdayLowerByPhase: Record<Phase, ExerciseSeed[]> = {
       ['Yoga Mat']
     ),
   ],
+  2: [
+    ex(
+      'Dumbbell Front-Rack Squat',
+      45,
+      'Hold the dumbbells at shoulder height, sit between the knees, and keep the torso tall. This gives Tuesday a bilateral squat pattern after Monday single-leg work.',
+      ['quads', 'glutes', 'core'],
+      ['Dumbbells'],
+      { targetReps: 10 }
+    ),
+    ex(
+      'Tall-Kneeling Hip Hinge',
+      35,
+      'Kneel on the mat, push hips back toward heels, then squeeze glutes to return tall. Keep it smooth and restorative.',
+      ['glutes', 'hamstrings', 'core'],
+      ['Yoga Mat']
+    ),
+  ],
+  3: [
+    ex(
+      'Reverse Lunge Alternating',
+      45,
+      'Step back into each lunge with a quiet landing and stand by driving through the front foot. Hold dumbbells only if control stays crisp.',
+      ['quads', 'glutes', 'hamstrings', 'core'],
+      ['Dumbbells'],
+      { targetReps: 10 }
+    ),
+    ex(
+      'Calf Raise with Slow Lower',
+      35,
+      'Rise smoothly, pause, and lower for three seconds. Use the wall or rings for balance if needed.',
+      ['calves', 'feet'],
+      [],
+      { targetReps: 12 }
+    ),
+  ],
+  4: [
+    ex(
+      'Supported Split Squat Iso - Alternating',
+      45,
+      'Use the rings lightly for balance and hold a comfortable split-squat position, alternating sides halfway through.',
+      ['quads', 'glutes', 'hip flexors'],
+      ['Gymnastic Rings', 'Yoga Mat']
+    ),
+  ],
+  5: [
+    ex(
+      'Dumbbell Cyclist Squat',
+      45,
+      'Elevate heels slightly on the mat if comfortable, keep the torso tall, and use a smooth quad-dominant squat.',
+      ['quads', 'glutes', 'core'],
+      ['Dumbbells', 'Yoga Mat'],
+      { targetReps: 12 }
+    ),
+    ex(
+      'Supported Hip Airplane Switches',
+      35,
+      'Hold the rings lightly, open and close the hip with control, and keep this about coordination rather than fatigue.',
+      ['glutes', 'hip stabilizers', 'core'],
+      ['Gymnastic Rings']
+    ),
+  ],
+};
+
+const fridayPosteriorByPhase: Record<Phase, ExerciseSeed[]> = {
+  1: [
+    ex(
+      'Weighted Vest Hip Thrust',
+      45,
+      'Wear the vest if it feels clean, drive through heels, and pause at the top without arching the low back.',
+      ['glutes', 'hamstrings', 'core'],
+      ['Weight Vest', 'Yoga Mat'],
+      { targetReps: 12 }
+    ),
+  ],
+  2: [
+    ex(
+      'Dumbbell Romanian Deadlift',
+      45,
+      'Use the bilateral hinge today so Friday does not repeat Monday single-leg balance work. Keep the weights close and reps smooth.',
+      ['hamstrings', 'glutes', 'back'],
+      ['Dumbbells'],
+      { targetReps: 12 }
+    ),
+  ],
+  3: [
+    ex(
+      'Single-Leg Glute Bridge - Right',
+      35,
+      'Drive through the right heel, keep hips level, and pause at the top.',
+      ['glutes', 'hamstrings', 'core'],
+      ['Yoga Mat'],
+      { targetReps: 10 }
+    ),
+    ex(
+      'Single-Leg Glute Bridge - Left',
+      35,
+      'Match the right side with the same tempo and hip height.',
+      ['glutes', 'hamstrings', 'core'],
+      ['Yoga Mat'],
+      { targetReps: 10 }
+    ),
+  ],
+  4: [
+    ex(
+      'Hamstring Walkouts',
+      45,
+      'Start from a glute bridge and walk heels out only as far as control allows, then return slowly.',
+      ['hamstrings', 'glutes', 'core'],
+      ['Yoga Mat'],
+      { targetReps: 6 }
+    ),
+  ],
+  5: [
+    ex(
+      'Long-Lever Glute Bridge',
+      45,
+      'Set heels farther from the body, keep ribs down, and squeeze glutes without cramping the hamstrings.',
+      ['glutes', 'hamstrings', 'core'],
+      ['Yoga Mat'],
+      { targetReps: 12 }
+    ),
+  ],
 };
 
 function mondayStrength(date: string, phase: Phase): ProgrammedWorkout {
@@ -726,7 +848,7 @@ function tuesdayStrength(date: string, phase: Phase): ProgrammedWorkout {
       : phase === 2
         ? ex('Wall Handstand Pushup Negatives', 35, 'Kick to the wall, lower under control, and come down before fatigue changes the line.', ['shoulders', 'triceps', 'core'], ['Yoga Mat'], { targetReps: 4 })
         : phase === 3
-          ? ex('Dumbbell Squat to Press', 45, 'Squat with both dumbbells, then press overhead as you stand. Use lighter settings if needed.', ['quads', 'glutes', 'shoulders', 'core'], ['Dumbbells'], { targetReps: 10 })
+          ? ex('Dumbbell Push Press', 40, 'Use a shallow dip and crisp drive, then control the dumbbells back down. This keeps the press powerful without another squat exposure.', ['shoulders', 'triceps', 'core'], ['Dumbbells'], { targetReps: 8 })
           : phase === 4
             ? ex('Half-Kneeling Band Press - Alternating', 45, 'Press a light band forward from half kneeling, alternating sides with control.', ['chest', 'shoulders', 'core'], ['Resistance Bands'], { targetReps: 12 })
             : ex('Strict Handstand Pushup Practice', 35, 'Use the hardest clean variation available today, stopping with perfect control.', ['shoulders', 'triceps', 'core'], ['Yoga Mat'], { targetReps: 5 });
@@ -1023,6 +1145,12 @@ function thursdayHealthSnack(date: string, phase: Phase): ProgrammedWorkout {
 function fridayStrength(date: string, phase: Phase): ProgrammedWorkout {
   const phaseLabel = PHASE_LABELS[phase];
   const rounds = phase === 4 ? 2 : 3;
+  const fridayPush =
+    phase === 1
+      ? ex('Ring Dips', 40, 'Smooth reps with rings quiet. Stop before the shoulder position degrades.', ['chest', 'triceps', 'shoulders'], ['Gymnastic Rings'], { targetReps: 8 })
+      : phase === 3
+        ? ex('Feet-Elevated Ring Pushups', 40, 'Set the rings low, elevate feet only if shoulders stay happy, and keep a rigid plank line.', ['chest', 'triceps', 'shoulders', 'core'], ['Gymnastic Rings'], { targetReps: 10 })
+        : chestByPhase[phase];
 
   return programmedWorkout({
     id: `program-2026-07-${phase}-friday-strength-${date}`,
@@ -1048,9 +1176,7 @@ function fridayStrength(date: string, phase: Phase): ProgrammedWorkout {
         restBetweenExercises: 15,
         exercises: [
           phase === 1 || phase === 4 ? pullByPhase[phase] : fingerByPhase[phase],
-          phase === 1
-            ? ex('Ring Dips', 40, 'Smooth reps with rings quiet. Stop before the shoulder position degrades.', ['chest', 'triceps', 'shoulders'], ['Gymnastic Rings'], { targetReps: 8 })
-            : chestByPhase[phase],
+          fridayPush,
           ex(
             phase === 3 ? 'Typewriter Pull-ups' : 'Ring Archer Rows',
             40,
@@ -1077,7 +1203,7 @@ function fridayStrength(date: string, phase: Phase): ProgrammedWorkout {
         restBetweenRounds: 60,
         restBetweenExercises: 12,
         exercises: [
-          ...hingeByPhase[phase],
+          ...fridayPosteriorByPhase[phase],
           ex(
             phase === 2 ? 'Weighted Vest Bear Crawl' : 'Bear Crawl Shoulder Tap',
             40,
