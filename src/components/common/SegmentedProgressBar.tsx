@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, StyleProp, ViewStyle, useWindowDimensions } from 'react-native';
 import { borderRadius, spacing } from '@/theme';
 import { TimerItem } from '@/types/workout';
 
@@ -7,7 +7,7 @@ interface SegmentedProgressBarProps {
   items: TimerItem[];
   currentItemIndex: number;
   height?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 // Fill colors for each segment (progress indicator)

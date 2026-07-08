@@ -4,13 +4,14 @@ import {
   Text,
   ScrollView,
   StyleSheet,
+  StyleProp,
   TextStyle,
   LayoutChangeEvent,
 } from 'react-native';
 
 interface MarqueeTextProps {
   text: string;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
   pauseDuration?: number;
   scrollSpeed?: number;
 }

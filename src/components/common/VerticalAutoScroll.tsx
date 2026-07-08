@@ -4,12 +4,13 @@ import {
   Text,
   ScrollView,
   StyleSheet,
+  StyleProp,
   TextStyle,
 } from 'react-native';
 
 interface VerticalAutoScrollProps {
   text: string;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
   containerHeight: number;
   lineHeight?: number;
   pauseDuration?: number;
