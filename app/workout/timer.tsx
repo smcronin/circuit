@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { SegmentedProgressBar, MarqueeText, VerticalAutoScroll } from '@/components/common';
+import { SegmentedProgressBar, VerticalAutoScroll } from '@/components/common';
 import { colors, spacing, typography } from '@/theme';
 import { useTimerStore, useHistoryStore, useUserStore } from '@/stores';
 import { formatTime, isRestItem, getItemTypeLabel } from '@/utils';
@@ -77,6 +77,11 @@ export default function TimerScreen() {
   const itemAfterNext = items[currentItemIndex + 2];
   const nextIsRest = nextItem ? isRestItem(nextItem.type) : false;
   const isRest = currentItem ? isRestItem(currentItem.type) : false;
+  const workoutTimeRemaining = items.reduce((remaining, item, index) => {
+    if (index < currentItemIndex) return remaining;
+    if (index === currentItemIndex) return remaining + timeRemaining;
+    return remaining + item.duration;
+  }, 0);
 
   // Side-switching logic
   const hasSideSwitching = currentItem?.exercise?.switchSides ?? false;
@@ -331,14 +336,6 @@ export default function TimerScreen() {
   };
 
   const backgroundColor = isRest ? colors.timerRest : colors.timerActive;
-  const descriptionHeight = isCompactLandscape
-    ? 56
-    : isVeryCompactPortrait
-      ? 78
-      : isCompactPortrait
-        ? 112
-        : 88;
-  const descriptionLineHeight = isCompactLandscape ? 20 : isCompactPortrait ? 21 : 22;
 
   // Show countdown overlay: during initial countdown OR during last 3 seconds of any item
   const isEndingCountdown = status === 'running' && timeRemaining <= 3 && timeRemaining >= 1;
@@ -483,12 +480,10 @@ export default function TimerScreen() {
     </>
   );
 
-  const renderExerciseDescription = (compact = false) => (
-    activeItem.exercise?.description ? (
-      // Wrap with a View for vertical spacing so marginTop lives OUTSIDE
-      // the ScrollView. If marginTop is on the Text inside the scroll
-      // container it creates blank space at y=0, making the first scroll
-      // step remove blank rather than reveal new text (looks reversed).
+  const renderExerciseDescription = (compact = false) => {
+    if (!activeItem.exercise?.description) return null;
+
+    return (
       <View
         style={[
           styles.exerciseDescriptionWrapper,
@@ -496,20 +491,27 @@ export default function TimerScreen() {
           isCompactPortrait && styles.exerciseDescriptionWrapperCompactPortrait,
         ]}
       >
-        <VerticalAutoScroll
-          text={activeItem.exercise.description}
-          style={[
-            styles.exerciseDescriptionText,
-            compact && styles.exerciseDescriptionTextLandscape,
-            isCompactPortrait && styles.exerciseDescriptionTextCompactPortrait,
-          ]}
-          containerHeight={descriptionHeight}
-          lineHeight={descriptionLineHeight}
-          pauseDuration={3000}
-        />
+        {compact ? (
+          <VerticalAutoScroll
+            text={activeItem.exercise.description}
+            style={[styles.exerciseDescriptionText, styles.exerciseDescriptionTextLandscape]}
+            containerHeight={56}
+            lineHeight={20}
+            pauseDuration={3000}
+          />
+        ) : (
+          <Text
+            style={[
+              styles.exerciseDescriptionText,
+              isCompactPortrait && styles.exerciseDescriptionTextCompactPortrait,
+            ]}
+          >
+            {activeItem.exercise.description}
+          </Text>
+        )}
       </View>
-    ) : null
-  );
+    );
+  };
 
   const renderUpNext = (compact = false) => {
     if (nextItem && nextIsRest && itemAfterNext) {
@@ -598,6 +600,8 @@ export default function TimerScreen() {
         ]}
       >
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Previous exercise"
           style={[
             styles.controlButton,
             compact && styles.controlButtonLandscape,
@@ -614,6 +618,8 @@ export default function TimerScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={status === 'running' ? 'Pause workout' : 'Resume workout'}
           style={[
             styles.mainControlButton,
             compact && styles.mainControlButtonLandscape,
@@ -629,6 +635,8 @@ export default function TimerScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Next exercise"
           style={[
             styles.controlButton,
             compact && styles.controlButtonLandscape,
@@ -646,6 +654,76 @@ export default function TimerScreen() {
     );
   };
 
+  const renderPausedScreen = () => (
+    <View
+      style={[
+        styles.pausedScreen,
+        isCompactLandscape && styles.pausedScreenLandscape,
+      ]}
+    >
+      <View
+        style={[
+          styles.pausedContent,
+          isCompactLandscape && styles.pausedContentLandscape,
+        ]}
+      >
+        <Text style={[styles.pausedText, isCompactLandscape && styles.pausedTextLandscape]}>
+          PAUSED
+        </Text>
+
+        <Text
+          style={[
+            styles.pausedExerciseName,
+            isCompactLandscape && styles.pausedExerciseNameLandscape,
+          ]}
+          numberOfLines={3}
+          adjustsFontSizeToFit
+          minimumFontScale={0.6}
+        >
+          {activeItem.name}
+        </Text>
+
+        <View style={styles.pausedTimerBlock}>
+          <Text
+            style={[
+              styles.pausedTimerValue,
+              isCompactLandscape && styles.pausedTimerValueLandscape,
+            ]}
+          >
+            {formatTime(timeRemaining)}
+          </Text>
+          <Text style={styles.pausedTimerLabel}>REMAINING IN THIS STEP</Text>
+        </View>
+
+        {activeItem.exercise?.description && (
+          isCompactLandscape ? (
+            <ScrollView
+              style={[styles.pausedInstructions, styles.pausedInstructionsLandscape]}
+              contentContainerStyle={styles.pausedInstructionsContent}
+              showsVerticalScrollIndicator={true}
+            >
+              <Text style={[styles.pausedInstructionsText, styles.pausedInstructionsTextLandscape]}>
+                {activeItem.exercise.description}
+              </Text>
+            </ScrollView>
+          ) : (
+            <View style={[styles.pausedInstructions, styles.pausedInstructionsPortrait]}>
+              <Text style={styles.pausedInstructionsText}>
+                {activeItem.exercise.description}
+              </Text>
+            </View>
+          )
+        )}
+
+        <Text style={[styles.pausedSubtext, isCompactLandscape && styles.pausedSubtextLandscape]}>
+          Tap play to resume
+        </Text>
+      </View>
+
+      {renderControls(isCompactLandscape)}
+    </View>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor, paddingTop: insets.top }]}>
       {/* Header */}
@@ -661,6 +739,8 @@ export default function TimerScreen() {
         ]}
       >
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="End workout"
           onPress={handleStop}
           style={[
             styles.closeButton,
@@ -674,12 +754,25 @@ export default function TimerScreen() {
             color={colors.text}
           />
         </TouchableOpacity>
-        <View style={styles.progressInfo}>
-          <Text style={styles.progressText}>
-            {currentItemIndex + 1} / {items.length}
-          </Text>
+        <View style={styles.headerTimeline}>
+          <View style={[styles.headerMetric, styles.headerMetricLeft]}>
+            <Text style={styles.headerMetricLabel}>ELAPSED</Text>
+            <Text style={styles.headerMetricValue}>{formatTime(totalElapsed)}</Text>
+          </View>
+          <View style={styles.progressInfo}>
+            <Text style={styles.headerMetricLabel}>STEP</Text>
+            <Text style={styles.progressText}>
+              {currentItemIndex + 1} / {items.length}
+            </Text>
+          </View>
+          <View style={[styles.headerMetric, styles.headerMetricRight]}>
+            <Text style={styles.headerMetricLabel}>REMAINING</Text>
+            <Text style={styles.headerMetricValue}>{formatTime(workoutTimeRemaining)}</Text>
+          </View>
         </View>
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={isAudioMuted ? 'Unmute audio' : 'Mute audio'}
           onPress={toggleAudioMute}
           style={[
             styles.closeButton,
@@ -707,7 +800,9 @@ export default function TimerScreen() {
         ]}
       />
 
-      {isCompactLandscape ? (
+      {status === 'paused' ? (
+        renderPausedScreen()
+      ) : isCompactLandscape ? (
         <View
           style={[
             styles.landscapeContent,
@@ -746,53 +841,6 @@ export default function TimerScreen() {
           {/* Controls */}
           {renderControls()}
         </>
-      )}
-
-      {/* Paused Overlay - positioned below header */}
-      {status === 'paused' && (
-        <View style={[styles.pausedOverlay, isCompactLandscape && styles.pausedOverlayLandscape]}>
-          <View style={[styles.pausedContent, isCompactLandscape && styles.pausedContentLandscape]}>
-            <Text style={[styles.pausedText, isCompactLandscape && styles.pausedTextLandscape]}>
-              PAUSED
-            </Text>
-
-            {/* Exercise name with horizontal scroll if long */}
-            <View style={styles.pausedExerciseNameContainer}>
-              <MarqueeText
-                text={activeItem.name}
-                style={[
-                  styles.pausedExerciseName,
-                  isCompactLandscape && styles.pausedExerciseNameLandscape,
-                ]}
-              />
-            </View>
-
-            {/* Full instructions - user can scroll manually */}
-            {activeItem.exercise?.description && (
-              <ScrollView
-                style={[
-                  styles.pausedInstructions,
-                  isCompactLandscape && styles.pausedInstructionsLandscape,
-                ]}
-                contentContainerStyle={styles.pausedInstructionsContent}
-                showsVerticalScrollIndicator={true}
-              >
-                <Text
-                  style={[
-                    styles.pausedInstructionsText,
-                    isCompactLandscape && styles.pausedInstructionsTextLandscape,
-                  ]}
-                >
-                  {activeItem.exercise.description}
-                </Text>
-              </ScrollView>
-            )}
-
-            <Text style={[styles.pausedSubtext, isCompactLandscape && styles.pausedSubtextLandscape]}>
-              Tap play to resume
-            </Text>
-          </View>
-        </View>
       )}
 
       {/* Exit Confirmation Overlay — replaces Alert.alert, which falls back to
@@ -857,13 +905,47 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
+  headerTimeline: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.xs,
+  },
+  headerMetric: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headerMetricLeft: {
+    alignItems: 'flex-start',
+  },
+  headerMetricRight: {
+    alignItems: 'flex-end',
+  },
+  headerMetricLabel: {
+    fontSize: 9,
+    lineHeight: 11,
+    fontWeight: typography.bold,
+    color: 'rgba(255,255,255,0.55)',
+    letterSpacing: 0.7,
+  },
+  headerMetricValue: {
+    fontSize: typography.sm,
+    lineHeight: 18,
+    fontWeight: typography.bold,
+    color: colors.text,
+    fontVariant: ['tabular-nums'],
+  },
   progressInfo: {
+    flex: 0.9,
     alignItems: 'center',
   },
   progressText: {
     fontSize: typography.sm,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: typography.medium,
+    lineHeight: 18,
+    color: colors.text,
+    fontWeight: typography.bold,
+    fontVariant: ['tabular-nums'],
   },
   progressBar: {
     marginHorizontal: spacing.lg,
@@ -998,9 +1080,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   exerciseDescriptionWrapper: {
-    // marginTop lives here, OUTSIDE the VerticalAutoScroll container, so it
-    // doesn't create blank space inside the scrollable area.
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
+    width: '100%',
   },
   exerciseDescriptionWrapperLandscape: {
     marginTop: 0,
@@ -1014,7 +1095,7 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.md,
     lineHeight: 22,
   },
   exerciseDescriptionTextLandscape: {
@@ -1026,7 +1107,7 @@ const styles = StyleSheet.create({
   exerciseDescriptionTextCompactPortrait: {
     fontSize: 15,
     lineHeight: 21,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.sm,
   },
   upNext: {
     alignItems: 'center',
@@ -1167,56 +1248,80 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     maxWidth: '86%',
   },
-  pausedOverlay: {
-    position: 'absolute',
-    top: 76, // header height (44 button + 16 padding top + 16 padding bottom)
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    zIndex: 5,
+  pausedScreen: {
+    flex: 1,
+    minHeight: 0,
+    backgroundColor: colors.timerBackground,
   },
-  pausedOverlayLandscape: {
-    top: 52,
+  pausedScreenLandscape: {
+    paddingHorizontal: spacing.md,
   },
   pausedContent: {
     flex: 1,
+    minHeight: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   pausedContentLandscape: {
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   pausedText: {
     fontSize: typography['4xl'],
     fontWeight: typography.bold,
     color: colors.text,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   pausedTextLandscape: {
     fontSize: typography['2xl'],
     marginBottom: spacing.sm,
-  },
-  pausedExerciseNameContainer: {
-    width: '100%',
-    marginBottom: spacing.md,
   },
   pausedExerciseName: {
     fontSize: typography['2xl'],
     fontWeight: typography.semibold,
     color: colors.text,
     textAlign: 'center',
+    width: '100%',
+    marginBottom: spacing.sm,
   },
   pausedExerciseNameLandscape: {
     fontSize: typography.lg,
+    marginBottom: spacing.xs,
+  },
+  pausedTimerBlock: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  pausedTimerValue: {
+    fontSize: typography['5xl'],
+    lineHeight: 54,
+    fontWeight: typography.bold,
+    color: colors.text,
+    fontVariant: ['tabular-nums'],
+  },
+  pausedTimerValueLandscape: {
+    fontSize: typography['4xl'],
+    lineHeight: 40,
+  },
+  pausedTimerLabel: {
+    fontSize: 9,
+    lineHeight: 11,
+    fontWeight: typography.bold,
+    color: 'rgba(255,255,255,0.55)',
+    letterSpacing: 0.8,
   },
   pausedInstructions: {
-    maxHeight: 200,
     width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    maxWidth: 480,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  pausedInstructionsPortrait: {
+    padding: spacing.md,
   },
   pausedInstructionsLandscape: {
     maxHeight: 96,
@@ -1224,7 +1329,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   pausedInstructionsContent: {
-    padding: spacing.md,
+    padding: spacing.sm,
   },
   pausedInstructionsText: {
     fontSize: typography.base,
@@ -1240,7 +1345,7 @@ const styles = StyleSheet.create({
   pausedSubtext: {
     fontSize: typography.base,
     color: colors.textSecondary,
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
   },
   pausedSubtextLandscape: {
     fontSize: typography.sm,
