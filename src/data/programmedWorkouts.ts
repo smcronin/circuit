@@ -51,6 +51,7 @@ interface WorkoutSeed {
   circuits?: CircuitSeed[];
   coolDown?: ExerciseSeed[];
   restBetweenCircuits?: number;
+  equipmentSetUsed?: string;
   partingWords: string;
 }
 
@@ -76,11 +77,13 @@ const EQUIPMENT_NOTES: Record<string, string> = {
   Dumbbells: 'Use the 22.5 lb setting unless the note says to go lighter.',
   'Pull-up Bar': 'Use for pull-ups, scapular pulls, and active hangs.',
   'Jump Rope': 'Optional on low-impact days; substitute fast marching if needed.',
+  'Mini Bands': 'Pack one light mini band for hips, shoulders, and simple pulling substitutes.',
   'Gymnastic Rings': 'Set to a stable height before starting.',
   'Weight Vest': 'Use the 20 lb vest only when reps stay crisp.',
   Hangboard: 'Use a comfortable edge and stop if finger pain appears.',
   'Yoga wheel': 'Use for thoracic mobility and chest opening.',
   'Road Bike': 'Use the road bike for steady Zone 2 work.',
+  'Hotel Cardio Machine': 'Use whichever hotel option is available: treadmill, bike, elliptical, or rower.',
 };
 
 const pad = (value: number) => String(value).padStart(2, '0');
@@ -212,7 +215,7 @@ function makeWorkout(seed: WorkoutSeed): GeneratedWorkout {
     difficulty: seed.difficulty,
     targetDuration: seed.targetDurationMinutes * 60,
     actualDuration,
-    equipmentSetUsed: 'Minimal Home',
+    equipmentSetUsed: seed.equipmentSetUsed ?? 'Minimal Home',
     equipmentRequired,
     equipment: equipmentItems(equipmentRequired),
     warmUp,
@@ -1585,6 +1588,575 @@ function sundayMobility(date: string, phase: Phase): ProgrammedWorkout {
   });
 }
 
+function travelDriveReset(date: string, direction: 'Departure' | 'Return'): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-07-travel-${date}-drive-reset`,
+    date,
+    slot: 'Mobility',
+    priority: 1,
+    coachNotes: `${direction} driving day: keep the streak alive with joint nutrition, hips, calves, T-spine, and easy circulation.`,
+    name: `${direction} Drive-Day Reset`,
+    description:
+      'A compact travel-day decompression session for long car time. It is deliberately easy: move blood, open hips, and undo sitting without pretending this is a full training day.',
+    difficulty: 'beginner',
+    targetDurationMinutes: 14,
+    estimatedCalories: 45,
+    calorieRange: { low: 30, high: 65 },
+    focusAreas: ['mobility', 'recovery', 'longevity'],
+    muscleGroupsTargeted: ['hips', 'calves', 'thoracic spine', 'shoulders', 'core'],
+    equipmentSetUsed: 'Bodyweight Travel',
+    warmUp: [],
+    circuits: [
+      {
+        name: 'Car-Seat Antidote',
+        rounds: 2,
+        restBetweenRounds: 15,
+        restBetweenExercises: 5,
+        exercises: [
+          ex(
+            'Walk or March Ramp',
+            45,
+            'Walk around the lot, march in place, or use quiet fast feet until the legs feel awake.',
+            ['calves', 'quads', 'cardiovascular system']
+          ),
+          ex(
+            'Standing Hip CARs',
+            40,
+            'Draw slow circles with one knee, switching sides halfway. Hold a wall or car door lightly if useful.',
+            ['hips', 'glutes', 'core']
+          ),
+          ex(
+            'Standing Lunge Hip Flexor Reach - Right',
+            35,
+            'Step the right leg back, squeeze the right glute, and reach overhead without arching.',
+            ['hip flexors', 'quads', 'lats']
+          ),
+          ex(
+            'Standing Lunge Hip Flexor Reach - Left',
+            35,
+            'Match the left side with a long exhale and easy range.',
+            ['hip flexors', 'quads', 'lats']
+          ),
+          ex(
+            'Mini Band Pull-Aparts or Wall Angels',
+            40,
+            'Use the mini band if it is handy; otherwise slide arms on a wall and keep ribs quiet.',
+            ['upper back', 'rear delts', 'shoulders'],
+            ['Mini Bands']
+          ),
+          ex(
+            'Deep Squat Breathing',
+            45,
+            'Sit into a comfortable squat, shift slightly side to side, and take slow nasal breaths.',
+            ['hips', 'adductors', 'ankles', 'diaphragm']
+          ),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Box Breathing Downshift', 60, 'Use an even inhale, hold, exhale, and hold to leave the session calmer.', ['diaphragm', 'nervous system']),
+    ],
+    restBetweenCircuits: 0,
+    partingWords:
+      'That is the right dose for a drive day. You gave the body a reason to feel less folded up without spending tomorrow.',
+  });
+}
+
+function travelHotelGymMain(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-07-travel-${date}-hotel-gym-main`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes:
+      'Travel Friday: use the hotel gym for low-friction aerobic work, then add enough bodyweight strength to feel normal again after the drive.',
+    name: 'Travel Hotel Gym Reset',
+    description:
+      'A hotel-friendly reset that prioritizes Zone 2, posture, and simple strength after car time. Use any cardio machine available and keep the strength block clean rather than heroic.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 30,
+    estimatedCalories: 220,
+    calorieRange: { low: 170, high: 280 },
+    focusAreas: ['cardio', 'body composition', 'mobility', 'strength'],
+    muscleGroupsTargeted: ['quads', 'glutes', 'calves', 'chest', 'upper back', 'core', 'hips'],
+    equipmentSetUsed: 'Hotel Gym + Travel Kit',
+    warmUp: [
+      ex(
+        'Jump Rope Easy Bounce',
+        45,
+        'Use the rope if there is a good spot. If not, substitute quiet fast feet or a treadmill walk.',
+        ['calves', 'shoulders', 'core'],
+        ['Jump Rope']
+      ),
+      ex(
+        'Hotel Cardio Ramp',
+        180,
+        'Start very easy and gradually settle into a conversational rhythm on the treadmill, bike, elliptical, or rower.',
+        ['cardiovascular system', 'quads', 'glutes', 'calves'],
+        ['Hotel Cardio Machine']
+      ),
+    ],
+    circuits: [
+      {
+        name: 'Zone 2 Travel Block',
+        rounds: 1,
+        restBetweenRounds: 0,
+        restBetweenExercises: 0,
+        exercises: [
+          ex(
+            'Hotel Cardio Zone 2',
+            900,
+            'Stay at RPE 4-5: conversational, smooth, and boring in the best way. No intervals today.',
+            ['cardiovascular system', 'quads', 'glutes', 'calves'],
+            ['Hotel Cardio Machine']
+          ),
+        ],
+      },
+      {
+        name: 'Post-Drive Strength Reset',
+        rounds: 2,
+        restBetweenRounds: 30,
+        restBetweenExercises: 12,
+        exercises: [
+          ex(
+            'Incline Pushups',
+            40,
+            'Hands on a bench or bed edge if needed. Keep shoulders down and stop before form changes.',
+            ['chest', 'triceps', 'shoulders', 'core'],
+            [],
+            { targetReps: 12 }
+          ),
+          ex(
+            'Walking Lunge Alternating',
+            45,
+            'Take controlled steps with a tall chest and quiet knees. Keep it like movement quality, not a sufferfest.',
+            ['quads', 'glutes', 'hamstrings', 'core'],
+            [],
+            { targetReps: 12 }
+          ),
+          ex(
+            'Mini Band Seated Row',
+            45,
+            'Loop the mini band around the feet, sit tall, and row elbows back with a one-count squeeze.',
+            ['upper back', 'lats', 'rear delts'],
+            ['Mini Bands'],
+            { targetReps: 15 }
+          ),
+          ex(
+            'Dead Bug Reach',
+            40,
+            'Reach long through opposite arm and leg while keeping the low back quiet.',
+            ['core', 'hip flexors'],
+            ['Yoga Mat']
+          ),
+        ],
+      },
+    ],
+    coolDown: [
+      ex(
+        'Half-Kneeling Hip Flexor Rock - Right',
+        45,
+        'Tuck the pelvis gently and rock forward and back without pinching.',
+        ['hip flexors', 'quads'],
+        ['Yoga Mat']
+      ),
+      ex(
+        'Half-Kneeling Hip Flexor Rock - Left',
+        45,
+        'Match the left side and keep the ribs stacked.',
+        ['hip flexors', 'quads'],
+        ['Yoga Mat']
+      ),
+      ex(
+        'Thoracic Open Book - Right',
+        45,
+        'Rotate open with a long exhale and keep hips stacked.',
+        ['thoracic spine', 'chest'],
+        ['Yoga Mat']
+      ),
+      ex(
+        'Thoracic Open Book - Left',
+        45,
+        'Repeat left and let the breath slow down.',
+        ['thoracic spine', 'chest'],
+        ['Yoga Mat']
+      ),
+    ],
+    restBetweenCircuits: 45,
+    partingWords:
+      'Perfect travel dose: enough aerobic work to support the health goal, enough strength to feel like yourself, and no equipment drama.',
+  });
+}
+
+function lakeRopePrimalMain(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-07-travel-${date}-rope-primal-main`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes:
+      'Lake house Saturday: reintroduce training with rope rhythm and ground-based patterns instead of trying to replace the home gym.',
+    name: 'Lake House Rope and Primal Flow',
+    description:
+      'A fun travel session built around jump rope, animal-flow patterns, hips, shoulders, and trunk control. This starts the lake-house block with athletic movement instead of repetitive calisthenics.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 30,
+    estimatedCalories: 220,
+    calorieRange: { low: 175, high: 280 },
+    focusAreas: ['cardio', 'mobility', 'coordination', 'core'],
+    muscleGroupsTargeted: ['calves', 'hips', 'quads', 'shoulders', 'chest', 'core', 'glutes'],
+    equipmentSetUsed: 'Travel Kit',
+    warmUp: [
+      ex('Jump Rope Boxer Step', 60, 'Relax the shoulders and find an easy rhythm before the ground work.', ['calves', 'shoulders', 'core'], ['Jump Rope']),
+      ex('Wrist Rocks and Palm Lifts', 45, 'Rock gently over the hands, then lift the palms with fingers planted.', ['wrists', 'forearms', 'shoulders'], ['Yoga Mat']),
+      ex('Ape Reach Prep', 45, 'Sit into a squat and reach one arm across the body, alternating sides smoothly.', ['hips', 'thoracic spine', 'core'], ['Yoga Mat']),
+      ex('Scap Pushup Wave', 40, 'Move only through the shoulder blades, then add a small spine wave if it feels good.', ['serratus', 'upper back', 'shoulders'], ['Yoga Mat']),
+    ],
+    circuits: [
+      {
+        name: 'Rope and Ground Flow',
+        rounds: 3,
+        restBetweenRounds: 40,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Jump Rope Easy Cruise', 60, 'Stay smooth and aerobic. If calves feel cooked, switch to fast feet.', ['calves', 'cardiovascular system', 'shoulders'], ['Jump Rope']),
+          ex('Ape Reach to Lateral Shift', 45, 'Move side to side from a squat and reach across the body with control.', ['hips', 'adductors', 'thoracic spine'], ['Yoga Mat']),
+          ex('Frogger Step-Through', 40, 'Step or lightly hop feet outside the hands, then step one foot through to rotate.', ['hips', 'quads', 'core', 'shoulders'], ['Yoga Mat']),
+          ex('Side Kick-Through', 35, 'From a beast position, kick one leg through and rotate the torso. Keep it crisp, not rushed.', ['core', 'shoulders', 'obliques'], ['Yoga Mat']),
+          ex('Prone Swimmer', 40, 'Lie face down and sweep arms from overhead to hips without shrugging.', ['upper back', 'shoulders', 'thoracic spine'], ['Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Trunk Finish',
+        rounds: 2,
+        restBetweenRounds: 25,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Quadruped Knee Hover Breath', 35, 'Hover knees one inch and breathe slowly without hips drifting.', ['core', 'quads', 'shoulders'], ['Yoga Mat']),
+          ex('Cross-Body Mountain Climber Slow', 40, 'Drive knee toward opposite elbow with quiet hips and controlled tempo.', ['core', 'hip flexors', 'shoulders'], ['Yoga Mat']),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('90/90 Hip Breathing', 60, 'Settle into 90/90 and breathe into the outside hip, switching sides halfway.', ['hips', 'glutes'], ['Yoga Mat']),
+      ex('Child Pose Lat Reach', 60, 'Reach one hand forward and one hand across to open the lats and ribs.', ['lats', 'thoracic spine'], ['Yoga Mat']),
+      ex('Calf Wall Stretch - Alternating', 60, 'Alternate sides and keep the pressure easy after rope work.', ['calves', 'ankles']),
+    ],
+    partingWords:
+      'That is exactly the travel-training mood: athletic, light on logistics, and still useful for health and movement quality.',
+  });
+}
+
+function lakeMobilityFlowMain(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-07-travel-${date}-mobility-flow-main`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes:
+      'Travel Sunday: no climbing today, so use the slot for tissue quality, breath, hips, shoulders, and low-intensity trunk work.',
+    name: 'Lake House Mobility Flow and Core',
+    description:
+      'A non-climbing Sunday session that keeps the body moving without pretending you need another hard workout. It uses animal-flow transitions, hip work, and quiet core control.',
+    difficulty: 'beginner',
+    targetDurationMinutes: 28,
+    estimatedCalories: 135,
+    calorieRange: { low: 100, high: 175 },
+    focusAreas: ['mobility', 'recovery', 'core', 'longevity'],
+    muscleGroupsTargeted: ['hips', 'shoulders', 'thoracic spine', 'glutes', 'core', 'wrists'],
+    equipmentSetUsed: 'Travel Kit',
+    warmUp: [
+      ex('Jump Rope Easy Bounce', 45, 'Use this as a temperature ramp only. Keep it very easy.', ['calves', 'shoulders', 'core'], ['Jump Rope']),
+      ex('Spinal Wave to Child Pose', 50, 'Move through cat-cow, then sit back into child pose and breathe.', ['spine', 'lats', 'shoulders'], ['Yoga Mat']),
+      ex('Ankle Knee Circles', 45, 'Circle knees over ankles in both directions with feet planted.', ['ankles', 'calves', 'quads']),
+      ex('Scapular Clock', 45, 'In a plank or quadruped position, move the shoulder blades in small controlled circles.', ['shoulders', 'serratus', 'upper back'], ['Yoga Mat']),
+    ],
+    circuits: [
+      {
+        name: 'Sunday Ground Flow',
+        rounds: 3,
+        restBetweenRounds: 30,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Slow Beast to Down Dog', 45, 'Hover the knees, then press back into down dog and return with control.', ['shoulders', 'core', 'hamstrings', 'calves'], ['Yoga Mat']),
+          ex('Crab Reach Alternating', 45, 'Bridge through the hips and reach one arm overhead, alternating slowly.', ['glutes', 'shoulders', 'thoracic spine', 'core'], ['Yoga Mat']),
+          ex('Shinbox to Hip Extension', 45, 'Move through shinbox, then squeeze glutes into a tall hip extension.', ['hips', 'glutes', 'adductors'], ['Yoga Mat']),
+          ex('Low Lizard Switch', 45, 'Step into a low lizard position, switch sides, and keep the breath calm.', ['hips', 'hamstrings', 'thoracic spine'], ['Yoga Mat']),
+          ex('Mini Band Dead Bug Press', 40, 'Press gently into the band while alternating slow dead bug reps.', ['core', 'lats', 'hip flexors'], ['Mini Bands', 'Yoga Mat']),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Supine Figure-4 - Right', 55, 'Breathe into the outside right hip without forcing range.', ['glutes', 'hips'], ['Yoga Mat']),
+      ex('Supine Figure-4 - Left', 55, 'Match the left side and let the jaw relax.', ['glutes', 'hips'], ['Yoga Mat']),
+      ex('Open-Chain Shoulder CARs', 60, 'Make slow shoulder circles in a pain-free range.', ['shoulders', 'upper back']),
+      ex('Legs-Up Breathing', 90, 'Elevate legs on a couch or wall and downshift the nervous system.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords:
+      'Good Sunday choice. You skipped the climbing-specific work and still banked mobility, breath, and quality movement.',
+  });
+}
+
+function lakeBodyweightStrengthA(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-07-travel-${date}-bodyweight-strength-a`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes:
+      'Lake house Monday: bodyweight strength with push, legs, posterior chain, rows via mini band, and trunk control.',
+    name: 'Lake House Bodyweight Strength A',
+    description:
+      'A no-home-equipment strength session that keeps the weekly muscle-retention signal alive. It uses tempo, unilateral work, mini-band pulling, and trunk control instead of load.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 30,
+    estimatedCalories: 210,
+    calorieRange: { low: 170, high: 260 },
+    focusAreas: ['strength', 'body composition', 'core', 'mobility'],
+    muscleGroupsTargeted: ['chest', 'quads', 'glutes', 'hamstrings', 'upper back', 'core', 'calves'],
+    equipmentSetUsed: 'Travel Kit',
+    warmUp: [
+      ex('Jump Rope Easy Bounce', 50, 'Stay light and elastic. Keep this below workout intensity.', ['calves', 'shoulders', 'core'], ['Jump Rope']),
+      ex('Inchworm Walkout', 50, 'Walk hands to plank, pause, then walk back with soft knees.', ['hamstrings', 'core', 'shoulders'], ['Yoga Mat']),
+      ex('Cossack Pry', 45, 'Shift side to side in a comfortable range and keep heels down if possible.', ['adductors', 'quads', 'hips'], ['Yoga Mat']),
+      ex('Mini Band Lateral Walk', 45, 'Use a small step and keep knees tracking over toes.', ['glutes', 'hips'], ['Mini Bands']),
+    ],
+    circuits: [
+      {
+        name: 'Bodyweight Strength',
+        rounds: 3,
+        restBetweenRounds: 50,
+        restBetweenExercises: 12,
+        exercises: [
+          ex('Slow Tempo Pushup', 40, 'Lower for three seconds, pause, and press cleanly. Elevate hands if needed.', ['chest', 'triceps', 'shoulders', 'core'], ['Yoga Mat'], { targetReps: 10 }),
+          ex('Squat to Reverse Lunge', 45, 'Do one bodyweight squat, then step back into a reverse lunge and alternate legs.', ['quads', 'glutes', 'hamstrings', 'core'], ['Yoga Mat'], { targetReps: 8 }),
+          ex('Mini Band Seated Row Tall Posture', 45, 'Loop the band around the feet and row with a one-count squeeze.', ['upper back', 'lats', 'rear delts'], ['Mini Bands'], { targetReps: 15 }),
+          ex('Glute Bridge Walkout', 40, 'Bridge up, walk heels away a few inches, then return without dropping hips.', ['hamstrings', 'glutes', 'core'], ['Yoga Mat'], { targetReps: 6 }),
+          ex('Hollow Body March', 35, 'Hold a hollow position and alternate slow marches without arching.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Posture and Calves',
+        rounds: 2,
+        restBetweenRounds: 25,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Prone Y-T-W', 45, 'Move through Y, T, and W positions with thumbs up and neck long.', ['upper back', 'rear delts', 'shoulders'], ['Yoga Mat']),
+          ex('Side Plank Thread - Right', 35, 'Thread the top arm under the ribs, then rotate open under control.', ['obliques', 'shoulders', 'glutes'], ['Yoga Mat']),
+          ex('Side Plank Thread - Left', 35, 'Match the left side and keep hips stacked.', ['obliques', 'shoulders', 'glutes'], ['Yoga Mat']),
+          ex('Calf Raise Iso Ladder', 40, 'Rise up, hold briefly, lower slowly, and keep reps springy but controlled.', ['calves', 'feet'], [], { targetReps: 15 }),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Kneeling Quad Stretch - Right', 45, 'Tuck pelvis and breathe into the front of the right thigh.', ['quads', 'hip flexors'], ['Yoga Mat']),
+      ex('Kneeling Quad Stretch - Left', 45, 'Repeat left with the same easy pressure.', ['quads', 'hip flexors'], ['Yoga Mat']),
+      ex('Thread the Needle - Alternating', 60, 'Rotate through the upper back and let shoulders settle.', ['thoracic spine', 'shoulders'], ['Yoga Mat']),
+      ex('Hamstring Floss - Alternating', 60, 'Alternate legs with a soft knee and relaxed breath.', ['hamstrings', 'calves'], ['Yoga Mat']),
+    ],
+    partingWords:
+      'That is the lake-house strength template: simple tools, real tissue signal, and enough variation to avoid grinding the same pattern every day.',
+  });
+}
+
+function lakeRopeCardio(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-07-travel-${date}-rope-cardio`,
+    date,
+    slot: 'Cardio',
+    priority: 1,
+    coachNotes:
+      'Lake house Tuesday: swap the usual road-bike Zone 2 idea for rope-based aerobic work and shoulder/hip maintenance.',
+    name: 'Lake House Rope Cardio and Band Armor',
+    description:
+      'A jump-rope-forward aerobic session with enough band and mobility work to keep joints happy. Keep most intervals conversational and stop before calves get irritated.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 32,
+    estimatedCalories: 260,
+    calorieRange: { low: 205, high: 330 },
+    focusAreas: ['cardio', 'coordination', 'mobility', 'longevity'],
+    muscleGroupsTargeted: ['calves', 'quads', 'shoulders', 'upper back', 'hips', 'core'],
+    equipmentSetUsed: 'Travel Kit',
+    warmUp: [
+      ex('Jump Rope Easy Bounce', 60, 'Very easy rhythm. If calves feel tight, use fast marching instead.', ['calves', 'shoulders', 'core'], ['Jump Rope']),
+      ex('Ankle Pogos Low Amplitude', 35, 'Tiny elastic bounces with quiet feet and soft knees.', ['calves', 'ankles', 'feet']),
+      ex('Mini Band Shoulder Halo', 45, 'Move the band around the head slowly with ribs down.', ['shoulders', 'upper back'], ['Mini Bands']),
+      ex('Hip Opener Step-Back', 45, 'Step back, open the hip, and alternate sides smoothly.', ['hips', 'glutes', 'quads']),
+    ],
+    circuits: [
+      {
+        name: 'Rope Aerobic Ladder',
+        rounds: 6,
+        restBetweenRounds: 25,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Jump Rope Zone 2 Cruise', 95, 'Stay relaxed and conversational. Use boxer step, bounce, or fast feet as needed.', ['calves', 'cardiovascular system', 'shoulders'], ['Jump Rope']),
+          ex('Nasal Walk or March', 45, 'Walk around or march slowly until breathing settles.', ['cardiovascular system', 'calves']),
+        ],
+      },
+      {
+        name: 'Band Armor',
+        rounds: 2,
+        restBetweenRounds: 25,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Mini Band Face Pull', 45, 'Pull toward eye level and rotate knuckles back slightly.', ['upper back', 'rear delts', 'rotator cuff'], ['Mini Bands'], { targetReps: 15 }),
+          ex('Mini Band Monster Walk', 45, 'Step forward and back with knees tracking and hips level.', ['glutes', 'hips'], ['Mini Bands']),
+          ex('Dead Bug Breathing Reset', 45, 'Slow dead bugs with full exhales and quiet ribs.', ['core', 'diaphragm'], ['Yoga Mat']),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Calf Stretch - Right', 45, 'Long exhale and light pressure through the heel.', ['calves']),
+      ex('Calf Stretch - Left', 45, 'Match the left side and keep the foot straight.', ['calves']),
+      ex('90/90 Hip Switch Downshift', 60, 'Move between sides slowly and stay relaxed.', ['hips', 'glutes'], ['Yoga Mat']),
+      ex('Supine Twist Breathing', 60, 'Alternate sides and let the rib cage soften.', ['back', 'obliques'], ['Yoga Mat']),
+    ],
+    restBetweenCircuits: 45,
+    partingWords:
+      'That scratches the cardio itch without needing the bike. Keep the calves honest and this can be a great travel staple.',
+  });
+}
+
+function lakePrimalDensityMain(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-07-travel-${date}-primal-density-main`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes:
+      'Lake house Wednesday: animal-flow density with different patterns from Saturday and a trunk emphasis that does not need equipment.',
+    name: 'Lake House Primal Density',
+    description:
+      'A denser ground-movement session built around crawling, lateral travel, rotation, and trunk stiffness. It is fresh, athletic, and still compact.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 30,
+    estimatedCalories: 230,
+    calorieRange: { low: 185, high: 285 },
+    focusAreas: ['conditioning', 'mobility', 'core', 'coordination'],
+    muscleGroupsTargeted: ['shoulders', 'core', 'hips', 'quads', 'glutes', 'obliques'],
+    equipmentSetUsed: 'Travel Kit',
+    warmUp: [
+      ex('Jump Rope Boxer Step', 50, 'Find rhythm, breathe through the nose if possible, and keep calves relaxed.', ['calves', 'shoulders', 'core'], ['Jump Rope']),
+      ex('Wrist Rockers to Palm Lifts', 45, 'Rock forward over hands, then lift palms with fingers down.', ['wrists', 'forearms', 'shoulders'], ['Yoga Mat']),
+      ex('Loaded Beast Rock', 45, 'Sit hips toward heels, hover knees, and rock forward and back quietly.', ['quads', 'core', 'shoulders'], ['Yoga Mat']),
+      ex('Hip Airplane Switch', 45, 'Open and close the hip while standing, using a wall if needed.', ['glutes', 'hip stabilizers', 'core']),
+      ex('Thoracic Reach-Through', 45, 'Thread one arm under, then rotate open and switch sides.', ['thoracic spine', 'shoulders'], ['Yoga Mat']),
+    ],
+    circuits: [
+      {
+        name: 'Locomotion Density',
+        rounds: 3,
+        restBetweenRounds: 45,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Bear Crawl Compass', 45, 'Crawl forward, sideways, back, and sideways again with hips quiet.', ['core', 'shoulders', 'quads'], ['Yoga Mat']),
+          ex('Lateral Ape Travel', 45, 'Travel side to side from a squat, planting hands softly and landing quietly.', ['hips', 'adductors', 'shoulders'], ['Yoga Mat']),
+          ex('Crab Toe Touch', 40, 'Lift opposite hand and foot to touch while keeping hips from collapsing.', ['core', 'glutes', 'shoulders'], ['Yoga Mat']),
+          ex('Panther Step Back', 40, 'Hover knees and step one foot back at a time with quiet hips.', ['core', 'quads', 'shoulders'], ['Yoga Mat']),
+          ex('Cossack Sweep', 45, 'Shift into a side lunge and sweep hands across the floor as the torso rotates.', ['adductors', 'quads', 'thoracic spine'], ['Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Trunk Control',
+        rounds: 2,
+        restBetweenRounds: 25,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Plank Wave', 40, 'Move from forearm plank to a gentle pike and back without sagging.', ['core', 'shoulders', 'hamstrings'], ['Yoga Mat']),
+          ex('Reverse Plank March', 40, 'Hold a reverse plank and alternate slow marches if hip position stays high.', ['glutes', 'hamstrings', 'shoulders', 'core'], ['Yoga Mat']),
+          ex('Hollow-to-Arch Roll', 40, 'Roll from hollow to arch under control, scaling with bent knees as needed.', ['core', 'low back', 'glutes'], ['Yoga Mat']),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Pigeon Pose - Right', 50, 'Breathe into the outside hip without forcing the knee angle.', ['glutes', 'hips'], ['Yoga Mat']),
+      ex('Pigeon Pose - Left', 50, 'Match the left side and keep the breath slow.', ['glutes', 'hips'], ['Yoga Mat']),
+      ex('Forearm Flexor Stretch - Alternating', 60, 'Gently stretch palm and finger lines after the ground work.', ['forearms', 'wrists']),
+      ex('Crocodile Breathing', 75, 'Lie face down and breathe into the floor to downshift.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords:
+      'That was the good kind of weird: coordinated, sweaty, joint-friendly, and very hard to get from standard sets and reps.',
+  });
+}
+
+function lakeBodyweightStrengthB(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-07-travel-${date}-bodyweight-strength-b`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes:
+      'Lake house Thursday: second bodyweight strength exposure with different angles from Monday and no climbing-specific work.',
+    name: 'Lake House Bodyweight Strength B',
+    description:
+      'A second travel strength day using split squats, pike pressing, posterior chain, scapular work, and anti-extension core. It complements Monday without copying it.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 30,
+    estimatedCalories: 215,
+    calorieRange: { low: 175, high: 270 },
+    focusAreas: ['strength', 'body composition', 'upper body', 'lower body', 'core'],
+    muscleGroupsTargeted: ['quads', 'glutes', 'hamstrings', 'shoulders', 'chest', 'upper back', 'core'],
+    equipmentSetUsed: 'Travel Kit',
+    warmUp: [
+      ex('Jump Rope Easy Bounce', 50, 'Keep it springy and light. This is just the opener.', ['calves', 'shoulders', 'core'], ['Jump Rope']),
+      ex('Squat Pry to Tall Reach', 45, 'Sit into a squat, pry gently, then stand and reach tall.', ['hips', 'quads', 'thoracic spine'], ['Yoga Mat']),
+      ex('Mini Band No-Money Drill', 45, 'Elbows by ribs, rotate hands apart, and feel shoulder blades settle.', ['rotator cuff', 'upper back'], ['Mini Bands']),
+      ex('Hamstring Sweep Walk', 45, 'Step forward, sweep the hands down the front leg, and alternate sides.', ['hamstrings', 'calves', 'glutes']),
+    ],
+    circuits: [
+      {
+        name: 'Split Squat and Press',
+        rounds: 3,
+        restBetweenRounds: 55,
+        restBetweenExercises: 12,
+        exercises: [
+          ex('Split Squat Pulse - Right', 40, 'Hold the bottom half of the range and pulse smoothly without knee irritation.', ['quads', 'glutes', 'hip flexors'], ['Yoga Mat'], { targetReps: 12 }),
+          ex('Split Squat Pulse - Left', 40, 'Match the left side with the same range and tempo.', ['quads', 'glutes', 'hip flexors'], ['Yoga Mat'], { targetReps: 12 }),
+          ex('Pike Pushup', 40, 'Press the floor away from a high-hip pike. Elevate hands if needed.', ['shoulders', 'triceps', 'upper chest', 'core'], ['Yoga Mat'], { targetReps: 8 }),
+          ex('Prone Lat Sweep', 45, 'Lie face down and sweep arms from overhead toward hips as if pulling water.', ['lats', 'upper back', 'shoulders'], ['Yoga Mat']),
+          ex('Body Saw Forearm Plank', 35, 'Shift forward and back in a forearm plank with ribs down.', ['core', 'shoulders'], ['Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Posterior Chain Finish',
+        rounds: 2,
+        restBetweenRounds: 30,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Single-Leg Hip Bridge - Right', 35, 'Drive through the right heel and pause at the top.', ['glutes', 'hamstrings', 'core'], ['Yoga Mat'], { targetReps: 10 }),
+          ex('Single-Leg Hip Bridge - Left', 35, 'Match the left side and keep hips level.', ['glutes', 'hamstrings', 'core'], ['Yoga Mat'], { targetReps: 10 }),
+          ex('Superman Pull', 40, 'Lift lightly, pull elbows toward ribs, then reach long again.', ['low back', 'upper back', 'glutes'], ['Yoga Mat']),
+          ex('Mini Band Reverse Fly', 40, 'Pull the band apart with soft elbows and shoulder blades sliding back.', ['rear delts', 'upper back'], ['Mini Bands'], { targetReps: 15 }),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Low Lunge Quad Opener - Right', 45, 'Open the front of the right hip and thigh with an easy glute squeeze.', ['quads', 'hip flexors'], ['Yoga Mat']),
+      ex('Low Lunge Quad Opener - Left', 45, 'Repeat left and avoid forcing range.', ['quads', 'hip flexors'], ['Yoga Mat']),
+      ex('Lat Prayer Stretch', 55, 'Sink hips back and breathe into side ribs.', ['lats', 'shoulders'], ['Yoga Mat']),
+      ex('Supine Hamstring Strapless Floss', 60, 'Alternate legs slowly and keep the stretch mild.', ['hamstrings', 'calves'], ['Yoga Mat']),
+    ],
+    partingWords:
+      'Nice close to the lake-house work block. You got a real strength signal with zero home-gym dependency.',
+  });
+}
+
+const TRAVEL_OVERRIDE_START_DATE = '2026-07-16';
+const TRAVEL_OVERRIDE_END_DATE = '2026-07-24';
+
+const TRAVEL_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+  travelDriveReset('2026-07-16', 'Departure'),
+  travelHotelGymMain('2026-07-17'),
+  lakeRopePrimalMain('2026-07-18'),
+  lakeMobilityFlowMain('2026-07-19'),
+  lakeBodyweightStrengthA('2026-07-20'),
+  lakeRopeCardio('2026-07-21'),
+  lakePrimalDensityMain('2026-07-22'),
+  lakeBodyweightStrengthB('2026-07-23'),
+  travelDriveReset('2026-07-24', 'Return'),
+];
+
 function buildTrainingWeek(startDate: string, phase: Phase, includeWeekend: boolean): ProgrammedWorkout[] {
   const monday = startDate;
   const tuesday = addDays(startDate, 1);
@@ -1618,12 +2190,20 @@ function buildTrainingWeek(startDate: string, phase: Phase, includeWeekend: bool
 export const PROGRAM_START_DATE = '2026-06-29';
 export const PROGRAM_END_DATE = '2026-07-31';
 
-export const PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+const BASE_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...buildTrainingWeek('2026-06-29', 1, true),
   ...buildTrainingWeek('2026-07-06', 2, true),
   ...buildTrainingWeek('2026-07-13', 3, true),
   ...buildTrainingWeek('2026-07-20', 4, true),
   ...buildTrainingWeek('2026-07-27', 5, false),
+];
+
+export const PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+  ...BASE_PROGRAMMED_WORKOUTS.filter(
+    (programmedWorkout) =>
+      programmedWorkout.date < TRAVEL_OVERRIDE_START_DATE || programmedWorkout.date > TRAVEL_OVERRIDE_END_DATE
+  ),
+  ...TRAVEL_PROGRAMMED_WORKOUTS,
 ].sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority);
 
 export function getProgrammedWorkoutsForDate(date: Date | string = new Date()): ProgrammedWorkout[] {
