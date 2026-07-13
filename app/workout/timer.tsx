@@ -24,7 +24,13 @@ export default function TimerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
+  const isPortrait = height >= width;
   const isCompactLandscape = width > height && height <= 560;
+  // Short phones have substantially less usable height after the header,
+  // controls, and safe areas are accounted for. Keep all of the workout's
+  // essential information in view by tightening the secondary UI first.
+  const isCompactPortrait = isPortrait && height <= 740;
+  const isVeryCompactPortrait = isPortrait && height <= 640;
 
   const {
     status,
@@ -325,7 +331,14 @@ export default function TimerScreen() {
   };
 
   const backgroundColor = isRest ? colors.timerRest : colors.timerActive;
-  const descriptionHeight = isCompactLandscape ? 56 : 88;
+  const descriptionHeight = isCompactLandscape
+    ? 56
+    : isVeryCompactPortrait
+      ? 78
+      : isCompactPortrait
+        ? 112
+        : 88;
+  const descriptionLineHeight = isCompactLandscape ? 20 : isCompactPortrait ? 21 : 22;
 
   // Show countdown overlay: during initial countdown OR during last 3 seconds of any item
   const isEndingCountdown = status === 'running' && timeRemaining <= 3 && timeRemaining >= 1;
@@ -400,34 +413,70 @@ export default function TimerScreen() {
 
   const renderTimerDetails = (compact = false) => (
     <>
-      <Text style={[styles.itemType, compact && styles.itemTypeLandscape]}>
+      <Text
+        style={[
+          styles.itemType,
+          compact && styles.itemTypeLandscape,
+          isCompactPortrait && styles.itemTypeCompactPortrait,
+        ]}
+      >
         {getItemTypeLabel(activeItem.type)}
       </Text>
       <Text
-        style={[styles.itemName, compact && styles.itemNameLandscape]}
-        numberOfLines={compact ? 2 : 3}
+        style={[
+          styles.itemName,
+          compact && styles.itemNameLandscape,
+          isCompactPortrait && styles.itemNameCompactPortrait,
+          isVeryCompactPortrait && styles.itemNameVeryCompactPortrait,
+        ]}
+        numberOfLines={3}
         adjustsFontSizeToFit
-        minimumFontScale={0.72}
+        minimumFontScale={0.55}
       >
         {activeItem.name}
       </Text>
       {hasSideSwitching && (
-        <Text style={[styles.sideIndicator, compact && styles.sideIndicatorLandscape]}>
+        <Text
+          style={[
+            styles.sideIndicator,
+            compact && styles.sideIndicatorLandscape,
+            isCompactPortrait && styles.sideIndicatorCompactPortrait,
+          ]}
+        >
           {currentSide} SIDE
         </Text>
       )}
 
-      <Text style={[styles.timerDisplay, compact && styles.timerDisplayLandscape]}>
+      <Text
+        style={[
+          styles.timerDisplay,
+          compact && styles.timerDisplayLandscape,
+          isCompactPortrait && styles.timerDisplayCompactPortrait,
+          isVeryCompactPortrait && styles.timerDisplayVeryCompactPortrait,
+        ]}
+      >
         {formatTime(timeRemaining)}
       </Text>
 
       {activeItem.exercise?.targetReps && (
-        <Text style={[styles.repsTarget, compact && styles.repsTargetLandscape]}>
+        <Text
+          style={[
+            styles.repsTarget,
+            compact && styles.repsTargetLandscape,
+            isCompactPortrait && styles.repsTargetCompactPortrait,
+          ]}
+        >
           Target: {activeItem.exercise.targetReps} reps
         </Text>
       )}
       {activeItem.exercise?.repRange && (
-        <Text style={[styles.repsTarget, compact && styles.repsTargetLandscape]}>
+        <Text
+          style={[
+            styles.repsTarget,
+            compact && styles.repsTargetLandscape,
+            isCompactPortrait && styles.repsTargetCompactPortrait,
+          ]}
+        >
           Target: {activeItem.exercise.repRange} reps
         </Text>
       )}
@@ -444,6 +493,7 @@ export default function TimerScreen() {
         style={[
           styles.exerciseDescriptionWrapper,
           compact && styles.exerciseDescriptionWrapperLandscape,
+          isCompactPortrait && styles.exerciseDescriptionWrapperCompactPortrait,
         ]}
       >
         <VerticalAutoScroll
@@ -451,9 +501,10 @@ export default function TimerScreen() {
           style={[
             styles.exerciseDescriptionText,
             compact && styles.exerciseDescriptionTextLandscape,
+            isCompactPortrait && styles.exerciseDescriptionTextCompactPortrait,
           ]}
           containerHeight={descriptionHeight}
-          lineHeight={compact ? 20 : 22}
+          lineHeight={descriptionLineHeight}
           pauseDuration={3000}
         />
       </View>
@@ -463,32 +514,68 @@ export default function TimerScreen() {
   const renderUpNext = (compact = false) => {
     if (nextItem && nextIsRest && itemAfterNext) {
       return (
-        <View style={[styles.upNext, compact && styles.upNextLandscape]}>
-          <Text style={[styles.upNextLabel, compact && styles.upNextLabelLandscape]}>
+        <View
+          style={[
+            styles.upNext,
+            compact && styles.upNextLandscape,
+            isCompactPortrait && styles.upNextCompactPortrait,
+          ]}
+        >
+          <Text
+            style={[
+              styles.upNextLabel,
+              compact && styles.upNextLabelLandscape,
+              isCompactPortrait && styles.upNextLabelCompactPortrait,
+            ]}
+          >
             UP NEXT
           </Text>
-          <MarqueeText
-            text={`${nextItem.name} • ${itemAfterNext.name}`}
-            style={[styles.upNextName, compact && styles.upNextNameLandscape]}
-            pauseDuration={3000}
-            scrollSpeed={30}
-          />
+          <Text
+            style={[
+              styles.upNextName,
+              compact && styles.upNextNameLandscape,
+              isCompactPortrait && styles.upNextNameCompactPortrait,
+            ]}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.55}
+          >
+            {nextItem.name} • {itemAfterNext.name}
+          </Text>
         </View>
       );
     }
 
     if (nextItem && !nextIsRest) {
       return (
-        <View style={[styles.upNext, compact && styles.upNextLandscape]}>
-          <Text style={[styles.upNextLabel, compact && styles.upNextLabelLandscape]}>
+        <View
+          style={[
+            styles.upNext,
+            compact && styles.upNextLandscape,
+            isCompactPortrait && styles.upNextCompactPortrait,
+          ]}
+        >
+          <Text
+            style={[
+              styles.upNextLabel,
+              compact && styles.upNextLabelLandscape,
+              isCompactPortrait && styles.upNextLabelCompactPortrait,
+            ]}
+          >
             UP NEXT
           </Text>
-          <MarqueeText
-            text={nextItem.name}
-            style={[styles.upNextName, compact && styles.upNextNameLandscape]}
-            pauseDuration={3000}
-            scrollSpeed={30}
-          />
+          <Text
+            style={[
+              styles.upNextName,
+              compact && styles.upNextNameLandscape,
+              isCompactPortrait && styles.upNextNameCompactPortrait,
+            ]}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+            minimumFontScale={0.55}
+          >
+            {nextItem.name}
+          </Text>
         </View>
       );
     }
@@ -496,46 +583,68 @@ export default function TimerScreen() {
     return null;
   };
 
-  const renderControls = (compact = false) => (
-    <View
-      style={[
-        styles.controls,
-        compact
-          ? styles.controlsLandscape
-          : { paddingBottom: insets.bottom + spacing.lg },
-      ]}
-    >
-      <TouchableOpacity
-        style={[styles.controlButton, compact && styles.controlButtonLandscape]}
-        onPress={goToPrevious}
-        disabled={currentItemIndex === 0}
-      >
-        <Ionicons
-          name="play-skip-back"
-          size={compact ? 24 : 28}
-          color={currentItemIndex === 0 ? 'rgba(255,255,255,0.3)' : colors.text}
-        />
-      </TouchableOpacity>
+  const renderControls = (compact = false) => {
+    const useCompactControls = compact || isCompactPortrait;
 
-      <TouchableOpacity
-        style={[styles.mainControlButton, compact && styles.mainControlButtonLandscape]}
-        onPress={handlePauseResume}
+    return (
+      <View
+        style={[
+          styles.controls,
+          compact && styles.controlsLandscape,
+          isCompactPortrait && styles.controlsCompactPortrait,
+          !compact && {
+            paddingBottom: insets.bottom + (isCompactPortrait ? spacing.sm : spacing.lg),
+          },
+        ]}
       >
-        <Ionicons
-          name={status === 'running' ? 'pause' : 'play'}
-          size={compact ? 30 : 36}
-          color={backgroundColor}
-        />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.controlButton,
+            compact && styles.controlButtonLandscape,
+            isCompactPortrait && styles.controlButtonCompactPortrait,
+          ]}
+          onPress={goToPrevious}
+          disabled={currentItemIndex === 0}
+        >
+          <Ionicons
+            name="play-skip-back"
+            size={useCompactControls ? 24 : 28}
+            color={currentItemIndex === 0 ? 'rgba(255,255,255,0.3)' : colors.text}
+          />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.controlButton, compact && styles.controlButtonLandscape]}
-        onPress={skipToNext}
-      >
-        <Ionicons name="play-skip-forward" size={compact ? 24 : 28} color={colors.text} />
-      </TouchableOpacity>
-    </View>
-  );
+        <TouchableOpacity
+          style={[
+            styles.mainControlButton,
+            compact && styles.mainControlButtonLandscape,
+            isCompactPortrait && styles.mainControlButtonCompactPortrait,
+          ]}
+          onPress={handlePauseResume}
+        >
+          <Ionicons
+            name={status === 'running' ? 'pause' : 'play'}
+            size={useCompactControls ? 30 : 36}
+            color={backgroundColor}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.controlButton,
+            compact && styles.controlButtonLandscape,
+            isCompactPortrait && styles.controlButtonCompactPortrait,
+          ]}
+          onPress={skipToNext}
+        >
+          <Ionicons
+            name="play-skip-forward"
+            size={useCompactControls ? 24 : 28}
+            color={colors.text}
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor, paddingTop: insets.top }]}>
@@ -544,6 +653,7 @@ export default function TimerScreen() {
         style={[
           styles.header,
           isCompactLandscape && styles.headerLandscape,
+          isCompactPortrait && styles.headerCompactPortrait,
           isCompactLandscape && {
             paddingLeft: Math.max(insets.left, spacing.sm),
             paddingRight: Math.max(insets.right, spacing.sm),
@@ -552,9 +662,17 @@ export default function TimerScreen() {
       >
         <TouchableOpacity
           onPress={handleStop}
-          style={[styles.closeButton, isCompactLandscape && styles.closeButtonLandscape]}
+          style={[
+            styles.closeButton,
+            isCompactLandscape && styles.closeButtonLandscape,
+            isCompactPortrait && styles.closeButtonCompactPortrait,
+          ]}
         >
-          <Ionicons name="close" size={isCompactLandscape ? 24 : 28} color={colors.text} />
+          <Ionicons
+            name="close"
+            size={isCompactLandscape || isCompactPortrait ? 24 : 28}
+            color={colors.text}
+          />
         </TouchableOpacity>
         <View style={styles.progressInfo}>
           <Text style={styles.progressText}>
@@ -563,11 +681,15 @@ export default function TimerScreen() {
         </View>
         <TouchableOpacity
           onPress={toggleAudioMute}
-          style={[styles.closeButton, isCompactLandscape && styles.closeButtonLandscape]}
+          style={[
+            styles.closeButton,
+            isCompactLandscape && styles.closeButtonLandscape,
+            isCompactPortrait && styles.closeButtonCompactPortrait,
+          ]}
         >
           <Ionicons
             name={isAudioMuted ? 'volume-mute' : 'volume-high'}
-            size={isCompactLandscape ? 22 : 24}
+            size={isCompactLandscape || isCompactPortrait ? 22 : 24}
             color={isAudioMuted ? 'rgba(255,255,255,0.5)' : colors.text}
           />
         </TouchableOpacity>
@@ -577,8 +699,12 @@ export default function TimerScreen() {
       <SegmentedProgressBar
         items={items}
         currentItemIndex={currentItemIndex}
-        height={isCompactLandscape ? 4 : 6}
-        style={[styles.progressBar, isCompactLandscape && styles.progressBarLandscape]}
+        height={isCompactLandscape || isCompactPortrait ? 4 : 6}
+        style={[
+          styles.progressBar,
+          isCompactLandscape && styles.progressBarLandscape,
+          isCompactPortrait && styles.progressBarCompactPortrait,
+        ]}
       />
 
       {isCompactLandscape ? (
@@ -604,7 +730,12 @@ export default function TimerScreen() {
       ) : (
         <>
           {/* Main Timer Display */}
-          <View style={styles.timerContainer}>
+          <View
+            style={[
+              styles.timerContainer,
+              isCompactPortrait && styles.timerContainerCompactPortrait,
+            ]}
+          >
             {renderTimerDetails()}
             {renderExerciseDescription()}
           </View>
@@ -708,6 +839,10 @@ const styles = StyleSheet.create({
   headerLandscape: {
     paddingVertical: spacing.xs,
   },
+  headerCompactPortrait: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   closeButton: {
     width: 44,
     height: 44,
@@ -715,6 +850,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeButtonLandscape: {
+    width: 40,
+    height: 40,
+  },
+  closeButtonCompactPortrait: {
     width: 40,
     height: 40,
   },
@@ -732,11 +871,20 @@ const styles = StyleSheet.create({
   progressBarLandscape: {
     marginHorizontal: spacing.md,
   },
+  progressBarCompactPortrait: {
+    marginHorizontal: spacing.md,
+  },
   timerContainer: {
     flex: 1,
+    minHeight: 0,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.lg,
+  },
+  timerContainerCompactPortrait: {
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
   },
   landscapeContent: {
     flex: 1,
@@ -770,17 +918,29 @@ const styles = StyleSheet.create({
     fontSize: typography.xs,
     marginBottom: spacing.xs,
   },
+  itemTypeCompactPortrait: {
+    fontSize: typography.xs,
+    marginBottom: 2,
+  },
   itemName: {
     fontSize: typography['3xl'],
     fontWeight: typography.bold,
     color: colors.text,
     textAlign: 'center',
     marginBottom: spacing.sm,
+    width: '100%',
   },
   itemNameLandscape: {
     fontSize: typography['2xl'],
     marginBottom: spacing.xs,
     maxWidth: '100%',
+  },
+  itemNameCompactPortrait: {
+    fontSize: 28,
+    marginBottom: 2,
+  },
+  itemNameVeryCompactPortrait: {
+    fontSize: typography['2xl'],
   },
   sideIndicator: {
     fontSize: typography.xl,
@@ -800,6 +960,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     marginBottom: spacing.xs,
   },
+  sideIndicatorCompactPortrait: {
+    fontSize: typography.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.xs,
+  },
   timerDisplay: {
     fontSize: typography['7xl'],
     fontWeight: typography.bold,
@@ -810,6 +976,14 @@ const styles = StyleSheet.create({
     fontSize: typography['6xl'],
     lineHeight: 68,
   },
+  timerDisplayCompactPortrait: {
+    fontSize: typography['6xl'],
+    lineHeight: 68,
+  },
+  timerDisplayVeryCompactPortrait: {
+    fontSize: 56,
+    lineHeight: 62,
+  },
   repsTarget: {
     fontSize: typography.lg,
     color: 'rgba(255,255,255,0.8)',
@@ -819,6 +993,10 @@ const styles = StyleSheet.create({
     fontSize: typography.sm,
     marginTop: spacing.xs,
   },
+  repsTargetCompactPortrait: {
+    fontSize: typography.sm,
+    marginTop: 2,
+  },
   exerciseDescriptionWrapper: {
     // marginTop lives here, OUTSIDE the VerticalAutoScroll container, so it
     // doesn't create blank space inside the scrollable area.
@@ -826,6 +1004,10 @@ const styles = StyleSheet.create({
   },
   exerciseDescriptionWrapperLandscape: {
     marginTop: 0,
+    width: '100%',
+  },
+  exerciseDescriptionWrapperCompactPortrait: {
+    marginTop: spacing.sm,
     width: '100%',
   },
   exerciseDescriptionText: {
@@ -841,6 +1023,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     textAlign: 'left',
   },
+  exerciseDescriptionTextCompactPortrait: {
+    fontSize: 15,
+    lineHeight: 21,
+    paddingHorizontal: spacing.lg,
+  },
   upNext: {
     alignItems: 'center',
     padding: spacing.lg,
@@ -852,6 +1039,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: 8,
   },
+  upNextCompactPortrait: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   upNextLabel: {
     fontSize: typography.xs,
     fontWeight: typography.bold,
@@ -862,13 +1053,24 @@ const styles = StyleSheet.create({
   upNextLabelLandscape: {
     marginBottom: 2,
   },
+  upNextLabelCompactPortrait: {
+    marginBottom: 2,
+  },
   upNextName: {
-    fontSize: typography['2xl'],
+    fontSize: typography.xl,
     fontWeight: typography.semibold,
     color: colors.text,
+    lineHeight: 24,
+    textAlign: 'center',
+    width: '100%',
   },
   upNextNameLandscape: {
     fontSize: typography.base,
+    lineHeight: 20,
+  },
+  upNextNameCompactPortrait: {
+    fontSize: typography.lg,
+    lineHeight: 22,
   },
   controls: {
     flexDirection: 'row',
@@ -884,6 +1086,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
     paddingBottom: 0,
   },
+  controlsCompactPortrait: {
+    gap: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+  },
   controlButton: {
     width: 56,
     height: 56,
@@ -897,6 +1104,11 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
   },
+  controlButtonCompactPortrait: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
   mainControlButton: {
     width: 80,
     height: 80,
@@ -909,6 +1121,11 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
+  },
+  mainControlButtonCompactPortrait: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
   },
   countdownContainer: {
     flex: 1,
