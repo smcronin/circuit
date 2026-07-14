@@ -92,7 +92,8 @@ export function computeMuscleHeat(stats: [string, number][]): Record<MuscleKey, 
 // ─── Heat colors ─────────────────────────────────────────────────────────────
 
 const COLD = '#242E4A'; // untouched muscle
-const NEUTRAL = '#1A2236'; // head, hands, joints — never heat-mapped
+const NEUTRAL = '#1A2236'; // pelvis "shorts" — never heat-mapped
+const SILHOUETTE_TONE = '#161E33'; // solid body behind the muscles
 const HEAT_STOPS = ['#4451E6', '#A438E0', '#FF6B2C'] as const;
 
 function hexLerp(a: string, b: string, t: number): string {
@@ -121,16 +122,27 @@ interface ShapeDef {
   rect?: { x: number; y: number; w: number; h: number; r: number };
 }
 
-const SHARED_NEUTRAL: ShapeDef[] = [
-  { ellipse: { cx: 85, cy: 26, rx: 13, ry: 16 } }, // head
-  { rect: { x: 77, y: 38, w: 16, h: 14, r: 5 } }, // neck
-  { ellipse: { cx: 136.5, cy: 184, rx: 6, ry: 10, rot: 12 }, mirror: true }, // hand
-  { ellipse: { cx: 100, cy: 361, rx: 8.5, ry: 7 }, mirror: true }, // foot
+// Connected body silhouette rendered underneath the muscles. The pieces
+// share one fill and are drawn without strokes, so overlaps merge into a
+// single solid figure — this is what keeps the muscles from reading as
+// floating blobs.
+const SILHOUETTE: ShapeDef[] = [
+  { ellipse: { cx: 85, cy: 26, rx: 13.5, ry: 16.5 } }, // head
+  { rect: { x: 76, y: 34, w: 18, h: 22, r: 6 } }, // neck
+  // torso: shoulders to waist
+  { d: 'M 63 52 Q 85 46 107 52 Q 113 55 112 63 L 105 162 Q 85 174 65 162 L 58 63 Q 57 55 63 52 Z' },
+  { ellipse: { cx: 122, cy: 68, rx: 13.5, ry: 15 }, mirror: true }, // shoulder ball
+  { ellipse: { cx: 124, cy: 105, rx: 11, ry: 30, rot: 12 }, mirror: true }, // upper arm
+  { ellipse: { cx: 132, cy: 155, rx: 9, ry: 30, rot: 8 }, mirror: true }, // lower arm
+  { ellipse: { cx: 136.5, cy: 186, rx: 6.5, ry: 11, rot: 12 }, mirror: true }, // hand
+  // pelvis
+  { d: 'M 66 158 L 104 158 L 100 200 Q 85 208 70 200 Z' },
+  { ellipse: { cx: 100, cy: 222, rx: 13.5, ry: 50 }, mirror: true }, // thigh
+  { ellipse: { cx: 99.5, cy: 315, rx: 9.5, ry: 42 }, mirror: true }, // lower leg
+  { ellipse: { cx: 100, cy: 362, rx: 9, ry: 7.5 }, mirror: true }, // foot
 ];
 
 const FRONT_SHAPES: ShapeDef[] = [
-  ...SHARED_NEUTRAL,
-  { ellipse: { cx: 98, cy: 279, rx: 8, ry: 7 }, mirror: true }, // knee
   // traps peeking over the shoulders
   { muscle: 'traps', mirror: true, d: 'M 93 44 Q 104 47 114 55 Q 104 59 96 58 Q 93 51 93 44 Z' },
   // chest
@@ -163,8 +175,6 @@ const FRONT_SHAPES: ShapeDef[] = [
 ];
 
 const BACK_SHAPES: ShapeDef[] = [
-  ...SHARED_NEUTRAL,
-  { ellipse: { cx: 98, cy: 280, rx: 7, ry: 6 }, mirror: true }, // knee
   // full back slab (bottom layer — lats and traps paint over it)
   {
     muscle: 'back',
@@ -210,19 +220,22 @@ function Figure({
   onSelect: (m: MuscleKey) => void;
   width: number;
 }) {
-  const renderShape = (shape: ShapeDef, key: string) => {
-    const fill = shape.muscle
-      ? heatColor(maxHeat > 0 ? heat[shape.muscle] / maxHeat : 0)
-      : NEUTRAL;
-    const isSelected = shape.muscle && shape.muscle === selected;
-    const press = shape.muscle ? () => onSelect(shape.muscle!) : undefined;
-    // Hairline stroke in the card color keeps adjacent same-heat muscles
-    // reading as separate segments. onClick covers react-native-svg on web,
-    // onPress covers native.
+  const renderShape = (shape: ShapeDef, key: string, asSilhouette = false) => {
+    const fill = asSilhouette
+      ? SILHOUETTE_TONE
+      : shape.muscle
+        ? heatColor(maxHeat > 0 ? heat[shape.muscle] / maxHeat : 0)
+        : NEUTRAL;
+    const isSelected = !asSilhouette && shape.muscle && shape.muscle === selected;
+    const press = !asSilhouette && shape.muscle ? () => onSelect(shape.muscle!) : undefined;
+    // Silhouette pieces are strokeless so their overlaps merge into one solid
+    // body. Muscles get a hairline stroke in the card color so adjacent
+    // same-heat regions read as separate segments. onClick covers
+    // react-native-svg on web, onPress covers native.
     const common = {
       fill,
-      stroke: isSelected ? '#FFFFFF' : colors.surface,
-      strokeWidth: isSelected ? 1.75 : 1.25,
+      stroke: asSilhouette ? 'none' : isSelected ? '#FFFFFF' : colors.surface,
+      strokeWidth: asSilhouette ? 0 : isSelected ? 1.75 : 1.25,
       onPress: press,
       onClick: press,
     } as any;
@@ -248,9 +261,18 @@ function Figure({
 
   const rightShapes = shapes.filter((s) => s.mirror);
   const centerShapes = shapes.filter((s) => !s.mirror);
+  const silRight = SILHOUETTE.filter((s) => s.mirror);
+  const silCenter = SILHOUETTE.filter((s) => !s.mirror);
 
   return (
     <Svg width={width} height={width * (400 / 170)} viewBox="0 0 170 400">
+      {/* solid body underlay */}
+      {silCenter.map((s, i) => renderShape(s, `sc${i}`, true))}
+      {silRight.map((s, i) => renderShape(s, `sr${i}`, true))}
+      <G transform="translate(170,0) scale(-1,1)">
+        {silRight.map((s, i) => renderShape(s, `sl${i}`, true))}
+      </G>
+      {/* heat-mapped muscles */}
       {centerShapes.map((s, i) => renderShape(s, `c${i}`))}
       {rightShapes.map((s, i) => renderShape(s, `r${i}`))}
       <G transform="translate(170,0) scale(-1,1)">
