@@ -9,7 +9,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, typography } from '@/theme';
+import { colors, fonts, spacing, borderRadius, typography } from '@/theme';
 import { Button } from '@/components/common';
 
 interface Props {
@@ -123,9 +123,11 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headerTitle: {
-    fontSize: typography.lg,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xl,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
   closeButton: {
     padding: spacing.xs,

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Button, Card, Input } from '@/components/common';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useTimerStore, useHistoryStore } from '@/stores';
 import { formatDuration } from '@/utils';
 
@@ -416,14 +416,23 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
+    shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 8,
   },
   title: {
-    fontSize: typography['3xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.displayBlack,
+    fontSize: 34,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
@@ -437,9 +446,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   workoutName: {
-    fontSize: typography.lg,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xl,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
     marginBottom: spacing.lg,
     textAlign: 'center',
   },
@@ -459,22 +470,28 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   statValue: {
-    fontSize: typography.xl,
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 28,
     color: colors.text,
+    letterSpacing: 0.5,
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: typography.xs,
+    fontSize: 10,
+    fontWeight: typography.semibold,
     color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   progressCard: {
     marginBottom: spacing.lg,
   },
   progressTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginBottom: spacing.md,
   },
   progressRow: {
@@ -490,8 +507,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   progressValue: {
-    fontSize: typography.sm,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.base,
+    letterSpacing: 0.5,
     color: colors.text,
   },
   streakBadge: {
@@ -534,15 +552,17 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.hairline,
   },
   feedbackCard: {
     marginBottom: spacing.lg,
   },
   feedbackTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginBottom: spacing.xs,
   },
   feedbackSubtitle: {

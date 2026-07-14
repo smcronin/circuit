@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   TextInput,
@@ -22,19 +22,32 @@ export function Input({
   helper,
   containerStyle,
   style,
+  onFocus,
+  onBlur,
   ...props
 }: InputProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
         style={[
           styles.input,
+          focused && styles.inputFocused,
           error && styles.inputError,
           props.multiline && styles.multiline,
           style,
         ]}
         placeholderTextColor={colors.textMuted}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
         {...props}
       />
       {error && <Text style={styles.error}>{error}</Text>}
@@ -54,13 +67,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(9, 14, 26, 0.7)',
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.md,
     fontSize: typography.base,
     color: colors.text,
+  },
+  inputFocused: {
+    borderColor: colors.primary,
   },
   inputError: {
     borderColor: colors.error,

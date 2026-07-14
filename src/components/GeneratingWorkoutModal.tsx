@@ -4,7 +4,7 @@ import Svg, { Path, Defs, RadialGradient, LinearGradient, Stop, G } from 'react-
 
 const AnimatedPath = RNAnimated.createAnimatedComponent(Path);
 const AnimatedG = RNAnimated.createAnimatedComponent(G);
-import { colors, spacing, typography } from '@/theme';
+import { colors, fonts, spacing, typography } from '@/theme';
 
 const MESSAGES = [
   'Initializing neural pathways...',
@@ -763,7 +763,7 @@ export function GeneratingWorkoutModal({ visible }: GeneratingWorkoutModalProps)
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+    backgroundColor: 'rgba(4, 7, 14, 0.96)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -851,9 +851,11 @@ const styles = StyleSheet.create({
     }),
   },
   title: {
+    fontFamily: fonts.displaySemiBold,
     fontSize: typography['2xl'],
-    fontWeight: typography.bold as any,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
     marginBottom: spacing.sm,
     marginTop: spacing.lg,
   },

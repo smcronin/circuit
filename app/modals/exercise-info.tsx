@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Chip } from '@/components/common';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { formatTimeVerbose } from '@/utils';
 
 export default function ExerciseInfoModal() {
@@ -151,9 +151,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   exerciseName: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 30,
+    lineHeight: 34,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: spacing.md,
   },
   metaRow: {

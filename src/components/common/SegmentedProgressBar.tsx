@@ -12,16 +12,16 @@ interface SegmentedProgressBarProps {
 
 // Fill colors for each segment (progress indicator)
 const SEGMENT_FILL_COLORS = {
-  warmup: '#EF4444', // red
+  warmup: '#FFC53D', // amber — ignition
   main: '#FFFFFF', // white
-  cooldown: '#3B82F6', // blue
+  cooldown: '#7DE3FC', // ice blue — wind down
 };
 
 // Background track colors (unfilled portion)
 const SEGMENT_TRACK_COLORS = {
-  warmup: 'rgba(239, 68, 68, 0.3)', // red dimmed
-  main: 'rgba(255, 255, 255, 0.3)', // white dimmed
-  cooldown: 'rgba(59, 130, 246, 0.3)', // blue dimmed
+  warmup: 'rgba(255, 197, 61, 0.28)', // amber dimmed
+  main: 'rgba(255, 255, 255, 0.28)', // white dimmed
+  cooldown: 'rgba(125, 227, 252, 0.28)', // ice blue dimmed
 };
 
 function getSegmentType(item: TimerItem): 'warmup' | 'main' | 'cooldown' {

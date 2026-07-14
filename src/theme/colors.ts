@@ -1,48 +1,69 @@
+// ─── Circuit "Midnight Voltage" design system ───────────────────────────────
+// Near-black navy canvas, electric indigo energy, condensed athletic display
+// type. Body copy stays on the system font for maximum legibility; the
+// display font (Barlow Condensed) is reserved for headlines, numerals,
+// buttons and kickers.
+
 export const colors = {
   // Primary - Electric Indigo
-  primary: '#6366F1',
-  primaryLight: '#818CF8',
+  primary: '#6C7CFF',
+  primaryLight: '#96A5FF',
   primaryDark: '#4F46E5',
 
-  // Accent - Energetic Orange
-  accent: '#F97316',
-  accentLight: '#FB923C',
-  accentDark: '#EA580C',
+  // Accent - Ignition Orange
+  accent: '#FF7E33',
+  accentLight: '#FFA45C',
+  accentDark: '#E85D04',
 
   // Status Colors
-  success: '#22C55E',
-  successLight: '#4ADE80',
-  warning: '#EAB308',
-  warningLight: '#FDE047',
-  error: '#EF4444',
-  errorLight: '#F87171',
+  success: '#34D399',
+  successLight: '#6EE7B7',
+  warning: '#FBBF24',
+  warningLight: '#FDE68A',
+  error: '#F1564E',
+  errorLight: '#F98D87',
 
-  // Neutral - Dark Slate
-  background: '#0F172A',
-  surface: '#1E293B',
-  surfaceLight: '#334155',
-  surfaceHighlight: '#475569',
-  border: '#475569',
-  borderLight: '#64748B',
+  // Neutral - Midnight Navy
+  background: '#060A14',
+  surface: '#0E1524',
+  surfaceLight: '#1B2437',
+  surfaceHighlight: '#293650',
+  border: 'rgba(148, 163, 184, 0.16)',
+  borderLight: 'rgba(148, 163, 184, 0.30)',
+  hairline: 'rgba(255, 255, 255, 0.07)',
 
   // Text
-  text: '#F8FAFC',
-  textSecondary: '#94A3B8',
-  textMuted: '#64748B',
-  textInverse: '#0F172A',
+  text: '#F6F7FB',
+  textSecondary: '#9DA9C3',
+  textMuted: '#62708C',
+  textInverse: '#060A14',
 
   // Timer Specific
-  timerBackground: '#0F172A',
-  timerActive: '#22C55E',
-  timerRest: '#3B82F6',
-  timerWarning: '#F97316',
-  timerDanger: '#EF4444',
+  timerBackground: '#060A14',
+  timerActive: '#10B981',
+  timerRest: '#3D74F6',
+  timerWarning: '#FF7E33',
+  timerDanger: '#F1564E',
 
   // Gradients (use with LinearGradient)
-  gradientPrimary: ['#6366F1', '#4F46E5'],
-  gradientAccent: ['#F97316', '#EA580C'],
-  gradientSuccess: ['#22C55E', '#16A34A'],
-  gradientDark: ['#1E293B', '#0F172A'],
+  gradientPrimary: ['#8B9AFF', '#6366F1'] as const,
+  gradientAccent: ['#FF9A4D', '#F26419'] as const,
+  gradientSuccess: ['#34D399', '#0D9488'] as const,
+  gradientDark: ['#141C30', '#060A14'] as const,
+  // Full-bleed timer phase backgrounds (top → bottom)
+  gradientTimerWork: ['#0AA173', '#046C4E'] as const,
+  gradientTimerRest: ['#2F63E8', '#1E3E9E'] as const,
+};
+
+// Display typeface (loaded in app/_layout.tsx via @expo-google-fonts).
+// IMPORTANT: never pair these with a fontWeight style — the weight is baked
+// into the family name, and fontWeight can force a fallback font on Android.
+export const fonts = {
+  display: 'BarlowCondensed_700Bold',
+  displaySemiBold: 'BarlowCondensed_600SemiBold',
+  displayMedium: 'BarlowCondensed_500Medium',
+  displayBlack: 'BarlowCondensed_800ExtraBold',
+  displayItalic: 'BarlowCondensed_700Bold_Italic',
 };
 
 export const spacing = {
@@ -90,23 +111,45 @@ export const typography = {
 export const shadows = {
   sm: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
     elevation: 2,
   },
   md: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
     elevation: 5,
   },
   lg: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  // Colored glows for hero elements
+  glowPrimary: {
+    shadowColor: '#6C7CFF',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  glowAccent: {
+    shadowColor: '#FF7E33',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  glowSuccess: {
+    shadowColor: '#34D399',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
     elevation: 8,
   },
 };

@@ -10,7 +10,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover" />
 
         {/* PWA Meta Tags */}
-        <meta name="theme-color" content="#0F172A" />
+        <meta name="theme-color" content="#060A14" />
         <meta name="description" content="AI-powered workout generator" />
 
         {/* iOS PWA Meta Tags */}
@@ -28,11 +28,11 @@ export default function Root({ children }: PropsWithChildren) {
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: `
           html, body {
-            background-color: #0F172A;
+            background-color: #060A14;
           }
         `}} />
       </head>
-      <body style={{ backgroundColor: '#0F172A' }}>{children}</body>
+      <body style={{ backgroundColor: '#060A14' }}>{children}</body>
     </html>
   );
 }

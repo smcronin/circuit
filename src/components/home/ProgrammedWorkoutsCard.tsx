@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Chip } from '@/components/common';
 import type { ProgrammedWorkout } from '@/data/programmedWorkouts';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { formatDuration } from '@/utils';
 
 interface ProgrammedWorkoutsCardProps {
@@ -107,7 +107,7 @@ export function ProgrammedWorkoutsCard({
                 </View>
               </View>
 
-              <Text style={styles.workoutName} numberOfLines={1}>
+              <Text style={styles.workoutName} numberOfLines={2}>
                 {workout.name}
               </Text>
               <Text style={styles.workoutDescription} numberOfLines={2}>
@@ -145,12 +145,12 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.primaryDark,
+    borderColor: 'rgba(108, 124, 255, 0.45)',
   },
   completedCard: {
     marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: colors.success,
+    borderColor: 'rgba(52, 211, 153, 0.45)',
   },
   header: {
     flexDirection: 'row',
@@ -188,12 +188,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   title: {
-    fontSize: typography.lg,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xl,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   compactTitle: {
-    fontSize: typography.base,
+    fontSize: typography.lg,
   },
   statusPill: {
     borderRadius: borderRadius.full,
@@ -301,9 +303,11 @@ const styles = StyleSheet.create({
     fontWeight: typography.medium,
   },
   workoutName: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: spacing.xs,
   },
   workoutDescription: {

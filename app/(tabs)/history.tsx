@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Chip } from '@/components/common';
 import { ManualWorkoutModal } from '@/components/history';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore, useWorkoutStore } from '@/stores';
 import { WorkoutSession } from '@/types/workout';
 import { formatDate, formatDuration, flattenWorkout, formatCompactNumber } from '@/utils';
@@ -274,9 +274,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   title: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.displayBlack,
+    fontSize: 30,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   headerRow: {
     flexDirection: 'row',
@@ -312,24 +314,33 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
     alignItems: 'center',
   },
   statCardValue: {
-    fontSize: typography.xl,
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 26,
     color: colors.text,
+    letterSpacing: 0.5,
   },
   statCardLabel: {
-    fontSize: typography.xs,
+    fontSize: 10,
+    fontWeight: typography.semibold,
     color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginTop: 2,
   },
   sectionTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginBottom: spacing.md,
   },
   sessionCard: {
@@ -344,9 +355,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   workoutName: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   sessionMeta: {
     flexDirection: 'row',
@@ -434,9 +447,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxxl,
   },
   emptyTitle: {
-    fontSize: typography.lg,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xl,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },

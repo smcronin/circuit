@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Input } from '@/components/common';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useUserStore, useHistoryStore } from '@/stores';
 import { ALL_EQUIPMENT, DURATION_OPTIONS } from '@/utils/constants';
 import { uuid } from '@/utils/uuid';
@@ -729,9 +729,11 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   title: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.displayBlack,
+    fontSize: 30,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
     marginBottom: spacing.lg,
   },
   section: {
@@ -744,9 +746,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
   goalsText: {
     fontSize: typography.sm,
@@ -1000,9 +1004,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   dangerTitle: {
-    fontSize: typography.sm,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.base,
     color: colors.error,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginBottom: spacing.md,
   },
   dangerButton: {

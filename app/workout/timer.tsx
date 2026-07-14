@@ -14,11 +14,58 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SegmentedProgressBar, VerticalAutoScroll } from '@/components/common';
-import { colors, spacing, typography } from '@/theme';
+import { colors, fonts, spacing, typography } from '@/theme';
 import { useTimerStore, useHistoryStore, useUserStore } from '@/stores';
 import { formatTime, isRestItem, getItemTypeLabel } from '@/utils';
 import { soundManager } from '@/services/audio';
+
+// Renders a time string with every digit in a fixed-width slot so the clock
+// never jitters as seconds tick, regardless of the display font's metrics.
+function TimerDigits({
+  text,
+  fontSize,
+  color = colors.text,
+}: {
+  text: string;
+  fontSize: number;
+  color?: string;
+}) {
+  return (
+    <View style={digitStyles.row}>
+      {text.split('').map((ch, i) => (
+        <Text
+          key={i}
+          style={[
+            digitStyles.char,
+            {
+              fontSize,
+              lineHeight: Math.round(fontSize * 1.04),
+              color,
+              width: ch === ':' ? Math.ceil(fontSize * 0.3) : Math.ceil(fontSize * 0.56),
+            },
+          ]}
+        >
+          {ch}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+const digitStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  char: {
+    fontFamily: fonts.display,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+});
 
 export default function TimerScreen() {
   const router = useRouter();
@@ -351,18 +398,25 @@ export default function TimerScreen() {
       ? (upcomingItem ? `Next: ${upcomingItem.name}` : 'Final stretch!')
       : `First up: ${items[0]?.name}`;
 
-    // Solid colors: green for work ending, blue for rest ending, dark for initial
-    // Work ending = green (timerActive), Rest ending = blue (timerRest)
-    const countdownBackgroundColor = isEndingCountdown
-      ? (isRest ? colors.timerRest : colors.timerActive)
-      : colors.background;
+    // Gradient backdrops: deep green for work ending, deep blue for rest
+    // ending, near-black navy for the initial countdown.
+    const countdownGradient = isEndingCountdown
+      ? (isRest ? colors.gradientTimerRest : colors.gradientTimerWork)
+      : colors.gradientDark;
 
-    // White text on colored backgrounds for contrast, primary on dark initial screen
-    const countdownNumberColor = isEndingCountdown ? colors.text : colors.primary;
-    const countdownTextColor = isEndingCountdown ? colors.text : colors.textSecondary;
+    // White text on colored backgrounds for contrast, electric indigo on the
+    // dark initial screen.
+    const countdownNumberColor = isEndingCountdown ? colors.text : colors.primaryLight;
+    const countdownTextColor = isEndingCountdown
+      ? 'rgba(255,255,255,0.85)'
+      : colors.textSecondary;
+    const countdownGlow = isEndingCountdown
+      ? 'rgba(255,255,255,0.35)'
+      : 'rgba(108,124,255,0.55)';
 
     return (
-      <View style={[styles.container, { backgroundColor: countdownBackgroundColor }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <LinearGradient colors={countdownGradient} style={StyleSheet.absoluteFill} />
         <View style={[styles.countdownContainer, isCompactLandscape && styles.countdownContainerLandscape]}>
           <Text
             style={[
@@ -380,6 +434,9 @@ export default function TimerScreen() {
               {
                 transform: [{ scale: pulseAnim }],
                 color: countdownNumberColor,
+                textShadowColor: countdownGlow,
+                textShadowOffset: { width: 0, height: 0 },
+                textShadowRadius: 32,
               },
             ]}
           >
@@ -417,7 +474,8 @@ export default function TimerScreen() {
           isCompactPortrait && styles.itemTypeCompactPortrait,
         ]}
       >
-        {getItemTypeLabel(activeItem.type)}
+        {/* "REST / Rest" reads redundant — swap the kicker on rest steps */}
+        {isRest ? 'RECOVER' : getItemTypeLabel(activeItem.type)}
       </Text>
       <Text
         style={[
@@ -444,16 +502,14 @@ export default function TimerScreen() {
         </Text>
       )}
 
-      <Text
-        style={[
-          styles.timerDisplay,
-          compact && styles.timerDisplayLandscape,
-          isCompactPortrait && styles.timerDisplayCompactPortrait,
-          isVeryCompactPortrait && styles.timerDisplayVeryCompactPortrait,
-        ]}
-      >
-        {formatTime(timeRemaining)}
-      </Text>
+      <View style={styles.timerDisplayWrapper}>
+        <TimerDigits
+          text={formatTime(timeRemaining)}
+          fontSize={
+            compact ? 76 : isVeryCompactPortrait ? 80 : isCompactPortrait ? 92 : 112
+          }
+        />
+      </View>
 
       {activeItem.exercise?.targetReps && (
         <Text
@@ -684,14 +740,10 @@ export default function TimerScreen() {
         </Text>
 
         <View style={styles.pausedTimerBlock}>
-          <Text
-            style={[
-              styles.pausedTimerValue,
-              isCompactLandscape && styles.pausedTimerValueLandscape,
-            ]}
-          >
-            {formatTime(timeRemaining)}
-          </Text>
+          <TimerDigits
+            text={formatTime(timeRemaining)}
+            fontSize={isCompactLandscape ? 44 : 60}
+          />
           <Text style={styles.pausedTimerLabel}>REMAINING IN THIS STEP</Text>
         </View>
 
@@ -726,6 +778,10 @@ export default function TimerScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor, paddingTop: insets.top }]}>
+      <LinearGradient
+        colors={isRest ? colors.gradientTimerRest : colors.gradientTimerWork}
+        style={StyleSheet.absoluteFill}
+      />
       {/* Header */}
       <View
         style={[
@@ -930,22 +986,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.7,
   },
   headerMetricValue: {
-    fontSize: typography.sm,
-    lineHeight: 18,
-    fontWeight: typography.bold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 17,
+    lineHeight: 20,
     color: colors.text,
-    fontVariant: ['tabular-nums'],
+    letterSpacing: 0.5,
   },
   progressInfo: {
     flex: 0.9,
     alignItems: 'center',
   },
   progressText: {
-    fontSize: typography.sm,
-    lineHeight: 18,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 17,
+    lineHeight: 20,
     color: colors.text,
-    fontWeight: typography.bold,
-    fontVariant: ['tabular-nums'],
+    letterSpacing: 0.5,
   },
   progressBar: {
     marginHorizontal: spacing.lg,
@@ -990,50 +1046,53 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   itemType: {
-    fontSize: typography.sm,
-    fontWeight: typography.bold,
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 2,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
     marginBottom: spacing.sm,
   },
   itemTypeLandscape: {
-    fontSize: typography.xs,
+    fontSize: 13,
     marginBottom: spacing.xs,
   },
   itemTypeCompactPortrait: {
-    fontSize: typography.xs,
+    fontSize: 13,
     marginBottom: 2,
   },
   itemName: {
-    fontSize: typography['3xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 40,
     color: colors.text,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: spacing.sm,
     width: '100%',
   },
   itemNameLandscape: {
-    fontSize: typography['2xl'],
+    fontSize: 30,
     marginBottom: spacing.xs,
     maxWidth: '100%',
   },
   itemNameCompactPortrait: {
-    fontSize: 28,
+    fontSize: 34,
     marginBottom: 2,
   },
   itemNameVeryCompactPortrait: {
-    fontSize: typography['2xl'],
+    fontSize: 30,
   },
   sideIndicator: {
+    fontFamily: fonts.displaySemiBold,
     fontSize: typography.xl,
-    fontWeight: typography.bold,
-    color: 'rgba(255,255,255,0.9)',
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    color: colors.text,
+    backgroundColor: 'rgba(0,0,0,0.25)',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    borderRadius: 8,
+    borderRadius: 999,
     marginBottom: spacing.md,
-    letterSpacing: 2,
+    letterSpacing: 2.5,
     overflow: 'hidden',
   },
   sideIndicatorLandscape: {
@@ -1048,23 +1107,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     marginBottom: spacing.xs,
   },
-  timerDisplay: {
-    fontSize: typography['7xl'],
-    fontWeight: typography.bold,
-    color: colors.text,
-    fontVariant: ['tabular-nums'],
-  },
-  timerDisplayLandscape: {
-    fontSize: typography['6xl'],
-    lineHeight: 68,
-  },
-  timerDisplayCompactPortrait: {
-    fontSize: typography['6xl'],
-    lineHeight: 68,
-  },
-  timerDisplayVeryCompactPortrait: {
-    fontSize: 56,
-    lineHeight: 62,
+  timerDisplayWrapper: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
   },
   repsTarget: {
     fontSize: typography.lg,
@@ -1112,7 +1157,9 @@ const styles = StyleSheet.create({
   upNext: {
     alignItems: 'center',
     padding: spacing.lg,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.16)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
   },
   upNextLandscape: {
     alignItems: 'stretch',
@@ -1125,32 +1172,36 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   upNextLabel: {
-    fontSize: typography.xs,
-    fontWeight: typography.bold,
-    color: 'rgba(255,255,255,0.5)',
-    letterSpacing: 1,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.55)',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
     marginBottom: spacing.xs,
   },
   upNextLabelLandscape: {
     marginBottom: 2,
+    textAlign: 'center',
   },
   upNextLabelCompactPortrait: {
     marginBottom: 2,
   },
   upNextName: {
-    fontSize: typography.xl,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 22,
     color: colors.text,
-    lineHeight: 24,
+    lineHeight: 26,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     width: '100%',
   },
   upNextNameLandscape: {
-    fontSize: typography.base,
+    fontSize: 17,
     lineHeight: 20,
   },
   upNextNameCompactPortrait: {
-    fontSize: typography.lg,
+    fontSize: 19,
     lineHeight: 22,
   },
   controls: {
@@ -1176,7 +1227,9 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1194,9 +1247,14 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.text,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    elevation: 8,
   },
   mainControlButtonLandscape: {
     width: 64,
@@ -1218,10 +1276,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   getReady: {
-    fontSize: typography.lg,
-    fontWeight: typography.bold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xl,
     color: colors.textSecondary,
-    letterSpacing: 2,
+    letterSpacing: 5,
+    textTransform: 'uppercase',
     marginBottom: spacing.xl,
   },
   getReadyLandscape: {
@@ -1229,13 +1288,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   countdownNumber: {
-    fontSize: 120,
-    fontWeight: typography.bold,
+    fontFamily: fonts.displayBlack,
+    fontSize: 148,
+    lineHeight: 156,
     color: colors.text, // Default, overridden dynamically during countdown
   },
   countdownNumberLandscape: {
-    fontSize: 88,
-    lineHeight: 100,
+    fontSize: 96,
+    lineHeight: 104,
   },
   firstExercise: {
     fontSize: typography.lg,
@@ -1270,9 +1330,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   pausedText: {
+    fontFamily: fonts.displayBlack,
     fontSize: typography['4xl'],
-    fontWeight: typography.bold,
-    color: colors.text,
+    color: colors.primaryLight,
+    letterSpacing: 6,
+    textTransform: 'uppercase',
     marginBottom: spacing.sm,
   },
   pausedTextLandscape: {
@@ -1280,10 +1342,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   pausedExerciseName: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.semibold,
+    fontFamily: fonts.display,
+    fontSize: 28,
     color: colors.text,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     width: '100%',
     marginBottom: spacing.sm,
   },
@@ -1295,17 +1359,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.md,
   },
-  pausedTimerValue: {
-    fontSize: typography['5xl'],
-    lineHeight: 54,
-    fontWeight: typography.bold,
-    color: colors.text,
-    fontVariant: ['tabular-nums'],
-  },
-  pausedTimerValueLandscape: {
-    fontSize: typography['4xl'],
-    lineHeight: 40,
-  },
   pausedTimerLabel: {
     fontSize: 9,
     lineHeight: 11,
@@ -1316,8 +1369,10 @@ const styles = StyleSheet.create({
   pausedInstructions: {
     width: '100%',
     maxWidth: 480,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
     marginBottom: spacing.sm,
   },
   pausedInstructionsPortrait: {
@@ -1357,14 +1412,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(2,4,10,0.82)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 20,
   },
   exitConfirmCard: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.hairline,
     padding: spacing.xl,
     marginHorizontal: spacing.xl,
     width: '80%',
@@ -1372,9 +1429,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   exitConfirmTitle: {
+    fontFamily: fonts.displaySemiBold,
     fontSize: typography['2xl'],
-    fontWeight: typography.bold,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
     marginBottom: spacing.sm,
     textAlign: 'center',
   },
@@ -1393,27 +1452,31 @@ const styles = StyleSheet.create({
   exitKeepGoingButton: {
     flex: 1,
     paddingVertical: spacing.md,
-    borderRadius: 10,
-    backgroundColor: colors.background,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceLight,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderLight,
     alignItems: 'center',
   },
   exitKeepGoingText: {
+    fontFamily: fonts.displaySemiBold,
     fontSize: typography.base,
-    fontWeight: typography.medium,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
     color: colors.text,
   },
   exitEndButton: {
     flex: 1,
     paddingVertical: spacing.md,
-    borderRadius: 10,
-    backgroundColor: colors.error,
+    borderRadius: 999,
+    backgroundColor: '#D93A36',
     alignItems: 'center',
   },
   exitEndText: {
+    fontFamily: fonts.displaySemiBold,
     fontSize: typography.base,
-    fontWeight: typography.semibold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
     color: colors.text,
   },
 });

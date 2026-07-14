@@ -5,11 +5,24 @@ import { View, ActivityIndicator } from 'react-native';
 import { soundManager } from '@/services/audio/SoundManager';
 import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  BarlowCondensed_500Medium,
+  BarlowCondensed_600SemiBold,
+  BarlowCondensed_700Bold,
+  BarlowCondensed_700Bold_Italic,
+  BarlowCondensed_800ExtraBold,
+} from '@expo-google-fonts/barlow-condensed';
+import { colors } from '@/theme';
 
 export default function RootLayout() {
-  // Load Ionicons font for web
+  // Load Ionicons (needed on web) plus the Circuit display typeface
   const [fontsLoaded] = useFonts({
     ...Ionicons.font,
+    BarlowCondensed_500Medium,
+    BarlowCondensed_600SemiBold,
+    BarlowCondensed_700Bold,
+    BarlowCondensed_700Bold_Italic,
+    BarlowCondensed_800ExtraBold,
   });
 
   // Initialize audio on app start
@@ -19,19 +32,19 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#6366F1" />
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#0F172A' },
+          contentStyle: { backgroundColor: colors.background },
         }}
       >
         <Stack.Screen name="index" />

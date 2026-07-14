@@ -1,13 +1,15 @@
 import React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
+  View,
   StyleSheet,
   ViewStyle,
   TextStyle,
   ActivityIndicator,
 } from 'react-native';
-import { colors, spacing, borderRadius, typography } from '@/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, fonts, spacing, borderRadius, shadows } from '@/theme';
 import { soundManager } from '@/services/audio';
 
 interface ButtonProps {
@@ -41,90 +43,131 @@ export function Button({
     onPress();
   };
 
-  const buttonStyles = [
-    styles.base,
-    styles[variant],
-    styles[`size_${size}`],
-    fullWidth && styles.fullWidth,
-    (disabled || loading) && styles.disabled,
-    style,
-  ];
+  const isGradient = variant === 'primary' && !disabled && !loading;
+  const isDim = disabled || loading;
 
   const textStyles = [
     styles.text,
     styles[`text_${variant}`],
     styles[`text_${size}`],
-    (disabled || loading) && styles.textDisabled,
+    isDim && styles.textDisabled,
     textStyle,
   ];
 
+  const spinnerColor =
+    variant === 'outline' || variant === 'ghost' ? colors.primaryLight : colors.text;
+
+  const content = loading ? (
+    <ActivityIndicator color={spinnerColor} size="small" />
+  ) : (
+    <>
+      {icon}
+      <Text style={textStyles} numberOfLines={1}>
+        {title}
+      </Text>
+    </>
+  );
+
   return (
-    <TouchableOpacity
-      style={buttonStyles}
+    <Pressable
       onPress={handlePress}
       disabled={disabled || loading}
-      activeOpacity={0.8}
+      style={({ pressed }) => [
+        styles.wrapper,
+        isGradient && styles.wrapperGlow,
+        fullWidth && styles.fullWidth,
+        pressed && !isDim && styles.pressed,
+        style,
+      ]}
     >
-      {loading ? (
-        <ActivityIndicator
-          color={variant === 'outline' || variant === 'ghost' ? colors.primary : colors.text}
-          size="small"
-        />
+      {isGradient ? (
+        <LinearGradient
+          colors={colors.gradientPrimary}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.inner, styles[`size_${size}`]]}
+        >
+          {content}
+        </LinearGradient>
       ) : (
-        <>
-          {icon}
-          <Text style={textStyles}>{title}</Text>
-        </>
+        <View
+          style={[
+            styles.inner,
+            styles[variant],
+            styles[`size_${size}`],
+            isDim && styles.disabled,
+          ]}
+        >
+          {content}
+        </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  base: {
+  wrapper: {
+    borderRadius: borderRadius.full,
+  },
+  wrapperGlow: {
+    ...shadows.glowPrimary,
+  },
+  pressed: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.92,
+  },
+  inner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
   },
   primary: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryDark,
   },
   secondary: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.hairline,
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: colors.primary,
   },
   ghost: {
     backgroundColor: 'transparent',
   },
   danger: {
-    backgroundColor: colors.error,
+    backgroundColor: '#D93A36',
   },
   size_sm: {
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.md + spacing.xs,
+    minHeight: 36,
   },
   size_md: {
-    paddingVertical: spacing.md,
+    paddingVertical: 13,
     paddingHorizontal: spacing.lg,
+    minHeight: 48,
   },
   size_lg: {
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
+    minHeight: 56,
   },
   fullWidth: {
     width: '100%',
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
   text: {
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
   text_primary: {
     color: colors.text,
@@ -133,24 +176,24 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   text_outline: {
-    color: colors.primary,
+    color: colors.primaryLight,
   },
   text_ghost: {
-    color: colors.primary,
+    color: colors.primaryLight,
   },
   text_danger: {
     color: colors.text,
   },
   text_sm: {
-    fontSize: typography.sm,
+    fontSize: 15,
   },
   text_md: {
-    fontSize: typography.base,
+    fontSize: 18,
   },
   text_lg: {
-    fontSize: typography.lg,
+    fontSize: 20,
   },
   textDisabled: {
-    opacity: 0.7,
+    opacity: 0.8,
   },
 });

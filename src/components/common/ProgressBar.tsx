@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, borderRadius } from '@/theme';
 
 interface ProgressBarProps {
@@ -13,7 +14,7 @@ interface ProgressBarProps {
 
 export function ProgressBar({
   progress,
-  color = colors.primary,
+  color,
   backgroundColor = colors.surfaceLight,
   height = 8,
   style,
@@ -22,15 +23,21 @@ export function ProgressBar({
 
   return (
     <View style={[styles.container, { backgroundColor, height }, style]}>
-      <View
-        style={[
-          styles.fill,
-          {
-            backgroundColor: color,
-            width: `${clampedProgress * 100}%`,
-          },
-        ]}
-      />
+      {color ? (
+        <View
+          style={[
+            styles.fill,
+            { backgroundColor: color, width: `${clampedProgress * 100}%` },
+          ]}
+        />
+      ) : (
+        <LinearGradient
+          colors={colors.gradientPrimary}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={[styles.fill, { width: `${clampedProgress * 100}%` }]}
+        />
+      )}
     </View>
   );
 }

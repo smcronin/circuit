@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Input, Chip } from '@/components/common';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useWorkoutStore, useTimerStore, useUserStore, useHistoryStore } from '@/stores';
 import { flattenWorkout, formatDuration, formatTimeVerbose } from '@/utils';
 import { generateWorkout, WorkoutSummary } from '@/services/openrouter';
@@ -378,16 +378,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.hairline,
   },
   backButton: {
     padding: spacing.sm,
   },
   headerTitle: {
     flex: 1,
-    fontSize: typography.lg,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xl,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
     textAlign: 'center',
   },
   expandAllButton: {
@@ -401,9 +403,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   workoutName: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 32,
+    lineHeight: 36,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: spacing.xs,
   },
   workoutDescription: {
@@ -455,9 +460,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: 17,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   sectionSubtitle: {
     fontSize: typography.xs,
@@ -465,9 +472,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sectionDuration: {
-    fontSize: typography.sm,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.base,
     color: colors.textSecondary,
-    fontWeight: typography.medium,
+    letterSpacing: 0.5,
   },
   exerciseRow: {
     flexDirection: 'row',
@@ -579,7 +587,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.hairline,
     backgroundColor: colors.background,
   },
 });

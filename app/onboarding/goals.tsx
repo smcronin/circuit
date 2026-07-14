@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Input } from '@/components/common';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { GOAL_SUGGESTIONS } from '@/utils/constants';
 import { useUserStore } from '@/stores';
 import { uuid } from '@/utils/uuid';
@@ -160,9 +160,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   title: {
-    fontSize: typography['3xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 34,
+    lineHeight: 38,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: spacing.sm,
   },
   subtitle: {

@@ -14,7 +14,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/common';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { MuscleHeatMap } from '@/components/analytics/MuscleHeatMap';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore, useWeightStore, useUserStore } from '@/stores';
 import { WeightEntry } from '@/types/workout';
 
@@ -468,6 +469,7 @@ export default function AnalyticsScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGoalWeightModal, setShowGoalWeightModal] = useState(false);
   const [newGoalWeight, setNewGoalWeight] = useState('');
+  const [showMuscleBreakdown, setShowMuscleBreakdown] = useState(false);
 
   const weightUnit = profile?.weightUnit || 'lbs';
 
@@ -971,40 +973,61 @@ export default function AnalyticsScreen() {
           />
         </Card>
 
-        {/* Muscle Group Distribution */}
-        {muscleGroupStats.length > 0 && (
-          <Card style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="body-outline" size={20} color={colors.primaryLight} />
-              <Text style={styles.sectionTitle}>Muscle Groups</Text>
-            </View>
-            <Text style={styles.sectionSubtitle}>Last 7 days</Text>
+        {/* Muscle Heat Map */}
+        <Card style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="body-outline" size={20} color={colors.primaryLight} />
+            <Text style={styles.sectionTitle}>Muscle Heat Map</Text>
+          </View>
+          <Text style={styles.sectionSubtitle}>Last 7 days</Text>
 
-            <View style={styles.muscleGroupList}>
-              {muscleGroupStats.map(([group, count]) => {
-                const maxCount = muscleGroupStats[0][1];
-                const percentage = (count / maxCount) * 100;
+          <MuscleHeatMap stats={muscleGroupStats} />
 
-                return (
-                  <View key={group} style={styles.muscleGroupItem}>
-                    <View style={styles.muscleGroupHeader}>
-                      <Text style={styles.muscleGroupName}>{group}</Text>
-                      <Text style={styles.muscleGroupCount}>{count}x</Text>
-                    </View>
-                    <View style={styles.muscleGroupBarBg}>
-                      <View
-                        style={[
-                          styles.muscleGroupBar,
-                          { width: `${percentage}%` },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </Card>
-        )}
+          {muscleGroupStats.length > 0 && (
+            <>
+              <TouchableOpacity
+                style={styles.breakdownToggle}
+                onPress={() => setShowMuscleBreakdown(!showMuscleBreakdown)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.breakdownToggleText}>
+                  {showMuscleBreakdown ? 'Hide breakdown' : 'Full breakdown'}
+                </Text>
+                <Ionicons
+                  name={showMuscleBreakdown ? 'chevron-up' : 'chevron-down'}
+                  size={14}
+                  color={colors.primary}
+                />
+              </TouchableOpacity>
+
+              {showMuscleBreakdown && (
+                <View style={styles.muscleGroupList}>
+                  {muscleGroupStats.map(([group, count]) => {
+                    const maxCount = muscleGroupStats[0][1];
+                    const percentage = (count / maxCount) * 100;
+
+                    return (
+                      <View key={group} style={styles.muscleGroupItem}>
+                        <View style={styles.muscleGroupHeader}>
+                          <Text style={styles.muscleGroupName}>{group}</Text>
+                          <Text style={styles.muscleGroupCount}>{count}x</Text>
+                        </View>
+                        <View style={styles.muscleGroupBarBg}>
+                          <View
+                            style={[
+                              styles.muscleGroupBar,
+                              { width: `${percentage}%` },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </>
+          )}
+        </Card>
 
         {/* Focus Areas Distribution */}
         {focusAreaStats.length > 0 && (
@@ -1258,9 +1281,11 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   title: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.displayBlack,
+    fontSize: 30,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
     marginBottom: spacing.lg,
   },
   section: {
@@ -1273,9 +1298,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     flex: 1,
   },
   sectionSubtitle: {
@@ -1303,13 +1330,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   monthlyStatValue: {
-    fontSize: typography.xl,
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 26,
     color: colors.text,
+    letterSpacing: 0.5,
   },
   monthlyStatLabel: {
-    fontSize: typography.xs,
+    fontSize: 10,
+    fontWeight: typography.semibold,
     color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
     marginTop: 2,
   },
 
@@ -1423,9 +1454,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   weightCurrentValue: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 28,
     color: colors.text,
+    letterSpacing: 0.5,
   },
   weightCurrentLabel: {
     fontSize: typography.xs,
@@ -1639,8 +1671,24 @@ const styles = StyleSheet.create({
   },
 
   // Muscle Groups
+  breakdownToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  breakdownToggleText: {
+    fontSize: typography.sm,
+    color: colors.primary,
+    fontWeight: typography.medium,
+  },
   muscleGroupList: {
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
   muscleGroupItem: {
     gap: spacing.xs,
@@ -1682,13 +1730,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   lifetimeValue: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.bold,
-    color: colors.primary,
+    fontFamily: fonts.display,
+    fontSize: 32,
+    color: colors.primaryLight,
+    letterSpacing: 0.5,
   },
   lifetimeLabel: {
-    fontSize: typography.sm,
+    fontSize: 11,
+    fontWeight: typography.semibold,
     color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginTop: 2,
   },
 
@@ -1707,14 +1759,18 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: colors.surface,
     borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.hairline,
     padding: spacing.xl,
     width: '100%',
     maxWidth: 320,
   },
   modalTitle: {
+    fontFamily: fonts.displaySemiBold,
     fontSize: typography.xl,
-    fontWeight: typography.bold,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginBottom: spacing.lg,
     textAlign: 'center',
   },
@@ -1783,8 +1839,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   weightInput: {
-    fontSize: typography['3xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 36,
     color: colors.text,
     textAlign: 'right',
     minWidth: 80,

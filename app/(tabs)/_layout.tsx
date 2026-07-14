@@ -7,25 +7,35 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.primaryLight,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          backgroundColor: '#0A101E',
+          borderTopColor: colors.hairline,
           borderTopWidth: 1,
-          height: 50,
-          paddingTop: 0,
-          paddingBottom: 0,
+          height: 54,
+        },
+        tabBarItemStyle: {
+          paddingTop: 6,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Workout',
+          title: 'Train',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="flash" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="programs"
+        options={{
+          title: 'Programs',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
@@ -41,7 +51,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="analytics"
         options={{
-          title: 'Analytics',
+          title: 'Stats',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="stats-chart" size={size} color={color} />
           ),

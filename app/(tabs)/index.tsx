@@ -20,7 +20,7 @@ import { CircuitLogo } from '@/components/CircuitLogo';
 import { GeneratingWorkoutModal } from '@/components/GeneratingWorkoutModal';
 import { CustomInstructionsHistoryModal } from '@/components/home/CustomInstructionsHistoryModal';
 import { ProgrammedWorkoutsCard } from '@/components/home/ProgrammedWorkoutsCard';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { DURATION_OPTIONS, WARMUP_COOLDOWN_THRESHOLD } from '@/utils/constants';
 import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
 import { generateWorkout, WorkoutSummary } from '@/services/openrouter';
@@ -213,17 +213,21 @@ export default function HomeScreen() {
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <CircuitLogo size={96} />
+            <CircuitLogo size={52} />
             <View>
               <Text style={styles.appName}>Circuit</Text>
-              <Text style={styles.subtitle}>AI-Powered Workouts</Text>
+              <Text style={styles.subtitle}>
+                {new Date()
+                  .toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                  .toUpperCase()}
+              </Text>
             </View>
           </View>
           <TouchableOpacity
             style={styles.profileButton}
             onPress={() => router.push('/(tabs)/profile')}
           >
-            <Ionicons name="person-circle-outline" size={36} color={colors.text} />
+            <Ionicons name="person-circle-outline" size={32} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -493,7 +497,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   logoContainer: {
     flexDirection: 'row',
@@ -501,14 +505,19 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   appName: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.displayBlack,
+    fontSize: 30,
+    lineHeight: 32,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2.5,
   },
   subtitle: {
-    fontSize: typography.sm,
-    color: colors.textSecondary,
-    marginTop: 2,
+    fontSize: 11,
+    fontWeight: typography.semibold,
+    color: colors.primaryLight,
+    letterSpacing: 2,
+    marginTop: 3,
   },
   profileButton: {
     padding: spacing.xs,
@@ -523,9 +532,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
   optionalLabel: {
     fontSize: typography.sm,
@@ -557,11 +568,14 @@ const styles = StyleSheet.create({
   durationOption: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.full,
     backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.hairline,
   },
   durationOptionSelected: {
     backgroundColor: colors.primary,
+    borderColor: colors.primaryLight,
   },
   durationOptionPressed: {
     opacity: 0.7,
@@ -596,7 +610,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.hairline,
     backgroundColor: colors.background,
   },
   workoutOptionsRow: {
@@ -631,21 +645,25 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(2, 4, 10, 0.82)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     backgroundColor: colors.surface,
     padding: spacing.xl,
-    borderRadius: borderRadius.lg,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.hairline,
     width: '80%',
     maxWidth: 300,
   },
   modalTitle: {
-    fontSize: typography.lg,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xl,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
     marginBottom: spacing.md,
     textAlign: 'center',
   },

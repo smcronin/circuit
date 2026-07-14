@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Input } from '@/components/common';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore } from '@/stores';
 import { formatDate, formatDuration } from '@/utils';
 
@@ -190,9 +190,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
+    fontFamily: fonts.displaySemiBold,
     fontSize: typography.xl,
-    fontWeight: typography.bold,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
   workoutCard: {
     marginBottom: spacing.lg,

@@ -110,9 +110,9 @@ export const GOAL_SUGGESTIONS = [
 ];
 
 export const DIFFICULTY_COLORS = {
-  beginner: '#22C55E',
-  intermediate: '#EAB308',
-  advanced: '#EF4444',
+  beginner: '#34D399',
+  intermediate: '#FBBF24',
+  advanced: '#F1564E',
 };
 
 export const DIFFICULTY_LABELS = {

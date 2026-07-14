@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Input } from '@/components/common';
-import { colors, spacing, typography, borderRadius } from '@/theme';
+import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { GOAL_SUGGESTIONS } from '@/utils/constants';
 import { useUserStore } from '@/stores';
 
@@ -185,9 +185,11 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   headerTitle: {
-    fontSize: typography.base,
-    fontWeight: typography.semibold,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.lg,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
   headerSpacer: {
     width: 32,
@@ -200,9 +202,12 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   title: {
-    fontSize: typography['3xl'],
-    fontWeight: typography.bold,
+    fontFamily: fonts.display,
+    fontSize: 34,
+    lineHeight: 38,
     color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: spacing.sm,
   },
   subtitle: {

@@ -24,22 +24,27 @@ export function Chip({
   style,
   color,
 }: ChipProps) {
+  // A custom color renders as a tinted pill (translucent fill + colored text)
+  // instead of a solid block — keeps small labels legible on dark surfaces.
+  const tinted = Boolean(color && selected);
+
   const chipStyles = [
     styles.base,
     styles[`size_${size}`],
     variant === 'outline' ? styles.outline : styles.default,
-    selected && styles.selected,
-    color && selected && { backgroundColor: color },
+    selected && !tinted && styles.selected,
+    tinted && { backgroundColor: color + '26', borderColor: color + '55' },
     style,
   ];
 
   const textStyles = [
     styles.text,
     styles[`text_${size}`],
-    selected ? styles.textSelected : styles.textDefault,
+    selected && !tinted ? styles.textSelected : styles.textDefault,
+    tinted && { color },
   ];
 
-  const iconColor = selected ? colors.text : colors.textSecondary;
+  const iconColor = tinted ? color : selected ? colors.text : colors.textSecondary;
 
   return (
     <TouchableOpacity
@@ -59,29 +64,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   default: {
     backgroundColor: colors.surfaceLight,
+    borderColor: colors.hairline,
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
     borderColor: colors.border,
   },
   selected: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    borderColor: colors.primaryLight,
   },
   size_sm: {
     paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.sm + 2,
   },
   size_md: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
   text: {
-    fontWeight: typography.medium,
+    fontWeight: typography.semibold,
+    textTransform: 'capitalize',
   },
   text_sm: {
     fontSize: typography.xs,
@@ -93,6 +101,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   textSelected: {
-    color: colors.text,
+    color: '#FFFFFF',
   },
 });
