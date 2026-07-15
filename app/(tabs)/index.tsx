@@ -80,6 +80,25 @@ export default function HomeScreen() {
   const [showInstructionsHistory, setShowInstructionsHistory] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // The footer CTA follows the content: while the program card is in view it
+  // starts today's program; once the user scrolls into the generator controls
+  // (Equipment / Duration / ...) it becomes Generate Workout.
+  const [scrolledToGenerator, setScrolledToGenerator] = useState(false);
+  const generatorStartY = useRef(Number.MAX_SAFE_INTEGER);
+
+  const handleScroll = useCallback(
+    (event: { nativeEvent: { contentOffset: { y: number } } }) => {
+      const y = event.nativeEvent.contentOffset.y;
+      // Swap once the Equipment card approaches the upper half of the screen,
+      // with a little hysteresis so the button doesn't flicker at the edge.
+      const threshold = generatorStartY.current - 320;
+      setScrolledToGenerator((prev) =>
+        prev ? y > threshold - 40 : y > threshold
+      );
+    },
+    []
+  );
+
   // Helper to update warmup/cooldown defaults based on duration
   const updateDurationWithDefaults = useCallback((duration: number) => {
     setSelectedDuration(duration);
@@ -124,6 +143,17 @@ export default function HomeScreen() {
 
     return completedIds;
   }, [historySessions, programmedHome]);
+
+  // Today's next unfinished programmed workout — the footer's primary action
+  // while the program card is in view.
+  const pendingProgrammedWorkout = useMemo(() => {
+    if (!programmedHome?.isToday) return undefined;
+    return programmedHome.workouts.find(
+      (programmedWorkout) => !completedProgrammedWorkoutIds.has(programmedWorkout.id)
+    );
+  }, [programmedHome, completedProgrammedWorkoutIds]);
+
+  const showProgramCta = Boolean(pendingProgrammedWorkout) && !scrolledToGenerator;
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -207,6 +237,8 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
         }
@@ -242,7 +274,13 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Equipment Selection */}
+        {/* Equipment Selection — its position marks the start of the
+            generator controls for the footer CTA swap */}
+        <View
+          onLayout={(event) => {
+            generatorStartY.current = event.nativeEvent.layout.y;
+          }}
+        />
         <Card style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="fitness-outline" size={20} color={colors.primary} />
@@ -415,15 +453,25 @@ export default function HomeScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-        <Button
-          title={isGenerating ? 'Generating...' : 'Generate Workout'}
-          onPress={handleGenerateWorkout}
-          size="lg"
-          fullWidth
-          loading={isGenerating}
-          disabled={isGenerating}
-          icon={!isGenerating && <Ionicons name="flash" size={20} color={colors.text} />}
-        />
+        {showProgramCta && pendingProgrammedWorkout ? (
+          <Button
+            title="Start Today's Program"
+            onPress={() => handleOpenProgrammedWorkout(pendingProgrammedWorkout)}
+            size="lg"
+            fullWidth
+            icon={<Ionicons name="play" size={20} color={colors.text} />}
+          />
+        ) : (
+          <Button
+            title={isGenerating ? 'Generating...' : 'Generate Workout'}
+            onPress={handleGenerateWorkout}
+            size="lg"
+            fullWidth
+            loading={isGenerating}
+            disabled={isGenerating}
+            icon={!isGenerating && <Ionicons name="flash" size={20} color={colors.text} />}
+          />
+        )}
       </View>
 
       {/* Custom Duration Modal */}
