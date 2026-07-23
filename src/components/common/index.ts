@@ -5,5 +5,6 @@ export { Chip } from './Chip';
 export { ProgressBar } from './ProgressBar';
 export { SegmentedProgressBar } from './SegmentedProgressBar';
 export { Header } from './Header';
+export { BookmarkButton } from './BookmarkButton';
 export { MarqueeText } from './MarqueeText';
 export { VerticalAutoScroll } from './VerticalAutoScroll';

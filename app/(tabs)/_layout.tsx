@@ -17,6 +17,8 @@ export default function TabLayout() {
           height: 54,
         },
         tabBarItemStyle: {
+          flex: 1,
+          minWidth: 0,
           paddingTop: 6,
         },
       }}
@@ -36,6 +38,16 @@ export default function TabLayout() {
           title: 'Programs',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="saved"
+        options={{
+          title: 'Saved',
+          tabBarAccessibilityLabel: 'Saved workouts',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} size={size} color={color} />
           ),
         }}
       />

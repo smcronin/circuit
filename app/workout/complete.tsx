@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Button, Card, Input } from '@/components/common';
+import { BookmarkButton, Button, Card, Input } from '@/components/common';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useTimerStore, useHistoryStore } from '@/stores';
 import { formatDuration } from '@/utils';
@@ -184,6 +184,7 @@ export default function WorkoutCompleteScreen() {
         {/* Workout Summary */}
         <Card style={styles.summaryCard}>
           <Text style={styles.workoutName}>{workout.name}</Text>
+          <BookmarkButton workout={workout} style={styles.summaryBookmark} />
 
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
@@ -451,8 +452,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     textAlign: 'center',
+  },
+  summaryBookmark: {
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
   },
   statsGrid: {
     flexDirection: 'row',

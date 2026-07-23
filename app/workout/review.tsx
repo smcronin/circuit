@@ -11,7 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Input, Chip } from '@/components/common';
+import { BookmarkButton, Button, Card, Input, Chip } from '@/components/common';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useWorkoutStore, useTimerStore, useUserStore, useHistoryStore } from '@/stores';
 import { flattenWorkout, formatDuration, formatTimeVerbose } from '@/utils';
@@ -167,6 +167,8 @@ export default function WorkoutReviewScreen() {
               ))}
             </View>
           )}
+
+          <BookmarkButton workout={currentWorkout} style={styles.bookmarkButton} />
         </View>
 
         {/* Equipment Section - only show if equipment exists */}
@@ -436,6 +438,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
+  },
+  bookmarkButton: {
+    marginTop: spacing.md,
   },
   section: {
     marginBottom: spacing.lg,
