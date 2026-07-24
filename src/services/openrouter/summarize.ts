@@ -3,7 +3,7 @@ import { SummarizedWorkoutHistory } from '@/types/llm';
 
 const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const SUMMARY_MODEL = 'google/gemini-3.5-flash';
+const SUMMARY_MODEL = 'google/gemini-3.6-flash';
 
 export async function summarizeWorkoutHistory(
   sessions: WorkoutSession[]

@@ -41,4 +41,4 @@ calories:300
 AUDIO
 - modern audio implementation. beep tones at transition with 3 second countdown, audio goes over any playing audio on device (e.g. spotify) without ducking
 
-IMAGE: stretch goal, use google/gemini-3.5-flash for concise exercise-image prompt planning, then send the prompt to a supported image generator to create minimal, instructive images of the exercise; a simple minimalist instructional image of a figure performing the exercise, with key arrows for movement, no text, just the figure performing the move, possibly with panels of different stages of the exercise
+IMAGE: stretch goal, use google/gemini-3.6-flash for concise exercise-image prompt planning, then send the prompt to a supported image generator to create minimal, instructive images of the exercise; a simple minimalist instructional image of a figure performing the exercise, with key arrows for movement, no text, just the figure performing the move, possibly with panels of different stages of the exercise

@@ -5,7 +5,7 @@ import { buildPrompt, getSystemPrompt, GenerationContext, getManualWorkoutSystem
 import { uuid } from '@/utils/uuid';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const MODEL = 'google/gemini-3.5-flash';
+const MODEL = 'google/gemini-3.6-flash';
 
 export async function generateWorkout(
   context: GenerationContext
