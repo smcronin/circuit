@@ -29,6 +29,14 @@ function getSavedWorkoutVisual(workoutId: string): {
     };
   }
 
+  if (workoutId === 'saved-night-mobility-10') {
+    return {
+      icon: 'moon-outline',
+      color: colors.successLight,
+      backgroundColor: colors.success + '18',
+    };
+  }
+
   return {
     icon: 'flash',
     color: colors.primaryLight,

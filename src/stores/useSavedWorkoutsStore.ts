@@ -22,6 +22,11 @@ const starterSavedWorkouts: SavedWorkout[] = STARTER_SAVED_WORKOUTS.map((workout
   savedAt: new Date(Date.UTC(2026, 6, 22, 12, index)).toISOString(),
 }));
 
+const NIGHT_MOBILITY_WORKOUT_ID = 'saved-night-mobility-10';
+const nighttimeMobilityWorkout = starterSavedWorkouts.find(
+  (savedWorkout) => savedWorkout.workout.id === NIGHT_MOBILITY_WORKOUT_ID
+);
+
 export const useSavedWorkoutsStore = create<SavedWorkoutsState>()(
   persist(
     (set, get) => ({
@@ -62,6 +67,26 @@ export const useSavedWorkoutsStore = create<SavedWorkoutsState>()(
     {
       name: 'saved-workouts-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (persistedState, version) => {
+        const state = persistedState as Pick<SavedWorkoutsState, 'savedWorkouts'>;
+
+        if (
+          version < 1 &&
+          nighttimeMobilityWorkout &&
+          Array.isArray(state.savedWorkouts) &&
+          !state.savedWorkouts.some(
+            (savedWorkout) => savedWorkout.workout.id === NIGHT_MOBILITY_WORKOUT_ID
+          )
+        ) {
+          return {
+            ...state,
+            savedWorkouts: [...state.savedWorkouts, nighttimeMobilityWorkout],
+          };
+        }
+
+        return state;
+      },
     }
   )
 );

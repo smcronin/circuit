@@ -158,4 +158,110 @@ export const STARTER_SAVED_WORKOUTS: GeneratedWorkout[] = [
     muscleGroupsTargeted: ['calves', 'shoulders', 'forearms', 'core'],
     partingWords: 'Small window, real work. Ten focused minutes absolutely counts.',
   },
+  {
+    id: 'saved-night-mobility-10',
+    createdAt: '2026-07-23T12:00:00.000Z',
+    name: '10-Minute Restorative Night Mobility',
+    description:
+      'A quiet floor-based sequence pairing long, pain-free holds with slow breathing to release common tension and help your body settle before sleep.',
+    difficulty: 'beginner',
+    targetDuration: 600,
+    actualDuration: 600,
+    equipmentSetUsed: 'Bodyweight',
+    equipmentRequired: [],
+    equipment: [],
+    warmUp: {
+      type: 'warmup',
+      exercises: [
+        {
+          id: 'saved-night-mobility-10-breathing',
+          name: 'Constructive Rest Breathing',
+          duration: 120,
+          description:
+            'Lie on your back with knees bent and feet planted. Let the ribs expand on a gentle nasal inhale, then take an unforced, slightly longer exhale. Aim for about five or six easy breaths per minute.',
+          muscleGroups: ['diaphragm', 'rib cage', 'lower back'],
+          modifications: {
+            easier: 'Place a pillow under the knees or head wherever it helps the body relax.',
+            harder: 'Keep the effort low; this is a downshift, not a breath-hold challenge.',
+          },
+        },
+      ],
+      totalDuration: 120,
+    },
+    circuits: [
+      {
+        id: 'saved-night-mobility-10-flow',
+        name: 'Evening Release',
+        rounds: 1,
+        restBetweenRounds: 0,
+        restBetweenExercises: 0,
+        totalDuration: 360,
+        exercises: [
+          {
+            id: 'saved-night-mobility-10-childs-pose',
+            name: "Child's Pose Side Reach",
+            duration: 120,
+            description:
+              'Sink the hips toward the heels, then walk both hands gently to one side. Breathe into the open side of the ribs and switch halfway through without forcing the shoulders or knees.',
+            muscleGroups: ['lats', 'shoulders', 'thoracic spine', 'hips'],
+            switchSides: true,
+            modifications: {
+              easier: 'Support the torso with pillows or stay centered in a comfortable child\'s pose.',
+              harder: 'Reach the top hand a little farther while keeping the hips heavy and relaxed.',
+            },
+          },
+          {
+            id: 'saved-night-mobility-10-figure-four',
+            name: 'Reclined Figure Four',
+            duration: 120,
+            description:
+              'Cross one ankle over the opposite thigh and draw the legs in only until a mild glute stretch appears. Keep the head and shoulders heavy; switch sides halfway through.',
+            muscleGroups: ['glutes', 'outer hips', 'piriformis'],
+            switchSides: true,
+            modifications: {
+              easier: 'Leave the supporting foot on the floor or place it against a wall.',
+              harder: 'Draw the supporting thigh slightly closer without lifting the tailbone.',
+            },
+          },
+          {
+            id: 'saved-night-mobility-10-twist',
+            name: 'Supine Spinal Twist',
+            duration: 120,
+            description:
+              'Let bent knees fall gently to one side while both shoulders remain comfortable on the floor. Use each exhale to soften, then switch sides halfway through.',
+            muscleGroups: ['lower back', 'obliques', 'glutes', 'thoracic spine'],
+            switchSides: true,
+            modifications: {
+              easier: 'Place a pillow under the knees so the twist is fully supported.',
+              harder: 'Move the knees slightly higher toward the chest while keeping the stretch easy.',
+            },
+          },
+        ],
+      },
+    ],
+    coolDown: {
+      type: 'cooldown',
+      exercises: [
+        {
+          id: 'saved-night-mobility-10-legs-up-wall',
+          name: 'Legs Up the Wall',
+          duration: 120,
+          description:
+            'Rest the legs against a wall, couch, or bed with the hips a comfortable distance away. Let the arms settle, unclench the jaw, and return to slow, quiet breathing.',
+          muscleGroups: ['hamstrings', 'calves', 'lower back'],
+          modifications: {
+            easier: 'Rest the lower legs on a chair or bed with the knees bent.',
+            harder: 'There is no need to intensify this position; choose the version that feels most restful.',
+          },
+        },
+      ],
+      totalDuration: 120,
+    },
+    restBetweenCircuits: 0,
+    estimatedCalories: 20,
+    calorieRange: { low: 10, high: 30 },
+    focusAreas: ['restorative', 'mobility', 'relaxation'],
+    muscleGroupsTargeted: ['hips', 'spine', 'shoulders', 'glutes', 'hamstrings'],
+    partingWords: 'That is enough for tonight. Let the day be done.',
+  },
 ];
