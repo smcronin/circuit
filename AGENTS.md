@@ -18,6 +18,16 @@ Circuit is a personal workout app. Shipping useful features quickly is more impo
 - Preserve unrelated user changes and stage only the files that belong to the requested feature.
 - Confirm the pushed commit matches `origin/master` and that the production deployment is Ready.
 
+## Coaching Feedback Loop
+
+Circuit is a single-user coaching product. New monthly programming must be grounded in the user's actual completed-workout feedback, not only the written goals.
+
+- Before changing `src/data/programmedWorkouts.ts`, read the latest `Personal/Health/YYYY-MM Circuit Coaching Review.md`, current Circuit training-plan note, and relevant health-log entries from the Obsidian vault.
+- Use the recent workout data to distinguish a program prescription from what happened: preserve strong responses, adjust exercises that were underloaded or ineffective, and account for RPE, completion, equipment, travel, and reported pain.
+- Maintain the existing feedback fields (`rpe`, `notes`, `updatedAt`) and full workout snapshot in history. They are the source material for the next coaching cycle.
+- Treat pain, tendon warning signs, or an injury note as a programming constraint requiring conservative modification; do not diagnose or provide medical treatment advice.
+- At the end of a program cycle, create or update a linked monthly coaching review in the vault with weekly takeaways and next-cycle directives. Keep private exports and database credentials out of git.
+
 ## Local Preview Servers
 
 - Do not start or leave a development or preview server running unless the user specifically asks for a persistent local preview.
