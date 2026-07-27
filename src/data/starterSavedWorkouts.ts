@@ -4,15 +4,20 @@ export const STARTER_SAVED_WORKOUTS: GeneratedWorkout[] = [
   {
     id: 'saved-morning-mobility-5',
     createdAt: '2026-07-22T12:00:00.000Z',
-    name: '5-Minute Morning Mobility',
+    name: '6-Minute Morning Mobility',
     description:
-      'A compact joint-by-joint reset for hips, ankles, shoulders, and the upper back. Move through a comfortable range and use support whenever it helps.',
+      'A compact joint-by-joint reset for hips, ankles, shoulders, and the upper back, finished with a gentle hang. Move through a comfortable range and use support whenever it helps.',
     difficulty: 'beginner',
-    targetDuration: 300,
-    actualDuration: 300,
-    equipmentSetUsed: 'Bodyweight',
-    equipmentRequired: [],
-    equipment: [],
+    targetDuration: 360,
+    actualDuration: 360,
+    equipmentSetUsed: 'Bodyweight + Pull-Up Bar',
+    equipmentRequired: ['Pull-Up Bar'],
+    equipment: [
+      {
+        name: 'Pull-Up Bar',
+        notes: 'Use a stable bar with space to hang or keep the feet lightly supported.',
+      },
+    ],
     warmUp: {
       type: 'warmup',
       exercises: [],
@@ -25,7 +30,7 @@ export const STARTER_SAVED_WORKOUTS: GeneratedWorkout[] = [
         rounds: 1,
         restBetweenRounds: 0,
         restBetweenExercises: 0,
-        totalDuration: 300,
+        totalDuration: 360,
         exercises: [
           {
             id: 'saved-morning-mobility-5-squat',
@@ -76,6 +81,19 @@ export const STARTER_SAVED_WORKOUTS: GeneratedWorkout[] = [
               harder: 'Straighten the front leg briefly between rotations for a hamstring glide.',
             },
           },
+          {
+            id: 'saved-morning-mobility-5-dead-hang',
+            name: 'Dead Hang',
+            duration: 60,
+            description:
+              'Hang from a secure bar with the hands just outside shoulder width. Breathe steadily, keep the shoulders comfortable, and step down whenever your grip or shoulder position starts to fade.',
+            muscleGroups: ['shoulders', 'lats', 'forearms', 'grip'],
+            equipment: ['Pull-Up Bar'],
+            modifications: {
+              easier: 'Keep the toes on the floor or a sturdy step and use only as much body weight as feels comfortable.',
+              harder: 'Stay relaxed and add a few gentle scapular glides without swinging or shrugging into discomfort.',
+            },
+          },
         ],
       },
     ],
@@ -85,11 +103,19 @@ export const STARTER_SAVED_WORKOUTS: GeneratedWorkout[] = [
       totalDuration: 0,
     },
     restBetweenCircuits: 0,
-    estimatedCalories: 18,
-    calorieRange: { low: 10, high: 25 },
-    focusAreas: ['mobility', 'hips', 'spine'],
-    muscleGroupsTargeted: ['hips', 'ankles', 'glutes', 'shoulders', 'thoracic spine'],
-    partingWords: 'Five minutes done. You are moving better before the day even gets a vote.',
+    estimatedCalories: 20,
+    calorieRange: { low: 10, high: 30 },
+    focusAreas: ['mobility', 'hips', 'shoulders'],
+    muscleGroupsTargeted: [
+      'hips',
+      'ankles',
+      'glutes',
+      'shoulders',
+      'thoracic spine',
+      'lats',
+      'forearms',
+    ],
+    partingWords: 'Six minutes done. You are moving better before the day even gets a vote.',
   },
   {
     id: 'saved-jump-rope-snack-10',

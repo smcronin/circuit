@@ -22,7 +22,11 @@ const starterSavedWorkouts: SavedWorkout[] = STARTER_SAVED_WORKOUTS.map((workout
   savedAt: new Date(Date.UTC(2026, 6, 22, 12, index)).toISOString(),
 }));
 
+const MORNING_MOBILITY_WORKOUT_ID = 'saved-morning-mobility-5';
 const NIGHT_MOBILITY_WORKOUT_ID = 'saved-night-mobility-10';
+const morningMobilityWorkout = starterSavedWorkouts.find(
+  (savedWorkout) => savedWorkout.workout.id === MORNING_MOBILITY_WORKOUT_ID
+);
 const nighttimeMobilityWorkout = starterSavedWorkouts.find(
   (savedWorkout) => savedWorkout.workout.id === NIGHT_MOBILITY_WORKOUT_ID
 );
@@ -67,25 +71,35 @@ export const useSavedWorkoutsStore = create<SavedWorkoutsState>()(
     {
       name: 'saved-workouts-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 1,
+      version: 2,
       migrate: (persistedState, version) => {
         const state = persistedState as Pick<SavedWorkoutsState, 'savedWorkouts'>;
 
-        if (
-          version < 1 &&
-          nighttimeMobilityWorkout &&
-          Array.isArray(state.savedWorkouts) &&
-          !state.savedWorkouts.some(
-            (savedWorkout) => savedWorkout.workout.id === NIGHT_MOBILITY_WORKOUT_ID
-          )
-        ) {
-          return {
-            ...state,
-            savedWorkouts: [...state.savedWorkouts, nighttimeMobilityWorkout],
-          };
+        if (!Array.isArray(state.savedWorkouts)) {
+          return { ...state, savedWorkouts: starterSavedWorkouts };
         }
 
-        return state;
+        let savedWorkouts = state.savedWorkouts;
+
+        if (version < 1 && nighttimeMobilityWorkout) {
+          const hasNighttimeMobility = savedWorkouts.some(
+            (savedWorkout) => savedWorkout.workout.id === NIGHT_MOBILITY_WORKOUT_ID
+          );
+
+          if (!hasNighttimeMobility) {
+            savedWorkouts = [...savedWorkouts, nighttimeMobilityWorkout];
+          }
+        }
+
+        if (version < 2 && morningMobilityWorkout) {
+          savedWorkouts = savedWorkouts.map((savedWorkout) =>
+            savedWorkout.workout.id === MORNING_MOBILITY_WORKOUT_ID
+              ? { ...savedWorkout, workout: morningMobilityWorkout.workout }
+              : savedWorkout
+          );
+        }
+
+        return { ...state, savedWorkouts };
       },
     }
   )
