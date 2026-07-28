@@ -38,6 +38,16 @@ function exerciseNames(workout, section) {
   return workout.workout.circuits.flatMap((circuit) => circuit.exercises.map((exercise) => exercise.name));
 }
 
+function exercisesBySection(workout) {
+  return [
+    ...workout.workout.warmUp.exercises.map((exercise) => ({ section: 'warm-up', exercise })),
+    ...workout.workout.circuits.flatMap((circuit) =>
+      circuit.exercises.map((exercise) => ({ section: `circuit: ${circuit.name}`, exercise }))
+    ),
+    ...workout.workout.coolDown.exercises.map((exercise) => ({ section: 'cool-down', exercise })),
+  ];
+}
+
 function localDayDistance(a, b) {
   const first = new Date(`${a}T00:00:00`);
   const second = new Date(`${b}T00:00:00`);
@@ -104,6 +114,23 @@ for (let index = 1; index < warmupSignatures.length; index += 1) {
   }
 }
 
+const midpointSideSwitches = workouts.flatMap((workout) =>
+  exercisesBySection(workout)
+    .filter(({ exercise }) => exercise.switchSides)
+    .map(({ section, exercise }) => ({
+      date: workout.date,
+      workout: workout.workout.name,
+      section,
+      exercise: exercise.name,
+      duration: exercise.duration,
+      description: exercise.description,
+    }))
+);
+const invalidMidpointSideSwitches = midpointSideSwitches.filter((cue) => {
+  const description = cue.description.toLowerCase();
+  return cue.duration % 2 !== 0 || !description.includes('left') || !description.includes('right');
+});
+
 console.log(`Programmed workouts: ${workouts.length}`);
 console.log(`Date range: ${workouts[0]?.date ?? 'n/a'} to ${workouts[workouts.length - 1]?.date ?? 'n/a'}`);
 console.log('');
@@ -135,6 +162,24 @@ if (duplicateWarmupSignatures.length === 0) {
   }
 }
 
-if (adjacentCircuitRepeats.length > 0 || duplicateWarmupSignatures.length > 0) {
+console.log('');
+console.log(`Midpoint side-switch cues: ${midpointSideSwitches.length}`);
+for (const cue of midpointSideSwitches) {
+  console.log(`- ${cue.date}: ${cue.workout} / ${cue.section} / ${cue.exercise} (${cue.duration}s)`);
+}
+
+if (invalidMidpointSideSwitches.length > 0) {
+  console.log('');
+  console.log('Invalid midpoint side-switch cues:');
+  for (const cue of invalidMidpointSideSwitches) {
+    console.log(`- ${cue.date}: ${cue.workout} / ${cue.exercise}`);
+  }
+}
+
+if (
+  adjacentCircuitRepeats.length > 0 ||
+  duplicateWarmupSignatures.length > 0 ||
+  invalidMidpointSideSwitches.length > 0
+) {
   process.exitCode = 1;
 }

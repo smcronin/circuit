@@ -116,9 +116,16 @@ class SoundManager {
       warning: { freq: 1000, duration: 0.1, type: 'square' },
       tick: { freq: 880, duration: 0.05, type: 'square' },
       click: { freq: 600, duration: 0.03 },
-      sideSwitch: { freq: 784, duration: 0.1 },
+      sideSwitch: { freq: 392, duration: 0.18 },
       complete: { freq: 523, duration: 0.15 },
     };
+
+    if (name === 'sideSwitch') {
+      const startTime = this.audioContext.currentTime;
+      this.scheduleTone(392, 0.18, 'sine', startTime); // G4: "bing"
+      this.scheduleTone(262, 0.18, 'sine', startTime + 0.24); // C4: "bong"
+      return;
+    }
 
     const config = toneConfigs[name];
     await this.playTone(config.freq, config.duration, config.type || 'sine');

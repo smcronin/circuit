@@ -3,14 +3,32 @@ import { LLMWorkoutResponse, ManualWorkoutMetadataResponse } from '@/types/llm';
 import { GeneratedWorkout, Exercise, Circuit, WarmUpSection, CoolDownSection, EquipmentItem } from '@/types/workout';
 import { buildPrompt, getSystemPrompt, GenerationContext, getManualWorkoutSystemPrompt, buildManualWorkoutPrompt, ManualWorkoutPromptInput } from './prompts';
 import { uuid } from '@/utils/uuid';
+import { OPENROUTER_MODELS } from './models';
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const MODEL = 'google/gemini-3.6-flash';
+const JSON_PARSE_ATTEMPTS = 2;
 
-export async function generateWorkout(
-  context: GenerationContext
-): Promise<GeneratedWorkout> {
-  const prompt = buildPrompt(context);
+class LLMResponseParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'LLMResponseParseError';
+  }
+}
+
+interface JsonCompletionOptions {
+  title: string;
+  systemPrompt: string;
+  userPrompt: string;
+  maxTokens: number;
+}
+
+async function requestJsonCompletion(
+  options: JsonCompletionOptions,
+  isRetry: boolean
+): Promise<string> {
+  const retryInstruction = isRetry
+    ? '\n\nRETRY REQUIREMENT: Return one complete, valid JSON object only. Do not use markdown fences, commentary, or trailing text.'
+    : '';
 
   const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
     method: 'POST',
@@ -18,33 +36,95 @@ export async function generateWorkout(
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://circuit.app',
-      'X-Title': 'Circuit Workout Generator',
+      'X-Title': options.title,
     },
     body: JSON.stringify({
-      model: MODEL,
+      model: OPENROUTER_MODELS.workoutGeneration,
       messages: [
-        { role: 'system', content: getSystemPrompt() },
-        { role: 'user', content: prompt },
+        { role: 'system', content: options.systemPrompt },
+        { role: 'user', content: options.userPrompt + retryInstruction },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.7,
-      max_tokens: 4096,
+      max_tokens: options.maxTokens,
     }),
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(`OpenRouter API error: ${error.message || response.statusText}`);
+    const errorBody = await response.json().catch(() => ({}));
+    const errorMessage =
+      errorBody?.error?.message || errorBody?.message || response.statusText;
+    throw new Error(`OpenRouter API error: ${errorMessage}`);
   }
 
   const data = await response.json();
   const content = data.choices[0]?.message?.content;
 
-  if (!content) {
-    throw new Error('No content in response');
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new LLMResponseParseError('No JSON content in response');
   }
 
-  const llmResponse = parseAndValidateResponse(content, context.includeWarmup, context.includeCooldown);
+  return content;
+}
+
+async function requestAndParseJson<T>(
+  options: JsonCompletionOptions,
+  parse: (content: string) => T
+): Promise<T> {
+  for (let attempt = 0; attempt < JSON_PARSE_ATTEMPTS; attempt += 1) {
+    try {
+      const content = await requestJsonCompletion(options, attempt > 0);
+      return parse(content);
+    } catch (error) {
+      const shouldRetry = error instanceof LLMResponseParseError && attempt < JSON_PARSE_ATTEMPTS - 1;
+      if (!shouldRetry) {
+        throw error;
+      }
+
+      console.warn('OpenRouter returned invalid JSON; retrying once.');
+    }
+  }
+
+  throw new LLMResponseParseError('Failed to parse JSON response from LLM after retry');
+}
+
+function parseJsonObject<T>(content: string): T {
+  const candidates = [content.trim()];
+  const fencedJson = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)?.[1]?.trim();
+  if (fencedJson) candidates.push(fencedJson);
+
+  const jsonStart = content.indexOf('{');
+  const jsonEnd = content.lastIndexOf('}');
+  if (jsonStart !== -1 && jsonEnd > jsonStart) {
+    candidates.push(content.slice(jsonStart, jsonEnd + 1));
+  }
+
+  for (const candidate of Array.from(new Set(candidates))) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as T;
+      }
+    } catch {
+      // Try the next candidate before requesting a fresh completion.
+    }
+  }
+
+  throw new LLMResponseParseError('Failed to parse JSON response from LLM');
+}
+
+export async function generateWorkout(
+  context: GenerationContext
+): Promise<GeneratedWorkout> {
+  const prompt = buildPrompt(context);
+  const llmResponse = await requestAndParseJson(
+    {
+      title: 'Circuit Workout Generator',
+      systemPrompt: getSystemPrompt(),
+      userPrompt: prompt,
+      maxTokens: 4096,
+    },
+    (content) => parseAndValidateResponse(content, context.includeWarmup, context.includeCooldown)
+  );
   return transformToGeneratedWorkout(llmResponse, context);
 }
 
@@ -53,26 +133,7 @@ function parseAndValidateResponse(
   includeWarmup: boolean,
   includeCooldown: boolean
 ): LLMWorkoutResponse {
-  let parsed: LLMWorkoutResponse;
-
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    // Try to extract JSON from markdown code blocks
-    const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/);
-    if (jsonMatch) {
-      parsed = JSON.parse(jsonMatch[1]);
-    } else {
-      // Try to find JSON object in the response
-      const jsonStart = content.indexOf('{');
-      const jsonEnd = content.lastIndexOf('}');
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        parsed = JSON.parse(content.slice(jsonStart, jsonEnd + 1));
-      } else {
-        throw new Error('Invalid JSON response from LLM');
-      }
-    }
-  }
+  const parsed = parseJsonObject<LLMWorkoutResponse>(content);
 
   // Validate required fields - warmUp/coolDown only required if requested
   const requiredFields = ['name', 'circuits'];
@@ -103,6 +164,7 @@ function transformToGeneratedWorkout(
       duration: e.duration,
       description: e.description,
       muscleGroups: e.muscleGroups,
+      switchSides: e.switchSides,
     }));
     warmUp = {
       type: 'warmup',
@@ -124,6 +186,7 @@ function transformToGeneratedWorkout(
       description: e.description,
       muscleGroups: e.muscleGroups,
       equipment: e.equipment,
+      switchSides: e.switchSides,
       modifications: e.modifications,
     }));
 
@@ -154,6 +217,7 @@ function transformToGeneratedWorkout(
       duration: e.duration,
       description: e.description,
       muscleGroups: e.muscleGroups,
+      switchSides: e.switchSides,
     }));
     coolDown = {
       type: 'cooldown',
@@ -219,66 +283,22 @@ export async function generateManualWorkoutMetadata(
   input: ManualWorkoutPromptInput
 ): Promise<ManualWorkoutMetadataResponse> {
   const prompt = buildManualWorkoutPrompt(input);
-
-  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://circuit.app',
-      'X-Title': 'Circuit Workout Generator',
+  return requestAndParseJson(
+    {
+      title: 'Circuit Manual Workout Analyzer',
+      systemPrompt: getManualWorkoutSystemPrompt(),
+      userPrompt: prompt,
+      maxTokens: 1024,
     },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: 'system', content: getManualWorkoutSystemPrompt() },
-        { role: 'user', content: prompt },
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.5, // Lower temperature for more consistent metadata
-      max_tokens: 1024,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(`OpenRouter API error: ${error.message || response.statusText}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error('No content in response');
-  }
-
-  return parseManualWorkoutResponse(content, input.durationMinutes);
+    (content) => parseManualWorkoutResponse(content, input.durationMinutes)
+  );
 }
 
 function parseManualWorkoutResponse(
   content: string,
   durationMinutes: number
 ): ManualWorkoutMetadataResponse {
-  let parsed: ManualWorkoutMetadataResponse;
-
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    // Try to extract JSON from markdown code blocks
-    const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/);
-    if (jsonMatch) {
-      parsed = JSON.parse(jsonMatch[1]);
-    } else {
-      // Try to find JSON object in the response
-      const jsonStart = content.indexOf('{');
-      const jsonEnd = content.lastIndexOf('}');
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        parsed = JSON.parse(content.slice(jsonStart, jsonEnd + 1));
-      } else {
-        throw new Error('Invalid JSON response from LLM');
-      }
-    }
-  }
+  const parsed = parseJsonObject<ManualWorkoutMetadataResponse>(content);
 
   // Provide fallback values if LLM response is incomplete
   const fallbackCalories = Math.round(durationMinutes * 7); // 7 cal/min average

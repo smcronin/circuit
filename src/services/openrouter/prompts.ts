@@ -44,10 +44,11 @@ Exercise difficulty progression:
 - Advanced: High intensity, complex movements, shorter rests
 
 Side-switching exercises:
-- For exercises where the user needs to switch sides, create TWO independent exercises (with minimal rest in between)
-- Example: "Pistol Squat - Right Leg" with rest 5-10 seconds, then "Pistol Squat - Left Leg"
-- This ensures both sides are represented evenly in the circuit and allows proper tracking of each side
-- Apply this pattern to: lunges, single-leg deadlifts, pistol squats, single-arm rows, Bulgarian split squats, single-arm presses, etc.`;
+- Use one exercise with "switchSides": true when the athlete should work one side for the first half, hear a midpoint cue, then switch once for the second half
+- Prefer this for static stretches, mobility holds, side planks, unilateral activation, and simple timed work where equal halves are appropriate
+- Use an even duration long enough for both sides, and explicitly tell the athlete to start on the left and switch to the right at the midpoint
+- Omit "switchSides" or set it false for movements that alternate continuously throughout the interval
+- Create separate Right and Left exercises only when side-specific reps, loading, or performance tracking materially matters, such as heavy unilateral strength work`;
 }
 
 export function buildPrompt(context: GenerationContext): string {
@@ -152,7 +153,8 @@ You MUST follow these custom instructions when designing this workout.
         "name": "string",
         "duration": number (seconds, typically 30-45),
         "description": "string - clear instructions on how to perform",
-        "muscleGroups": ["string"]
+        "muscleGroups": ["string"],
+        "switchSides": boolean (optional; true when the timer should cue one midpoint side change)
       }
     ]
   },`
@@ -167,7 +169,8 @@ You MUST follow these custom instructions when designing this workout.
         "name": "string",
         "duration": number (seconds, typically 30-45),
         "description": "string - stretching/breathing cues",
-        "muscleGroups": ["string"]
+        "muscleGroups": ["string"],
+        "switchSides": boolean (optional; true when the timer should cue one midpoint side change)
       }
     ]
   }`
@@ -230,6 +233,7 @@ ${warmupSchema}
           "description": "string - clear form cues and instructions",
           "muscleGroups": ["string"],
           "equipment": ["string"] (optional, only if equipment needed),
+          "switchSides": boolean (optional; true only for one deliberate switch at the midpoint),
           "modifications": {
             "easier": "string - easier variation" (optional),
             "harder": "string - harder variation" (optional)

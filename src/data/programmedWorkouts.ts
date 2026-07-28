@@ -329,10 +329,13 @@ const strengthWarmUp = (day: StrengthDay, phase: Phase): ExerciseSeed[] => {
     commonRamp,
     ex(
       'Cat-Cow to Thread the Needle',
-      55,
-      'Move through two cat-cow reps, then thread one arm through and rotate. Switch sides halfway.',
+      phase === 5 ? 60 : 55,
+      phase === 5
+        ? 'Move through two cat-cow reps, then thread the left arm through and rotate. Switch to the right side halfway.'
+        : 'Move through two cat-cow reps, then thread one arm through and rotate. Switch sides halfway.',
       ['thoracic spine', 'shoulders', 'back'],
-      ['Yoga Mat']
+      ['Yoga Mat'],
+      phase === 5 ? { switchSides: true } : undefined
     ),
     ex(
       'Ring Support Scap Shrugs',
@@ -402,12 +405,15 @@ const climbingWarmUp = (phase: Phase, style: ClimbingWarmUpStyle = 'weekday'): E
     activeHang,
     ex(
       style === 'long' ? 'High-Step Rockbacks' : 'Hip CARs Standing',
-      55,
+      phase === 5 && style === 'weekday' ? 60 : 55,
       style === 'long'
         ? 'Set one foot high on a stable surface or floor position and rock in and out of the hip slowly.'
-        : 'Draw controlled circles with one knee, switching sides halfway. Hold the wall or rings lightly if needed.',
+        : phase === 5
+          ? 'Draw controlled circles with the left knee, then switch to the right halfway. Hold the wall or rings lightly if needed.'
+          : 'Draw controlled circles with one knee, switching sides halfway. Hold the wall or rings lightly if needed.',
       ['hips', 'glutes', 'adductors'],
-      ['Yoga Mat']
+      ['Yoga Mat'],
+      phase === 5 && style === 'weekday' ? { switchSides: true } : undefined
     ),
     ex(
       style === 'long' ? 'Cross-Body Dead Bug' : 'Hollow to Dead Bug Switch',
@@ -486,20 +492,33 @@ const strengthCoolDown = (day: StrengthDay, phase: Phase): ExerciseSeed[] => {
 
   if (day === 'tuesday') {
     return [
-      ex(
-        'Couch Stretch - Right',
-        45,
-        'Set the right knee on the mat and gently tuck the pelvis. Keep the front ribs quiet.',
-        ['hip flexors', 'quads'],
-        ['Yoga Mat']
-      ),
-      ex(
-        'Couch Stretch - Left',
-        45,
-        'Repeat on the left side with the same easy breathing standard.',
-        ['hip flexors', 'quads'],
-        ['Yoga Mat']
-      ),
+      ...(phase === 5
+        ? [
+            ex(
+              'Couch Stretch',
+              90,
+              'Start with the left knee down and gently tuck the pelvis. Switch to the right side halfway and keep the front ribs quiet.',
+              ['hip flexors', 'quads'],
+              ['Yoga Mat'],
+              { switchSides: true }
+            ),
+          ]
+        : [
+            ex(
+              'Couch Stretch - Right',
+              45,
+              'Set the right knee on the mat and gently tuck the pelvis. Keep the front ribs quiet.',
+              ['hip flexors', 'quads'],
+              ['Yoga Mat']
+            ),
+            ex(
+              'Couch Stretch - Left',
+              45,
+              'Repeat on the left side with the same easy breathing standard.',
+              ['hip flexors', 'quads'],
+              ['Yoga Mat']
+            ),
+          ]),
       ex(
         'Yoga Wheel Pec Opener',
         45,
@@ -517,34 +536,55 @@ const strengthCoolDown = (day: StrengthDay, phase: Phase): ExerciseSeed[] => {
   }
 
   return [
-    ex(
-      'Pigeon Pose - Right',
-      45,
-      'Set the front shin at a comfortable angle and breathe into the outside hip.',
-      ['glutes', 'hips'],
-      ['Yoga Mat']
-    ),
-    ex(
-      'Pigeon Pose - Left',
-      45,
-      'Match the right side without forcing range.',
-      ['glutes', 'hips'],
-      ['Yoga Mat']
-    ),
-    ex(
-      'Supine Twist - Right',
-      40,
-      'Let the right knee cross the body and keep shoulders heavy.',
-      ['back', 'obliques'],
-      ['Yoga Mat']
-    ),
-    ex(
-      'Supine Twist - Left',
-      40,
-      'Repeat left and slow the breath down.',
-      ['back', 'obliques'],
-      ['Yoga Mat']
-    ),
+    ...(phase === 5
+      ? [
+          ex(
+            'Pigeon Pose',
+            90,
+            'Start with the left shin forward and breathe into the outside hip. Switch to the right side halfway without forcing range.',
+            ['glutes', 'hips'],
+            ['Yoga Mat'],
+            { switchSides: true }
+          ),
+          ex(
+            'Supine Twist',
+            80,
+            'Start with the left knee crossing the body and keep both shoulders heavy. Switch to the right side halfway and slow the breath down.',
+            ['back', 'obliques'],
+            ['Yoga Mat'],
+            { switchSides: true }
+          ),
+        ]
+      : [
+          ex(
+            'Pigeon Pose - Right',
+            45,
+            'Set the front shin at a comfortable angle and breathe into the outside hip.',
+            ['glutes', 'hips'],
+            ['Yoga Mat']
+          ),
+          ex(
+            'Pigeon Pose - Left',
+            45,
+            'Match the right side without forcing range.',
+            ['glutes', 'hips'],
+            ['Yoga Mat']
+          ),
+          ex(
+            'Supine Twist - Right',
+            40,
+            'Let the right knee cross the body and keep shoulders heavy.',
+            ['back', 'obliques'],
+            ['Yoga Mat']
+          ),
+          ex(
+            'Supine Twist - Left',
+            40,
+            'Repeat left and slow the breath down.',
+            ['back', 'obliques'],
+            ['Yoga Mat']
+          ),
+        ]),
     ex(
       'Box Breathing',
       45,
@@ -559,7 +599,29 @@ const cardioCoolDown = (phase: Phase): ExerciseSeed[] => {
     ex('Easy Spin Downshift', 240, 'Back off to an easy spin and let heart rate drift down gradually.', ['cardiovascular system'], ['Road Bike']),
   ];
 
-  if (phase === 1 || phase === 5) {
+  if (phase === 5) {
+    return [
+      ...shared,
+      ex(
+        'Calf Stretch',
+        90,
+        'Start on the left with light pressure through the heel. Switch to the right side halfway and keep the exhale long.',
+        ['calves'],
+        undefined,
+        { switchSides: true }
+      ),
+      ex(
+        'Figure-4 Stretch',
+        90,
+        'Start with the left ankle over the right thigh and breathe into the outside hip. Switch to the right side halfway.',
+        ['glutes', 'hips'],
+        ['Yoga Mat'],
+        { switchSides: true }
+      ),
+    ];
+  }
+
+  if (phase === 1) {
     return [
       ...shared,
       ex('Calf Stretch - Right', 45, 'Long exhale and easy pressure through the heel.', ['calves']),
@@ -1143,20 +1205,33 @@ function tuesdayStrength(date: string, phase: Phase): ProgrammedWorkout {
             ['shoulders', 'back', 'core'],
             ['Gymnastic Rings']
           ),
-          ex(
-            'Side Plank - Right',
-            30,
-            'Stack shoulders and hips, press the floor away, and breathe.',
-            ['obliques', 'shoulders', 'glutes'],
-            ['Yoga Mat']
-          ),
-          ex(
-            'Side Plank - Left',
-            30,
-            'Match the right side and avoid letting hips roll open.',
-            ['obliques', 'shoulders', 'glutes'],
-            ['Yoga Mat']
-          ),
+          ...(phase === 5
+            ? [
+                ex(
+                  'Side Plank',
+                  60,
+                  'Start on the left, stack shoulders and hips, and press the floor away. Switch to the right side halfway and keep breathing.',
+                  ['obliques', 'shoulders', 'glutes'],
+                  ['Yoga Mat'],
+                  { switchSides: true }
+                ),
+              ]
+            : [
+                ex(
+                  'Side Plank - Right',
+                  30,
+                  'Stack shoulders and hips, press the floor away, and breathe.',
+                  ['obliques', 'shoulders', 'glutes'],
+                  ['Yoga Mat']
+                ),
+                ex(
+                  'Side Plank - Left',
+                  30,
+                  'Match the right side and avoid letting hips roll open.',
+                  ['obliques', 'shoulders', 'glutes'],
+                  ['Yoga Mat']
+                ),
+              ]),
           ex(
             'Band Pull-Aparts',
             40,
@@ -1236,22 +1311,35 @@ function wednesdaySnack(date: string, phase: Phase): ProgrammedWorkout {
             ['chest', 'triceps', 'shoulders', 'core'],
             ['Gymnastic Rings']
           ),
-          ex(
-            'Band External Rotation - Right',
-            30,
-            'Pin the elbow near the ribs and rotate the hand away slowly.',
-            ['rotator cuff', 'shoulders'],
-            ['Resistance Bands'],
-            { targetReps: 12 }
-          ),
-          ex(
-            'Band External Rotation - Left',
-            30,
-            'Match the right side with small, controlled reps.',
-            ['rotator cuff', 'shoulders'],
-            ['Resistance Bands'],
-            { targetReps: 12 }
-          ),
+          ...(phase === 5
+            ? [
+                ex(
+                  'Band External Rotation',
+                  60,
+                  'Start on the left with the elbow pinned near the ribs. Switch to the right side halfway and keep every rep small and controlled.',
+                  ['rotator cuff', 'shoulders'],
+                  ['Resistance Bands'],
+                  { switchSides: true }
+                ),
+              ]
+            : [
+                ex(
+                  'Band External Rotation - Right',
+                  30,
+                  'Pin the elbow near the ribs and rotate the hand away slowly.',
+                  ['rotator cuff', 'shoulders'],
+                  ['Resistance Bands'],
+                  { targetReps: 12 }
+                ),
+                ex(
+                  'Band External Rotation - Left',
+                  30,
+                  'Match the right side with small, controlled reps.',
+                  ['rotator cuff', 'shoulders'],
+                  ['Resistance Bands'],
+                  { targetReps: 12 }
+                ),
+              ]),
           ex(
             'Reverse Plank',
             35,

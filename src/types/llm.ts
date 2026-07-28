@@ -68,6 +68,7 @@ export interface LLMWorkoutResponse {
       duration: number;
       description: string;
       muscleGroups: string[];
+      switchSides?: boolean;
     }>;
   };
 
@@ -84,6 +85,7 @@ export interface LLMWorkoutResponse {
       description: string;
       muscleGroups: string[];
       equipment?: string[];
+      switchSides?: boolean;
       modifications?: {
         easier?: string;
         harder?: string;
@@ -97,6 +99,7 @@ export interface LLMWorkoutResponse {
       duration: number;
       description: string;
       muscleGroups: string[];
+      switchSides?: boolean;
     }>;
   };
 }

@@ -216,13 +216,13 @@ export default function TimerScreen() {
   // Halfway warning tone (work only, not rests)
   // Only play if the midpoint is > 3 to avoid overlap with the ending countdown
   useEffect(() => {
-    if (status === 'running' && !isRest && currentItem) {
+    if (status === 'running' && !isRest && !hasSideSwitching && currentItem) {
       const itemMidpoint = Math.floor(currentItem.duration / 2);
       if (timeRemaining === itemMidpoint && itemMidpoint > 3) {
         soundManager.playWarning();
       }
     }
-  }, [timeRemaining, status, isRest, currentItem]);
+  }, [timeRemaining, status, isRest, hasSideSwitching, currentItem]);
 
   // Play countdown sound immediately when an item STARTS at 3 seconds or less
   // (handles items with short durations, e.g., 3-second rests)

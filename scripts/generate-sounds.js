@@ -239,8 +239,8 @@ const sounds = {
   // Button click - very short subtle
   'click.wav': generateTone(600, 0.03, 0.3),
 
-  // Side switch - distinctive pattern
-  'side-switch.wav': generateArpeggio([784, 523, 784], 0.08, 0.5),
+  // Side switch - low descending two-note "bing-bong" (G4 to C4)
+  'side-switch.wav': generateDoubleBeep(392, 262, 0.18, 0.06, 0.5),
 
   // Workout complete - triumphant chiptune fanfare
   // E5 → G5 → A5 → C6 (ascending build), quick A5 dip, then triumphant C6 hold

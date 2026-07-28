@@ -1,9 +1,9 @@
 import { WorkoutSession } from '@/types/workout';
 import { SummarizedWorkoutHistory } from '@/types/llm';
+import { OPENROUTER_MODELS } from './models';
 
 const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const SUMMARY_MODEL = 'google/gemini-3.6-flash';
 
 export async function summarizeWorkoutHistory(
   sessions: WorkoutSession[]
@@ -95,9 +95,8 @@ Write a concise, actionable summary that captures the user's training tendencies
       'X-Title': 'Circuit Workout Summarizer',
     },
     body: JSON.stringify({
-      model: SUMMARY_MODEL,
+      model: OPENROUTER_MODELS.workoutSummary,
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.5,
       max_tokens: 300,
     }),
   });
