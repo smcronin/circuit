@@ -116,14 +116,14 @@ class SoundManager {
       warning: { freq: 1000, duration: 0.1, type: 'square' },
       tick: { freq: 880, duration: 0.05, type: 'square' },
       click: { freq: 600, duration: 0.03 },
-      sideSwitch: { freq: 392, duration: 0.18 },
+      sideSwitch: { freq: 587, duration: 0.18 },
       complete: { freq: 523, duration: 0.15 },
     };
 
     if (name === 'sideSwitch') {
       const startTime = this.audioContext.currentTime;
-      this.scheduleTone(392, 0.18, 'sine', startTime); // G4: "bing"
-      this.scheduleTone(262, 0.18, 'sine', startTime + 0.24); // C4: "bong"
+      this.scheduleTone(587, 0.18, 'sine', startTime, 0.4); // D5: "bing"
+      this.scheduleTone(392, 0.18, 'sine', startTime + 0.24, 0.4); // G4: "bong"
       return;
     }
 
@@ -157,7 +157,13 @@ class SoundManager {
   }
 
   // Schedule a single tone at a specific point in the audio timeline (for sequences)
-  private scheduleTone(frequency: number, duration: number, type: OscillatorType, startTime: number): void {
+  private scheduleTone(
+    frequency: number,
+    duration: number,
+    type: OscillatorType,
+    startTime: number,
+    peakGain = 0.3
+  ): void {
     if (!this.audioContext) return;
 
     try {
@@ -171,7 +177,7 @@ class SoundManager {
       oscillator.type = type;
 
       gainNode.gain.setValueAtTime(0, startTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.008);
+      gainNode.gain.linearRampToValueAtTime(peakGain, startTime + 0.008);
       gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
 
       oscillator.start(startTime);
