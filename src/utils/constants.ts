@@ -25,6 +25,7 @@ export const ALL_EQUIPMENT = [
   { id: 'jump_rope', name: 'Jump Rope', category: 'accessories', icon: 'pulse-outline' },
   { id: 'foam_roller', name: 'Foam Roller', category: 'accessories', icon: 'ellipse-outline' },
   { id: 'ab_wheel', name: 'Ab Wheel', category: 'accessories', icon: 'radio-button-on-outline' },
+  { id: 'fitness_ball', name: 'Fitness Ball', category: 'accessories', icon: 'ellipse-outline' },
   { id: 'trx_suspension', name: 'TRX/Suspension', category: 'accessories', icon: 'swap-vertical-outline' },
   { id: 'gymnastic_rings', name: 'Gymnastic Rings', category: 'accessories', icon: 'infinite-outline' },
   { id: 'weight_vest', name: 'Weight Vest', category: 'accessories', icon: 'body-outline' },
