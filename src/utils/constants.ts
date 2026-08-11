@@ -153,7 +153,7 @@ export const MUSCLE_GROUPS = [
   'lats',
 ] as const;
 
-// Duration options for manual workout entry — mirrors DURATION_OPTIONS
+// Duration options for manual workout entry
 export const MANUAL_DURATION_OPTIONS = [
   { value: 5, label: '5 min' },
   { value: 10, label: '10 min' },
@@ -163,4 +163,6 @@ export const MANUAL_DURATION_OPTIONS = [
   { value: 30, label: '30 min' },
   { value: 45, label: '45 min' },
   { value: 60, label: '60 min' },
+  { value: 90, label: '90 min' },
+  { value: 120, label: '2 hr' },
 ] as const;

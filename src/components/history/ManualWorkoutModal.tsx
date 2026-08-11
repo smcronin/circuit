@@ -53,7 +53,7 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
-  // Custom duration — text input value shown when user selects the "Custom" chip
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [customDurationText, setCustomDurationText] = useState('');
 
   const profile = useUserStore((state) => state.profile);
@@ -71,6 +71,7 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
     setError(null);
     setShowDatePicker(false);
     setSaving(false);
+    setIsCustomDuration(false);
     setCustomDurationText('');
   }, []);
 
@@ -82,6 +83,11 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
   const handleGenerateMetadata = async () => {
     if (!formData.title.trim() || !formData.description.trim()) {
       setError('Please fill in both title and description');
+      return;
+    }
+
+    if (formData.durationMinutes <= 0) {
+      setError('Please enter a custom duration in minutes');
       return;
     }
 
@@ -148,13 +154,6 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
     }
   };
 
-  // True when the current durationMinutes value isn't one of the preset chips.
-  // Used to keep the "Custom" chip highlighted and show the numeric input.
-  const PRESET_VALUES = MANUAL_DURATION_OPTIONS.map((o) => o.value);
-  const isCustomDuration =
-    customDurationText !== '' ||
-    (formData.durationMinutes > 0 && !PRESET_VALUES.includes(formData.durationMinutes as typeof PRESET_VALUES[number]));
-
   const handleWebDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Parse as local date (YYYY-MM-DD) so we don't get UTC midnight offset issues
     const [year, month, day] = e.target.value.split('-').map(Number);
@@ -198,8 +197,10 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
                   isSelected && styles.durationButtonSelected,
                 ]}
                 onPress={() => {
+                  setIsCustomDuration(false);
                   setCustomDurationText('');
                   setFormData({ ...formData, durationMinutes: option.value });
+                  setError(null);
                 }}
               >
                 <Text
@@ -221,13 +222,11 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
               isCustomDuration && styles.durationButtonSelected,
             ]}
             onPress={() => {
-              // Activate custom mode; seed the input with the current value
-              // if it's already a non-preset number so the user can refine it
-              setCustomDurationText(
-                isCustomDuration ? String(formData.durationMinutes) : ''
-              );
-              // Use 0 as a sentinel so no preset chip appears selected
+              if (isCustomDuration) return;
+              setIsCustomDuration(true);
+              setCustomDurationText('');
               setFormData({ ...formData, durationMinutes: 0 });
+              setError(null);
             }}
           >
             <Text
@@ -250,11 +249,14 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
               onChangeText={(val) => {
                 setCustomDurationText(val);
                 const parsed = parseInt(val, 10);
-                if (!isNaN(parsed) && parsed > 0) {
-                  setFormData({ ...formData, durationMinutes: parsed });
-                }
+                setFormData({
+                  ...formData,
+                  durationMinutes: !isNaN(parsed) && parsed > 0 ? parsed : 0,
+                });
+                setError(null);
               }}
               keyboardType="numeric"
+              autoFocus
               containerStyle={styles.customDurationInput}
             />
             <Text style={styles.customDurationLabel}>min</Text>
@@ -321,7 +323,11 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
           title="Generate Metadata"
           onPress={handleGenerateMetadata}
           fullWidth
-          disabled={!formData.title.trim() || !formData.description.trim()}
+          disabled={
+            !formData.title.trim() ||
+            !formData.description.trim() ||
+            formData.durationMinutes <= 0
+          }
         />
       </View>
     </ScrollView>
