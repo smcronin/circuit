@@ -4,6 +4,8 @@
 // display font (Barlow Condensed) is reserved for headlines, numerals,
 // buttons and kickers.
 
+import { scaleFont } from './metrics';
+
 export const colors = {
   // Primary - Electric Indigo
   primary: '#6C7CFF',
@@ -86,18 +88,20 @@ export const borderRadius = {
 };
 
 export const typography = {
-  // Font sizes
-  xs: 12,
-  sm: 14,
-  base: 16,
-  lg: 18,
-  xl: 20,
-  '2xl': 24,
-  '3xl': 30,
-  '4xl': 36,
-  '5xl': 48,
-  '6xl': 60,
-  '7xl': 72,
+  // Font sizes. The literals are the iPhone SE baseline; `scaleFont` grows them
+  // on roomier devices so text is readable at arm's (or gym-floor's) length.
+  // Spacing tokens deliberately do NOT scale — the extra room goes to the type.
+  xs: scaleFont(12),
+  sm: scaleFont(14),
+  base: scaleFont(16),
+  lg: scaleFont(18),
+  xl: scaleFont(20),
+  '2xl': scaleFont(24),
+  '3xl': scaleFont(30),
+  '4xl': scaleFont(36),
+  '5xl': scaleFont(48),
+  '6xl': scaleFont(60),
+  '7xl': scaleFont(72),
 
   // Font weights (as strings for RN)
   light: '300' as const,

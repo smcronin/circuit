@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Animated,
   ScrollView,
   Platform,
+  LayoutChangeEvent,
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -16,9 +17,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SegmentedProgressBar, VerticalAutoScroll } from '@/components/common';
-import { colors, fonts, spacing, typography } from '@/theme';
+import { colors, fonts, spacing, typography, scaleFont, clamp } from '@/theme';
 import { useTimerStore, useHistoryStore, useUserStore } from '@/stores';
-import { formatTime, isRestItem, getItemTypeLabel } from '@/utils';
+import { formatTime, isRestItem, getItemTypeLabel, fitText, fitTimerDigits } from '@/utils';
 import { soundManager } from '@/services/audio';
 
 // Renders a time string with every digit in a fixed-width slot so the clock
@@ -67,6 +68,149 @@ const digitStyles = StyleSheet.create({
   },
 });
 
+// ─── Fluid stage sizing ─────────────────────────────────────────────────────
+// The timer is read from across the room, so every type size is derived from
+// the space actually measured on screen rather than from fixed breakpoints.
+// Each state budgets its stage top-down: fixed chrome (kicker, side pill, rep
+// target, instructions) is reserved first, then everything left over is split
+// between the two "hero" elements. Long exercise names shrink and wrap into
+// their own box, so they can never push the clock off screen.
+
+interface StageBox {
+  width: number;
+  height: number;
+}
+
+interface WorkStageLayout {
+  kicker: number;
+  nameFontSize: number;
+  nameLineHeight: number;
+  nameLines: number;
+  sideSize: number;
+  digitsSize: number;
+  repsSize: number;
+  descriptionSize: number;
+  descriptionLines: number;
+  showDescription: boolean;
+}
+
+function computeWorkStage({
+  width,
+  height,
+  name,
+  digitsText,
+  hasSide,
+  hasReps,
+  hasDescription,
+}: StageBox & {
+  name: string;
+  digitsText: string;
+  hasSide: boolean;
+  hasReps: boolean;
+  hasDescription: boolean;
+}): WorkStageLayout {
+  const kicker = clamp(Math.round(height * 0.038), 13, 24);
+  const sideSize = hasSide ? clamp(Math.round(height * 0.046), 15, 30) : 0;
+  const repsSize = hasReps ? clamp(Math.round(height * 0.038), 14, 26) : 0;
+
+  // Instructions are the first thing to give up room — on a short stage they'd
+  // otherwise eat the space the clock needs.
+  const showDescription = hasDescription && height > 330;
+  const descriptionSize = showDescription ? clamp(Math.round(height * 0.033), 13, 21) : 0;
+  const descriptionLines = height < 420 ? 2 : 3;
+
+  const chrome =
+    kicker * 1.2 +
+    spacing.sm +
+    (hasSide ? sideSize * 1.15 + spacing.sm * 2 + spacing.sm : 0) +
+    (hasReps ? repsSize * 1.35 + spacing.sm : 0) +
+    (showDescription ? descriptionSize * 1.42 * descriptionLines + spacing.md : 0);
+
+  // Never let chrome claim so much that the heroes collapse.
+  const heroSpace = Math.max(height - chrome - spacing.md, height * 0.4);
+  const nameBox = heroSpace * 0.42;
+  const digitsBox = heroSpace * 0.58;
+
+  const nameFit = fitText(name, {
+    maxWidth: width,
+    maxHeight: nameBox,
+    maxLines: 3,
+    maxFontSize: clamp(Math.min(height * 0.2, nameBox / 1.06), 20, 96),
+    minFontSize: 20,
+  });
+
+  const digitsSize = fitTimerDigits(digitsText, width, clamp(digitsBox / 1.04, 40, 190));
+
+  return {
+    kicker,
+    nameFontSize: nameFit.fontSize,
+    nameLineHeight: nameFit.lineHeight,
+    nameLines: 3,
+    sideSize,
+    digitsSize,
+    repsSize,
+    descriptionSize,
+    descriptionLines,
+    showDescription,
+  };
+}
+
+interface RestStageLayout {
+  kicker: number;
+  digitsSize: number;
+  nextLabelSize: number;
+  nextFontSize: number;
+  nextLineHeight: number;
+  thenSize: number;
+  showThen: boolean;
+}
+
+function computeRestStage({
+  width,
+  height,
+  digitsText,
+  nextName,
+  hasThen,
+}: StageBox & { digitsText: string; nextName: string; hasThen: boolean }): RestStageLayout {
+  const kicker = clamp(Math.round(height * 0.04), 13, 26);
+  const nextLabelSize = clamp(Math.round(height * 0.032), 11, 20);
+  const showThen = hasThen && height > 380;
+  const thenSize = showThen ? clamp(Math.round(height * 0.032), 13, 20) : 0;
+
+  const chrome =
+    kicker * 1.2 +
+    spacing.sm +
+    nextLabelSize * 1.4 +
+    spacing.md +
+    (showThen ? thenSize * 1.4 + spacing.sm : 0);
+
+  const heroSpace = Math.max(height - chrome - spacing.md, height * 0.5);
+  // During rest the clock leads and the upcoming exercise is the second hero —
+  // it's what you need to read before the rest runs out.
+  const digitsBox = heroSpace * 0.56;
+  const nextBox = heroSpace * 0.44;
+
+  const digitsSize = fitTimerDigits(digitsText, width, clamp(digitsBox / 1.04, 40, 200));
+
+  const nextFit = fitText(nextName, {
+    maxWidth: width,
+    maxHeight: nextBox,
+    maxLines: 3,
+    maxFontSize: clamp(Math.min(height * 0.17, nextBox / 1.06), 18, 78),
+    minFontSize: 18,
+  });
+
+  return {
+    kicker,
+    digitsSize,
+    nextLabelSize,
+    nextFontSize: nextFit.fontSize,
+    nextLineHeight: nextFit.lineHeight,
+    thenSize,
+    showThen,
+  };
+}
+
 export default function TimerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -77,7 +221,6 @@ export default function TimerScreen() {
   // controls, and safe areas are accounted for. Keep all of the workout's
   // essential information in view by tightening the secondary UI first.
   const isCompactPortrait = isPortrait && height <= 740;
-  const isVeryCompactPortrait = isPortrait && height <= 640;
 
   const {
     status,
@@ -112,6 +255,16 @@ export default function TimerScreen() {
   }, [isAudioMuted]);
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  // Measured size of the main content area. Everything on the stage is sized
+  // from this, so the layout adapts to any device without a breakpoint table.
+  const [stage, setStage] = useState<StageBox>({ width: 0, height: 0 });
+  const handleStageLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width: w, height: h } = event.nativeEvent.layout;
+    setStage((prev) =>
+      Math.abs(prev.width - w) < 1 && Math.abs(prev.height - h) < 1 ? prev : { width: w, height: h }
+    );
+  }, []);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -388,50 +541,85 @@ export default function TimerScreen() {
   const isEndingCountdown = status === 'running' && timeRemaining <= 3 && timeRemaining >= 1;
   const isInitialCountdown = showCountdown && status === 'countdown';
 
+  // The clock is sized from the *widest* string this step will ever show, so it
+  // doesn't visibly resize as the minutes digit drops away.
+  const timerText = formatTime(timeRemaining);
+  const digitsSizingText =
+    currentItem && formatTime(currentItem.duration).length > timerText.length
+      ? formatTime(currentItem.duration)
+      : timerText;
+
+  // What's actually coming up. A rest step in between is a detail, not the
+  // headline — surface the exercise you need to get ready for.
+  const upNext = useMemo(() => {
+    if (!nextItem) return null;
+    if (nextIsRest && itemAfterNext) {
+      return { name: itemAfterNext.name, restSeconds: nextItem.duration };
+    }
+    if (nextIsRest) return null;
+    return { name: nextItem.name, restSeconds: null as number | null };
+  }, [nextItem, nextIsRest, itemAfterNext]);
+
+  // ─── Countdown overlay (initial 3-2-1 and end-of-step) ────────────────────
   if (isInitialCountdown || isEndingCountdown) {
     const upcomingItem = nextItem;
-    const displayValue = isEndingCountdown ? timeRemaining : (countdownValue || 'GO!');
-    const headerText = isEndingCountdown
-      ? (isRest ? 'REST ENDING' : 'FINISHING')
-      : 'GET READY';
-    const subText = isEndingCountdown
-      ? (upcomingItem ? `Next: ${upcomingItem.name}` : 'Final stretch!')
-      : `First up: ${items[0]?.name}`;
+    const displayValue = isEndingCountdown ? timeRemaining : countdownValue || 'GO!';
+    const headerText = isEndingCountdown ? (isRest ? 'REST ENDING' : 'FINISHING') : 'GET READY';
+    const nextName = isEndingCountdown
+      ? upcomingItem?.name ?? null
+      : items[0]?.name ?? null;
+    const nextLabel = isEndingCountdown ? 'NEXT' : 'FIRST UP';
+    const fallbackText = isEndingCountdown ? 'Final stretch!' : null;
 
     // Gradient backdrops: deep green for work ending, deep blue for rest
     // ending, near-black navy for the initial countdown.
     const countdownGradient = isEndingCountdown
-      ? (isRest ? colors.gradientTimerRest : colors.gradientTimerWork)
+      ? isRest
+        ? colors.gradientTimerRest
+        : colors.gradientTimerWork
       : colors.gradientDark;
 
     // White text on colored backgrounds for contrast, electric indigo on the
     // dark initial screen.
     const countdownNumberColor = isEndingCountdown ? colors.text : colors.primaryLight;
-    const countdownTextColor = isEndingCountdown
-      ? 'rgba(255,255,255,0.85)'
-      : colors.textSecondary;
+    const countdownTextColor = isEndingCountdown ? 'rgba(255,255,255,0.85)' : colors.textSecondary;
     const countdownGlow = isEndingCountdown
       ? 'rgba(255,255,255,0.35)'
       : 'rgba(108,124,255,0.55)';
 
+    const stageH = Math.max(height - insets.top - insets.bottom, 200);
+    const stageW = Math.max(width - spacing.lg * 2, 200);
+    const labelSize = clamp(Math.round(stageH * 0.028), 12, 22);
+    const numberSize = clamp(Math.round(stageH * (isCompactLandscape ? 0.4 : 0.3)), 84, 260);
+    // The upcoming exercise gets real size here — this screen is on for the
+    // three seconds when knowing what's next matters most.
+    const nextFit = fitText(nextName ?? fallbackText ?? '', {
+      maxWidth: stageW,
+      maxLines: isCompactLandscape ? 2 : 3,
+      maxFontSize: clamp(stageH * (isCompactLandscape ? 0.09 : 0.075), 20, 60),
+      minFontSize: 18,
+    });
+
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <LinearGradient colors={countdownGradient} style={StyleSheet.absoluteFill} />
-        <View style={[styles.countdownContainer, isCompactLandscape && styles.countdownContainerLandscape]}>
+        <View
+          style={[
+            styles.countdownContainer,
+            { paddingTop: insets.top, paddingBottom: insets.bottom },
+          ]}
+        >
           <Text
-            style={[
-              styles.getReady,
-              isCompactLandscape && styles.getReadyLandscape,
-              { color: countdownTextColor },
-            ]}
+            style={[styles.getReady, { color: countdownTextColor, fontSize: labelSize }]}
           >
             {headerText}
           </Text>
           <Animated.Text
             style={[
               styles.countdownNumber,
-              isCompactLandscape && styles.countdownNumberLandscape,
               {
+                fontSize: numberSize,
+                lineHeight: Math.round(numberSize * 1.05),
                 transform: [{ scale: pulseAnim }],
                 color: countdownNumberColor,
                 textShadowColor: countdownGlow,
@@ -442,18 +630,31 @@ export default function TimerScreen() {
           >
             {displayValue}
           </Animated.Text>
-          <Text
-            style={[
-              styles.firstExercise,
-              isCompactLandscape && styles.firstExerciseLandscape,
-              { color: countdownTextColor },
-            ]}
-            numberOfLines={isCompactLandscape ? 1 : 2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.75}
-          >
-            {subText}
-          </Text>
+          <View style={styles.countdownNextBlock}>
+            {nextName && (
+              <Text
+                style={[
+                  styles.countdownNextLabel,
+                  { color: countdownTextColor, fontSize: Math.round(labelSize * 0.8) },
+                ]}
+              >
+                {nextLabel}
+              </Text>
+            )}
+            <Text
+              style={[
+                styles.countdownNextName,
+                {
+                  color: nextName ? colors.text : countdownTextColor,
+                  fontSize: nextFit.fontSize,
+                  lineHeight: nextFit.lineHeight,
+                },
+              ]}
+              numberOfLines={isCompactLandscape ? 2 : 3}
+            >
+              {nextName ?? fallbackText}
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -464,181 +665,170 @@ export default function TimerScreen() {
   }
 
   const activeItem = currentItem;
+  const description = activeItem.exercise?.description ?? null;
+  const repsTargetText = activeItem.exercise?.targetReps
+    ? `${activeItem.exercise.targetReps} reps`
+    : activeItem.exercise?.repRange
+      ? `${activeItem.exercise.repRange} reps`
+      : null;
 
-  const renderTimerDetails = (compact = false) => (
-    <>
-      <Text
-        style={[
-          styles.itemType,
-          compact && styles.itemTypeLandscape,
-          isCompactPortrait && styles.itemTypeCompactPortrait,
-        ]}
-      >
-        {/* "REST / Rest" reads redundant — swap the kicker on rest steps */}
-        {isRest ? 'RECOVER' : getItemTypeLabel(activeItem.type)}
-      </Text>
-      <Text
-        style={[
-          styles.itemName,
-          compact && styles.itemNameLandscape,
-          isCompactPortrait && styles.itemNameCompactPortrait,
-          isVeryCompactPortrait && styles.itemNameVeryCompactPortrait,
-        ]}
-        numberOfLines={3}
-        adjustsFontSizeToFit
-        minimumFontScale={0.55}
-      >
-        {activeItem.name}
-      </Text>
-      {hasSideSwitching && (
+  // ─── Stage renderers ──────────────────────────────────────────────────────
+
+  const renderRestStage = (box: StageBox) => {
+    const nextName = upNext?.name ?? nextItem?.name ?? 'Workout complete';
+    // The step after the one you're getting ready for, skipping another rest.
+    const thenItem =
+      itemAfterNext && isRestItem(itemAfterNext.type) ? items[currentItemIndex + 3] : itemAfterNext;
+    const layout = computeRestStage({
+      width: box.width,
+      height: box.height,
+      digitsText: digitsSizingText,
+      nextName,
+      hasThen: !!thenItem,
+    });
+
+    return (
+      <>
+        <Text style={[styles.itemType, { fontSize: layout.kicker }]}>RECOVER</Text>
+
+        <TimerDigits text={timerText} fontSize={layout.digitsSize} />
+
+        <View style={styles.restNextBlock}>
+          <Text style={[styles.upNextLabel, { fontSize: layout.nextLabelSize }]}>UP NEXT</Text>
+          <Text
+            style={[
+              styles.restNextName,
+              { fontSize: layout.nextFontSize, lineHeight: layout.nextLineHeight },
+            ]}
+            numberOfLines={3}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            {nextName}
+          </Text>
+          {layout.showThen && thenItem && (
+            <Text style={[styles.restThen, { fontSize: layout.thenSize }]} numberOfLines={1}>
+              THEN {thenItem.name}
+            </Text>
+          )}
+        </View>
+      </>
+    );
+  };
+
+  // `allowDescription` is false in landscape, where the instructions live in
+  // their own auto-scrolling column instead of on the stage.
+  const renderWorkStage = (box: StageBox, allowDescription: boolean) => {
+    const layout = computeWorkStage({
+      width: box.width,
+      height: box.height,
+      name: activeItem.name,
+      digitsText: digitsSizingText,
+      hasSide: hasSideSwitching,
+      hasReps: !!repsTargetText,
+      hasDescription: allowDescription && !!description,
+    });
+
+    return (
+      <>
+        <Text style={[styles.itemType, { fontSize: layout.kicker }]}>
+          {getItemTypeLabel(activeItem.type)}
+        </Text>
+
         <Text
           style={[
-            styles.sideIndicator,
-            compact && styles.sideIndicatorLandscape,
-            isCompactPortrait && styles.sideIndicatorCompactPortrait,
+            styles.itemName,
+            { fontSize: layout.nameFontSize, lineHeight: layout.nameLineHeight },
           ]}
+          numberOfLines={layout.nameLines}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
         >
-          {currentSide} SIDE
+          {activeItem.name}
         </Text>
-      )}
 
-      <View style={styles.timerDisplayWrapper}>
-        <TimerDigits
-          text={formatTime(timeRemaining)}
-          fontSize={
-            compact ? 76 : isVeryCompactPortrait ? 80 : isCompactPortrait ? 92 : 112
-          }
-        />
-      </View>
+        {hasSideSwitching && (
+          <Text
+            style={[
+              styles.sideIndicator,
+              {
+                fontSize: layout.sideSize,
+                lineHeight: Math.round(layout.sideSize * 1.15),
+                paddingHorizontal: Math.round(layout.sideSize * 0.9),
+              },
+            ]}
+          >
+            {currentSide} SIDE
+          </Text>
+        )}
 
-      {activeItem.exercise?.targetReps && (
-        <Text
-          style={[
-            styles.repsTarget,
-            compact && styles.repsTargetLandscape,
-            isCompactPortrait && styles.repsTargetCompactPortrait,
-          ]}
-        >
-          Target: {activeItem.exercise.targetReps} reps
-        </Text>
-      )}
-      {activeItem.exercise?.repRange && (
-        <Text
-          style={[
-            styles.repsTarget,
-            compact && styles.repsTargetLandscape,
-            isCompactPortrait && styles.repsTargetCompactPortrait,
-          ]}
-        >
-          Target: {activeItem.exercise.repRange} reps
-        </Text>
-      )}
-    </>
-  );
+        <TimerDigits text={timerText} fontSize={layout.digitsSize} />
 
-  const renderExerciseDescription = (compact = false) => {
-    if (!activeItem.exercise?.description) return null;
+        {repsTargetText && (
+          <Text style={[styles.repsTarget, { fontSize: layout.repsSize }]} numberOfLines={1}>
+            TARGET {repsTargetText}
+          </Text>
+        )}
+
+        {layout.showDescription && description && (
+          <Text
+            style={[
+              styles.exerciseDescriptionText,
+              {
+                fontSize: layout.descriptionSize,
+                lineHeight: Math.round(layout.descriptionSize * 1.42),
+              },
+            ]}
+            numberOfLines={layout.descriptionLines}
+          >
+            {description}
+          </Text>
+        )}
+      </>
+    );
+  };
+
+  const renderStage = (box: StageBox, allowDescription = true) =>
+    isRest && upNext ? renderRestStage(box) : renderWorkStage(box, allowDescription);
+
+  // The persistent footer only earns its space during work — in rest the
+  // upcoming exercise is already the second hero on the stage.
+  const renderUpNextBar = (compact = false) => {
+    if (isRest || !upNext) return null;
+
+    const barWidth = compact
+      ? Math.max(width * 0.4 - spacing.md * 2, 140)
+      : Math.max(width - spacing.lg * 2, 200);
+    const fit = fitText(upNext.name, {
+      maxWidth: barWidth,
+      maxLines: 2,
+      maxFontSize: compact ? clamp(height * 0.08, 16, 26) : clamp(height * 0.045, 20, 44),
+      minFontSize: 15,
+    });
 
     return (
       <View
         style={[
-          styles.exerciseDescriptionWrapper,
-          compact && styles.exerciseDescriptionWrapperLandscape,
-          isCompactPortrait && styles.exerciseDescriptionWrapperCompactPortrait,
+          styles.upNext,
+          compact && styles.upNextLandscape,
+          !compact && isCompactPortrait && styles.upNextCompactPortrait,
         ]}
       >
-        {compact ? (
-          <VerticalAutoScroll
-            text={activeItem.exercise.description}
-            style={[styles.exerciseDescriptionText, styles.exerciseDescriptionTextLandscape]}
-            containerHeight={56}
-            lineHeight={20}
-            pauseDuration={3000}
-          />
-        ) : (
-          <Text
-            style={[
-              styles.exerciseDescriptionText,
-              isCompactPortrait && styles.exerciseDescriptionTextCompactPortrait,
-            ]}
-          >
-            {activeItem.exercise.description}
-          </Text>
-        )}
+        <Text style={[styles.upNextLabel, { fontSize: compact ? scaleFont(10) : scaleFont(12) }]}>
+          {upNext.restSeconds
+            ? `UP NEXT · AFTER ${formatTime(upNext.restSeconds)} REST`
+            : 'UP NEXT'}
+        </Text>
+        <Text
+          style={[styles.upNextName, { fontSize: fit.fontSize, lineHeight: fit.lineHeight }]}
+          numberOfLines={2}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
+          {upNext.name}
+        </Text>
       </View>
     );
-  };
-
-  const renderUpNext = (compact = false) => {
-    if (nextItem && nextIsRest && itemAfterNext) {
-      return (
-        <View
-          style={[
-            styles.upNext,
-            compact && styles.upNextLandscape,
-            isCompactPortrait && styles.upNextCompactPortrait,
-          ]}
-        >
-          <Text
-            style={[
-              styles.upNextLabel,
-              compact && styles.upNextLabelLandscape,
-              isCompactPortrait && styles.upNextLabelCompactPortrait,
-            ]}
-          >
-            UP NEXT
-          </Text>
-          <Text
-            style={[
-              styles.upNextName,
-              compact && styles.upNextNameLandscape,
-              isCompactPortrait && styles.upNextNameCompactPortrait,
-            ]}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.55}
-          >
-            {nextItem.name} • {itemAfterNext.name}
-          </Text>
-        </View>
-      );
-    }
-
-    if (nextItem && !nextIsRest) {
-      return (
-        <View
-          style={[
-            styles.upNext,
-            compact && styles.upNextLandscape,
-            isCompactPortrait && styles.upNextCompactPortrait,
-          ]}
-        >
-          <Text
-            style={[
-              styles.upNextLabel,
-              compact && styles.upNextLabelLandscape,
-              isCompactPortrait && styles.upNextLabelCompactPortrait,
-            ]}
-          >
-            UP NEXT
-          </Text>
-          <Text
-            style={[
-              styles.upNextName,
-              compact && styles.upNextNameLandscape,
-              isCompactPortrait && styles.upNextNameCompactPortrait,
-            ]}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.55}
-          >
-            {nextItem.name}
-          </Text>
-        </View>
-      );
-    }
-
-    return null;
   };
 
   const renderControls = (compact = false) => {
@@ -651,7 +841,7 @@ export default function TimerScreen() {
           compact && styles.controlsLandscape,
           isCompactPortrait && styles.controlsCompactPortrait,
           !compact && {
-            paddingBottom: insets.bottom + (isCompactPortrait ? spacing.sm : spacing.lg),
+            paddingBottom: insets.bottom + (isCompactPortrait ? spacing.md : spacing.lg),
           },
         ]}
       >
@@ -700,81 +890,93 @@ export default function TimerScreen() {
           ]}
           onPress={skipToNext}
         >
-          <Ionicons
-            name="play-skip-forward"
-            size={useCompactControls ? 24 : 28}
-            color={colors.text}
-          />
+          <Ionicons name="play-skip-forward" size={useCompactControls ? 24 : 28} color={colors.text} />
         </TouchableOpacity>
       </View>
     );
   };
 
-  const renderPausedScreen = () => (
-    <View
-      style={[
-        styles.pausedScreen,
-        isCompactLandscape && styles.pausedScreenLandscape,
-      ]}
-    >
-      <View
-        style={[
-          styles.pausedContent,
-          isCompactLandscape && styles.pausedContentLandscape,
-        ]}
-      >
-        <Text style={[styles.pausedText, isCompactLandscape && styles.pausedTextLandscape]}>
-          PAUSED
-        </Text>
+  const renderPausedScreen = () => {
+    const stageH = Math.max(
+      height - insets.top - insets.bottom - (isCompactLandscape ? 120 : 220),
+      200
+    );
+    const stageW = Math.max(width - spacing.lg * 2, 200);
+    const nameFit = fitText(activeItem.name, {
+      maxWidth: stageW,
+      maxLines: 3,
+      maxFontSize: clamp(stageH * 0.13, 22, 56),
+      minFontSize: 20,
+    });
+    const pausedDigits = fitTimerDigits(
+      digitsSizingText,
+      stageW,
+      clamp(stageH * 0.2, 40, 110)
+    );
 
-        <Text
-          style={[
-            styles.pausedExerciseName,
-            isCompactLandscape && styles.pausedExerciseNameLandscape,
-          ]}
-          numberOfLines={3}
-          adjustsFontSizeToFit
-          minimumFontScale={0.6}
-        >
-          {activeItem.name}
-        </Text>
+    return (
+      <View style={[styles.pausedScreen, isCompactLandscape && styles.pausedScreenLandscape]}>
+        <View style={[styles.pausedContent, isCompactLandscape && styles.pausedContentLandscape]}>
+          <Text style={[styles.pausedText, isCompactLandscape && styles.pausedTextLandscape]}>
+            PAUSED
+          </Text>
 
-        <View style={styles.pausedTimerBlock}>
-          <TimerDigits
-            text={formatTime(timeRemaining)}
-            fontSize={isCompactLandscape ? 44 : 60}
-          />
-          <Text style={styles.pausedTimerLabel}>REMAINING IN THIS STEP</Text>
+          <Text
+            style={[
+              styles.pausedExerciseName,
+              { fontSize: nameFit.fontSize, lineHeight: nameFit.lineHeight },
+            ]}
+            numberOfLines={3}
+            adjustsFontSizeToFit
+            minimumFontScale={0.6}
+          >
+            {activeItem.name}
+          </Text>
+
+          <View style={styles.pausedTimerBlock}>
+            <TimerDigits text={timerText} fontSize={pausedDigits} />
+            <Text style={styles.pausedTimerLabel}>REMAINING IN THIS STEP</Text>
+          </View>
+
+          {description &&
+            (isCompactLandscape ? (
+              <ScrollView
+                style={[styles.pausedInstructions, styles.pausedInstructionsLandscape]}
+                contentContainerStyle={styles.pausedInstructionsContent}
+                showsVerticalScrollIndicator={true}
+              >
+                <Text style={[styles.pausedInstructionsText, styles.pausedInstructionsTextLandscape]}>
+                  {description}
+                </Text>
+              </ScrollView>
+            ) : (
+              <View style={[styles.pausedInstructions, styles.pausedInstructionsPortrait]}>
+                <Text style={styles.pausedInstructionsText} numberOfLines={4}>
+                  {description}
+                </Text>
+              </View>
+            ))}
+
+          <Text style={[styles.pausedSubtext, isCompactLandscape && styles.pausedSubtextLandscape]}>
+            Tap play to resume
+          </Text>
         </View>
 
-        {activeItem.exercise?.description && (
-          isCompactLandscape ? (
-            <ScrollView
-              style={[styles.pausedInstructions, styles.pausedInstructionsLandscape]}
-              contentContainerStyle={styles.pausedInstructionsContent}
-              showsVerticalScrollIndicator={true}
-            >
-              <Text style={[styles.pausedInstructionsText, styles.pausedInstructionsTextLandscape]}>
-                {activeItem.exercise.description}
-              </Text>
-            </ScrollView>
-          ) : (
-            <View style={[styles.pausedInstructions, styles.pausedInstructionsPortrait]}>
-              <Text style={styles.pausedInstructionsText}>
-                {activeItem.exercise.description}
-              </Text>
-            </View>
-          )
-        )}
-
-        <Text style={[styles.pausedSubtext, isCompactLandscape && styles.pausedSubtextLandscape]}>
-          Tap play to resume
-        </Text>
+        {renderControls(isCompactLandscape)}
       </View>
+    );
+  };
 
-      {renderControls(isCompactLandscape)}
-    </View>
-  );
+  // Landscape splits the stage into two columns, so the hero column is measured
+  // separately from the window.
+  const landscapeStage: StageBox = {
+    width: Math.max(stage.width - spacing.md * 2, 160),
+    height: Math.max(stage.height - spacing.md, 160),
+  };
+  const portraitStage: StageBox = {
+    width: Math.max(stage.width - spacing.md * 2, 200),
+    height: Math.max(stage.height - spacing.md, 200),
+  };
 
   return (
     <View style={[styles.container, { backgroundColor, paddingTop: insets.top }]}>
@@ -798,17 +1000,9 @@ export default function TimerScreen() {
           accessibilityRole="button"
           accessibilityLabel="End workout"
           onPress={handleStop}
-          style={[
-            styles.closeButton,
-            isCompactLandscape && styles.closeButtonLandscape,
-            isCompactPortrait && styles.closeButtonCompactPortrait,
-          ]}
+          style={[styles.closeButton, isCompactPortrait && styles.closeButtonCompactPortrait]}
         >
-          <Ionicons
-            name="close"
-            size={isCompactLandscape || isCompactPortrait ? 24 : 28}
-            color={colors.text}
-          />
+          <Ionicons name="close" size={isCompactPortrait ? 26 : 30} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTimeline}>
           <View style={[styles.headerMetric, styles.headerMetricLeft]}>
@@ -817,12 +1011,12 @@ export default function TimerScreen() {
           </View>
           <View style={styles.progressInfo}>
             <Text style={styles.headerMetricLabel}>STEP</Text>
-            <Text style={styles.progressText}>
-              {currentItemIndex + 1} / {items.length}
+            <Text style={styles.headerMetricValue}>
+              {currentItemIndex + 1}/{items.length}
             </Text>
           </View>
           <View style={[styles.headerMetric, styles.headerMetricRight]}>
-            <Text style={styles.headerMetricLabel}>REMAINING</Text>
+            <Text style={styles.headerMetricLabel}>LEFT</Text>
             <Text style={styles.headerMetricValue}>{formatTime(workoutTimeRemaining)}</Text>
           </View>
         </View>
@@ -830,15 +1024,11 @@ export default function TimerScreen() {
           accessibilityRole="button"
           accessibilityLabel={isAudioMuted ? 'Unmute audio' : 'Mute audio'}
           onPress={toggleAudioMute}
-          style={[
-            styles.closeButton,
-            isCompactLandscape && styles.closeButtonLandscape,
-            isCompactPortrait && styles.closeButtonCompactPortrait,
-          ]}
+          style={[styles.closeButton, isCompactPortrait && styles.closeButtonCompactPortrait]}
         >
           <Ionicons
             name={isAudioMuted ? 'volume-mute' : 'volume-high'}
-            size={isCompactLandscape || isCompactPortrait ? 22 : 24}
+            size={isCompactPortrait ? 24 : 26}
             color={isAudioMuted ? 'rgba(255,255,255,0.5)' : colors.text}
           />
         </TouchableOpacity>
@@ -869,12 +1059,20 @@ export default function TimerScreen() {
             },
           ]}
         >
-          <View style={styles.landscapePrimary}>
-            {renderTimerDetails(true)}
+          <View style={styles.landscapePrimary} onLayout={handleStageLayout}>
+            {stage.height > 0 && renderStage(landscapeStage, false)}
           </View>
           <View style={styles.landscapeSecondary}>
-            {renderExerciseDescription(true)}
-            {renderUpNext(true)}
+            {description && (
+              <VerticalAutoScroll
+                text={description}
+                style={[styles.exerciseDescriptionText, styles.exerciseDescriptionTextLandscape]}
+                containerHeight={56}
+                lineHeight={20}
+                pauseDuration={3000}
+              />
+            )}
+            {renderUpNextBar(true)}
             {renderControls(true)}
           </View>
         </View>
@@ -882,17 +1080,14 @@ export default function TimerScreen() {
         <>
           {/* Main Timer Display */}
           <View
-            style={[
-              styles.timerContainer,
-              isCompactPortrait && styles.timerContainerCompactPortrait,
-            ]}
+            style={[styles.timerContainer, isCompactPortrait && styles.timerContainerCompactPortrait]}
+            onLayout={handleStageLayout}
           >
-            {renderTimerDetails()}
-            {renderExerciseDescription()}
+            {stage.height > 0 && renderStage(portraitStage)}
           </View>
 
           {/* Up Next */}
-          {renderUpNext()}
+          {renderUpNextBar()}
 
           {/* Controls */}
           {renderControls()}
@@ -905,9 +1100,7 @@ export default function TimerScreen() {
         <View style={styles.exitConfirmOverlay}>
           <View style={styles.exitConfirmCard}>
             <Text style={styles.exitConfirmTitle}>End Workout?</Text>
-            <Text style={styles.exitConfirmMessage}>
-              Your progress will be saved to history.
-            </Text>
+            <Text style={styles.exitConfirmMessage}>Your progress will be saved to history.</Text>
             <View style={styles.exitConfirmButtons}>
               <TouchableOpacity
                 style={styles.exitKeepGoingButton}
@@ -915,10 +1108,7 @@ export default function TimerScreen() {
               >
                 <Text style={styles.exitKeepGoingText}>Keep Going</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.exitEndButton}
-                onPress={handleConfirmStop}
-              >
+              <TouchableOpacity style={styles.exitEndButton} onPress={handleConfirmStop}>
                 <Text style={styles.exitEndText}>End Workout</Text>
               </TouchableOpacity>
             </View>
@@ -938,24 +1128,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   headerLandscape: {
     paddingVertical: spacing.xs,
   },
   headerCompactPortrait: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   closeButton: {
-    width: 44,
-    height: 44,
+    width: 46,
+    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeButtonLandscape: {
-    width: 40,
-    height: 40,
   },
   closeButtonCompactPortrait: {
     width: 40,
@@ -966,7 +1153,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: spacing.xs,
+    marginHorizontal: spacing.sm,
   },
   headerMetric: {
     flex: 1,
@@ -979,29 +1166,22 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   headerMetricLabel: {
-    fontSize: 9,
-    lineHeight: 11,
-    fontWeight: typography.bold,
-    color: 'rgba(255,255,255,0.55)',
-    letterSpacing: 0.7,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: scaleFont(11),
+    lineHeight: scaleFont(13),
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 1,
   },
   headerMetricValue: {
-    fontFamily: fonts.displaySemiBold,
-    fontSize: 17,
-    lineHeight: 20,
+    fontFamily: fonts.display,
+    fontSize: scaleFont(22),
+    lineHeight: scaleFont(25),
     color: colors.text,
     letterSpacing: 0.5,
   },
   progressInfo: {
-    flex: 0.9,
+    flex: 1,
     alignItems: 'center',
-  },
-  progressText: {
-    fontFamily: fonts.displaySemiBold,
-    fontSize: 17,
-    lineHeight: 20,
-    color: colors.text,
-    letterSpacing: 0.5,
   },
   progressBar: {
     marginHorizontal: spacing.lg,
@@ -1017,10 +1197,10 @@ const styles = StyleSheet.create({
     minHeight: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   timerContainerCompactPortrait: {
-    justifyContent: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
@@ -1047,169 +1227,114 @@ const styles = StyleSheet.create({
   },
   itemType: {
     fontFamily: fonts.displaySemiBold,
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.75)',
+    color: 'rgba(255,255,255,0.8)',
     letterSpacing: 3,
     textTransform: 'uppercase',
-    marginBottom: spacing.sm,
-  },
-  itemTypeLandscape: {
-    fontSize: 13,
     marginBottom: spacing.xs,
-  },
-  itemTypeCompactPortrait: {
-    fontSize: 13,
-    marginBottom: 2,
+    textAlign: 'center',
   },
   itemName: {
     fontFamily: fonts.display,
-    fontSize: 40,
     color: colors.text,
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-    width: '100%',
-  },
-  itemNameLandscape: {
-    fontSize: 30,
     marginBottom: spacing.xs,
-    maxWidth: '100%',
-  },
-  itemNameCompactPortrait: {
-    fontSize: 34,
-    marginBottom: 2,
-  },
-  itemNameVeryCompactPortrait: {
-    fontSize: 30,
+    width: '100%',
   },
   sideIndicator: {
     fontFamily: fonts.displaySemiBold,
-    fontSize: typography.xl,
     color: colors.text,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    paddingVertical: spacing.xs,
     borderRadius: 999,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     letterSpacing: 2.5,
     overflow: 'hidden',
-  },
-  sideIndicatorLandscape: {
-    fontSize: typography.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  sideIndicatorCompactPortrait: {
-    fontSize: typography.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  timerDisplayWrapper: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
+    textAlign: 'center',
   },
   repsTarget: {
-    fontSize: typography.lg,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: spacing.md,
-  },
-  repsTargetLandscape: {
-    fontSize: typography.sm,
+    fontFamily: fonts.displaySemiBold,
+    color: 'rgba(255,255,255,0.85)',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
     marginTop: spacing.xs,
+    textAlign: 'center',
   },
-  repsTargetCompactPortrait: {
-    fontSize: typography.sm,
-    marginTop: 2,
-  },
-  exerciseDescriptionWrapper: {
+  restNextBlock: {
+    width: '100%',
+    alignItems: 'center',
     marginTop: spacing.md,
+  },
+  restNextName: {
+    fontFamily: fonts.display,
+    color: colors.text,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     width: '100%',
   },
-  exerciseDescriptionWrapperLandscape: {
-    marginTop: 0,
-    width: '100%',
-  },
-  exerciseDescriptionWrapperCompactPortrait: {
-    marginTop: spacing.sm,
-    width: '100%',
+  restThen: {
+    fontFamily: fonts.displaySemiBold,
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   exerciseDescriptionText: {
-    fontSize: typography.base,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.72)',
     textAlign: 'center',
-    paddingHorizontal: spacing.md,
-    lineHeight: 22,
+    paddingHorizontal: spacing.sm,
+    marginTop: spacing.md,
   },
   exerciseDescriptionTextLandscape: {
     fontSize: typography.sm,
     lineHeight: 20,
     paddingHorizontal: 0,
+    marginTop: 0,
     textAlign: 'left',
-  },
-  exerciseDescriptionTextCompactPortrait: {
-    fontSize: 15,
-    lineHeight: 21,
-    paddingHorizontal: spacing.sm,
   },
   upNext: {
     alignItems: 'center',
-    padding: spacing.lg,
-    backgroundColor: 'rgba(0,0,0,0.16)',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: 'rgba(0,0,0,0.18)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.12)',
-  },
-  upNextLandscape: {
-    alignItems: 'stretch',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
   },
   upNextCompactPortrait: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
+  upNextLandscape: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 10,
+    borderTopWidth: 0,
+  },
   upNextLabel: {
     fontFamily: fonts.displaySemiBold,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.55)',
-    letterSpacing: 2.5,
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 2,
     textTransform: 'uppercase',
-    marginBottom: spacing.xs,
-  },
-  upNextLabelLandscape: {
     marginBottom: 2,
     textAlign: 'center',
   },
-  upNextLabelCompactPortrait: {
-    marginBottom: 2,
-  },
   upNextName: {
-    fontFamily: fonts.displaySemiBold,
-    fontSize: 22,
+    fontFamily: fonts.display,
     color: colors.text,
-    lineHeight: 26,
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     width: '100%',
-  },
-  upNextNameLandscape: {
-    fontSize: 17,
-    lineHeight: 20,
-  },
-  upNextNameCompactPortrait: {
-    fontSize: 19,
-    lineHeight: 22,
   },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xl,
-    padding: spacing.lg,
+    padding: spacing.md,
     zIndex: 10,
   },
   controlsLandscape: {
@@ -1272,41 +1397,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
-  countdownContainerLandscape: {
-    paddingHorizontal: spacing.xl,
-  },
   getReady: {
     fontFamily: fonts.displaySemiBold,
-    fontSize: typography.xl,
     color: colors.textSecondary,
     letterSpacing: 5,
     textTransform: 'uppercase',
-    marginBottom: spacing.xl,
-  },
-  getReadyLandscape: {
-    fontSize: typography.sm,
     marginBottom: spacing.md,
+    textAlign: 'center',
   },
   countdownNumber: {
     fontFamily: fonts.displayBlack,
-    fontSize: 148,
-    lineHeight: 156,
     color: colors.text, // Default, overridden dynamically during countdown
-  },
-  countdownNumberLandscape: {
-    fontSize: 96,
-    lineHeight: 104,
-  },
-  firstExercise: {
-    fontSize: typography.lg,
-    color: colors.textSecondary,
-    marginTop: spacing.xxl,
     textAlign: 'center',
   },
-  firstExerciseLandscape: {
-    fontSize: typography.base,
-    marginTop: spacing.md,
-    maxWidth: '86%',
+  countdownNextBlock: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: spacing.lg,
+  },
+  countdownNextLabel: {
+    fontFamily: fonts.displaySemiBold,
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  countdownNextName: {
+    fontFamily: fonts.display,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    width: '100%',
   },
   pausedScreen: {
     flex: 1,
@@ -1331,19 +1452,18 @@ const styles = StyleSheet.create({
   },
   pausedText: {
     fontFamily: fonts.displayBlack,
-    fontSize: typography['4xl'],
+    fontSize: typography['3xl'],
     color: colors.primaryLight,
     letterSpacing: 6,
     textTransform: 'uppercase',
     marginBottom: spacing.sm,
   },
   pausedTextLandscape: {
-    fontSize: typography['2xl'],
-    marginBottom: spacing.sm,
+    fontSize: typography.xl,
+    marginBottom: spacing.xs,
   },
   pausedExerciseName: {
     fontFamily: fonts.display,
-    fontSize: 28,
     color: colors.text,
     textAlign: 'center',
     textTransform: 'uppercase',
@@ -1351,20 +1471,16 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: spacing.sm,
   },
-  pausedExerciseNameLandscape: {
-    fontSize: typography.lg,
-    marginBottom: spacing.xs,
-  },
   pausedTimerBlock: {
     alignItems: 'center',
     marginBottom: spacing.md,
   },
   pausedTimerLabel: {
-    fontSize: 9,
-    lineHeight: 11,
-    fontWeight: typography.bold,
-    color: 'rgba(255,255,255,0.55)',
-    letterSpacing: 0.8,
+    fontFamily: fonts.displaySemiBold,
+    fontSize: scaleFont(11),
+    lineHeight: scaleFont(13),
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 1,
   },
   pausedInstructions: {
     width: '100%',
@@ -1389,7 +1505,7 @@ const styles = StyleSheet.create({
   pausedInstructionsText: {
     fontSize: typography.base,
     color: 'rgba(255,255,255,0.9)',
-    lineHeight: 22,
+    lineHeight: Math.round(typography.base * 1.4),
     textAlign: 'center',
   },
   pausedInstructionsTextLandscape: {
@@ -1442,7 +1558,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
-    lineHeight: 22,
+    lineHeight: Math.round(typography.base * 1.4),
   },
   exitConfirmButtons: {
     flexDirection: 'row',
