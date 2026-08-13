@@ -243,8 +243,8 @@ export default function RideScreen() {
           </TouchableOpacity>
 
           <Text style={styles.introFootnote}>
-            Your location never leaves the phone. Circuit stores the track locally and draws the
-            route itself — there's no map service in the loop.
+            Your track is stored on this phone, not uploaded anywhere. Map tiles come from
+            OpenStreetMap, so they see roughly where you ride.
           </Text>
         </ScrollView>
       </View>
