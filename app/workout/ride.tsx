@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -22,6 +21,7 @@ import { RouteMap } from '@/components/ride';
 import { PROGRAMMED_WORKOUTS } from '@/data/programmedWorkouts';
 import { createRideWorkoutSession } from '@/utils/createRideWorkoutSession';
 import { loadRideDraft, clearRideDraft } from '@/utils/rideDraft';
+import { confirmAction } from '@/utils/confirm';
 import { defaultRiderParams, toKilograms } from '@/utils/cycling';
 import {
   formatDistance,
@@ -89,30 +89,26 @@ export default function RideScreen() {
         setCheckedDraft(true);
         return;
       }
+
       const minutes = Math.round((draft.stats.elapsedSeconds || 0) / 60);
-      Alert.alert(
-        'Unfinished ride found',
-        `There's a ride in progress with ${minutes} min recorded. Pick it back up, or throw it away?`,
-        [
-          {
-            text: 'Discard',
-            style: 'destructive',
-            onPress: () => {
-              void clearRideDraft();
-              setCheckedDraft(true);
-            },
-          },
-          {
-            text: 'Resume',
-            onPress: () => {
-              // Come back paused: he is holding the phone reading this dialog,
-              // not riding, and resuming live would bank a bogus gap.
-              restore({ ...draft, status: 'paused' });
-              setCheckedDraft(true);
-            },
-          },
-        ]
-      );
+      const resume = await confirmAction({
+        title: 'Unfinished ride found',
+        message: `There's a ride in progress with ${minutes} min recorded. Pick it back up, or throw it away?`,
+        confirmLabel: 'Resume',
+        cancelLabel: 'Discard',
+      });
+      if (cancelled) return;
+
+      if (resume) {
+        // Come back paused: he's holding the phone reading this dialog, not
+        // riding, and resuming live would bank a bogus gap.
+        restore({ ...draft, status: 'paused' });
+      } else {
+        void clearRideDraft();
+      }
+      // Always release the gate. This screen renders nothing until it flips, so
+      // any path that forgets it leaves the recorder permanently blank.
+      setCheckedDraft(true);
     })();
     return () => {
       cancelled = true;
@@ -143,28 +139,30 @@ export default function RideScreen() {
     router.replace('/(tabs)/history');
   }, [addSession, buildSummary, resetRide, router, sourceWorkout, units.imperial]);
 
-  const handleDiscard = useCallback(() => {
-    Alert.alert('Discard this ride?', 'The recorded GPS data will be deleted for good.', [
-      { text: 'Keep', style: 'cancel' },
-      {
-        text: 'Discard',
-        style: 'destructive',
-        onPress: () => {
-          void clearRideDraft();
-          resetRide();
-          router.back();
-        },
-      },
-    ]);
+  const handleDiscard = useCallback(async () => {
+    const discard = await confirmAction({
+      title: 'Discard this ride?',
+      message: 'The recorded GPS data will be deleted for good.',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep',
+      destructive: true,
+    });
+    if (!discard) return;
+    void clearRideDraft();
+    resetRide();
+    router.back();
   }, [resetRide, router]);
 
-  const handleExit = useCallback(() => {
+  const handleExit = useCallback(async () => {
     if (status === 'recording' || status === 'paused') {
-      Alert.alert('Leave the recorder?', 'Recording stops when you leave this screen.', [
-        { text: 'Stay', style: 'cancel' },
-        { text: 'Leave', style: 'destructive', onPress: () => router.back() },
-      ]);
-      return;
+      const leave = await confirmAction({
+        title: 'Leave the recorder?',
+        message: 'Recording stops when you leave this screen.',
+        confirmLabel: 'Leave',
+        cancelLabel: 'Stay',
+        destructive: true,
+      });
+      if (!leave) return;
     }
     router.back();
   }, [router, status]);

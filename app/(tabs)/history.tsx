@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,7 @@ import {
   elevationUnit,
 } from '@/utils/rideFormat';
 import { DIFFICULTY_COLORS } from '@/utils/constants';
+import { confirmAction } from '@/utils/confirm';
 
 function getRpeColor(value: number): string {
   if (value <= 3) return colors.success;
@@ -54,19 +55,17 @@ export default function HistoryScreen() {
     router.push(`/workout/edit-feedback?sessionId=${sessionId}`);
   };
 
-  const handleDeleteSession = (session: WorkoutSession) => {
-    Alert.alert(
-      'Delete Workout',
-      `Are you sure you want to delete "${session.workout.name}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => removeSession(session.id),
-        },
-      ]
-    );
+  // Uses confirmAction rather than Alert directly: react-native-web's Alert is
+  // a no-op stub, so the callback never fired and delete silently did nothing
+  // on the web build this app actually runs on.
+  const handleDeleteSession = async (session: WorkoutSession) => {
+    const confirmed = await confirmAction({
+      title: 'Delete Workout',
+      message: `Are you sure you want to delete "${session.workout.name}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (confirmed) removeSession(session.id);
   };
 
   // Compute stats at runtime from sessions (source of truth)

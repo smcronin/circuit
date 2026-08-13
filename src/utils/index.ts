@@ -9,3 +9,5 @@ export * from './geo';
 export * from './cycling';
 export * from './rideFormat';
 export * from './rideDraft';
+export * from './tiles';
+export * from './confirm';
