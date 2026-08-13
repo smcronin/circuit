@@ -13,6 +13,7 @@ export default function WorkoutLayout() {
       <Stack.Screen name="review" />
       <Stack.Screen name="timer" />
       <Stack.Screen name="complete" />
+      <Stack.Screen name="ride" />
     </Stack>
   );
 }

@@ -5,10 +5,19 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Chip } from '@/components/common';
 import { ManualWorkoutModal } from '@/components/history';
+import { RouteTrace } from '@/components/ride';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
-import { useHistoryStore, useWorkoutStore } from '@/stores';
+import { useHistoryStore, useWorkoutStore, useUserStore } from '@/stores';
 import { WorkoutSession } from '@/types/workout';
 import { formatDate, formatDuration, flattenWorkout, formatCompactNumber } from '@/utils';
+import {
+  formatDistance,
+  formatSpeed,
+  formatElevation,
+  distanceUnit,
+  speedUnit,
+  elevationUnit,
+} from '@/utils/rideFormat';
 import { DIFFICULTY_COLORS } from '@/utils/constants';
 
 function getRpeColor(value: number): string {
@@ -24,7 +33,10 @@ export default function HistoryScreen() {
   const history = useHistoryStore((state) => state.history);
   const removeSession = useHistoryStore((state) => state.removeSession);
   const { setCurrentWorkout, setFlattenedWorkout } = useWorkoutStore();
+  const weightUnit = useUserStore((state) => state.profile?.weightUnit);
   const [showManualModal, setShowManualModal] = useState(false);
+
+  const rideUnits = useMemo(() => ({ imperial: (weightUnit ?? 'lbs') !== 'kg' }), [weightUnit]);
 
   const handleReplay = (session: WorkoutSession) => {
     const workout = session.workout;
@@ -76,6 +88,7 @@ export default function HistoryScreen() {
   const renderSession = ({ item }: { item: WorkoutSession }) => {
     const isCompleted = item.status === 'completed';
     const isManual = item.workout.isManual === true;
+    const ride = item.ride;
     const difficultyColor = DIFFICULTY_COLORS[item.workout.difficulty];
     const hasNotes = item.feedback?.notes && item.feedback.notes.length > 0;
 
@@ -105,7 +118,7 @@ export default function HistoryScreen() {
             </View>
           </View>
           <View style={styles.headerActions}>
-            {!isManual && (
+            {!isManual && !ride && (
               <TouchableOpacity
                 style={styles.replayButton}
                 onPress={() => handleReplay(item)}
@@ -163,6 +176,36 @@ export default function HistoryScreen() {
             </View>
           )}
         </View>
+
+        {ride && (
+          <View style={styles.ridePanel}>
+            {ride.points.length > 1 && (
+              <View style={styles.rideTrace}>
+                <RouteTrace points={ride.points} width={78} height={64} strokeWidth={2} />
+              </View>
+            )}
+            <View style={styles.rideStats}>
+              <View style={styles.rideStat}>
+                <Text style={styles.rideStatValue}>
+                  {formatDistance(ride.stats.distanceMeters, rideUnits)}
+                </Text>
+                <Text style={styles.rideStatLabel}>{distanceUnit(rideUnits)}</Text>
+              </View>
+              <View style={styles.rideStat}>
+                <Text style={styles.rideStatValue}>
+                  {formatSpeed(ride.stats.avgSpeedMps, rideUnits)}
+                </Text>
+                <Text style={styles.rideStatLabel}>{speedUnit(rideUnits)} avg</Text>
+              </View>
+              <View style={styles.rideStat}>
+                <Text style={styles.rideStatValue}>
+                  {formatElevation(ride.stats.elevationGainMeters, rideUnits)}
+                </Text>
+                <Text style={styles.rideStatLabel}>{elevationUnit(rideUnits)} climb</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {item.workout.focusAreas.length > 0 && (
           <View style={styles.focusAreas}>
@@ -408,6 +451,42 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: typography.sm,
     color: colors.textSecondary,
+  },
+  ridePanel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    padding: spacing.sm + 2,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: colors.surfaceLight + '80',
+  },
+  rideTrace: {
+    width: 78,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rideStats: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  rideStat: {
+    alignItems: 'center',
+  },
+  rideStatValue: {
+    fontFamily: fonts.display,
+    fontSize: typography.xl,
+    color: colors.text,
+  },
+  rideStatLabel: {
+    fontSize: 10,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   focusAreas: {
     flexDirection: 'row',

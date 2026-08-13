@@ -1,3 +1,5 @@
+import type { RideSummary } from './ride';
+
 // ============================================
 // CORE EXERCISE TYPES
 // ============================================
@@ -69,7 +71,14 @@ export interface GeneratedWorkout {
   muscleGroupsTargeted: string[];
   partingWords: string; // Motivational message displayed after workout completion
   isManual?: boolean; // True for manually logged workouts (no exercises, just metadata)
+  activityType?: ActivityType; // Non-circuit activities that use a different recorder
 }
+
+/**
+ * How a workout is performed. Absent means the standard circuit timer; 'ride'
+ * routes to the GPS recorder instead.
+ */
+export type ActivityType = 'ride';
 
 export interface EquipmentItem {
   name: string;
@@ -138,6 +147,7 @@ export interface WorkoutSession {
   actualDurationWorked: number;
   estimatedCaloriesBurned: number;
   feedback?: PostWorkoutFeedback;
+  ride?: RideSummary; // GPS data, present only for recorded rides
 }
 
 // ============================================

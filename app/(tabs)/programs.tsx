@@ -96,6 +96,12 @@ export default function ProgramsScreen() {
 
   const handleOpen = useCallback(
     (pw: ProgrammedWorkout) => {
+      // Rides skip the circuit timer entirely — there are no intervals to run,
+      // just GPS to record.
+      if (pw.workout.activityType === 'ride') {
+        router.push({ pathname: '/workout/ride', params: { programId: pw.id } });
+        return;
+      }
       setCurrentWorkout(pw.workout);
       setFlattenedWorkout(flattenWorkout(pw.workout));
       router.push('/workout/review');
@@ -106,15 +112,30 @@ export default function ProgramsScreen() {
   const renderItem = useCallback(
     ({ item }: { item: ProgrammedWorkout }) => {
       const isDone = completedIds.has(item.id);
+      const isRide = item.workout.activityType === 'ride';
       return (
         <TouchableOpacity
-          style={[styles.row, isDone && styles.rowDone]}
+          style={[styles.row, isDone && styles.rowDone, isRide && !isDone && styles.rowRide]}
           activeOpacity={0.75}
           onPress={() => handleOpen(item)}
         >
           <View style={styles.rowTop}>
-            <View style={[styles.slotPill, isDone && styles.slotPillDone]}>
-              <Text style={[styles.slotText, isDone && styles.slotTextDone]}>{item.slot}</Text>
+            <View
+              style={[
+                styles.slotPill,
+                isDone && styles.slotPillDone,
+                isRide && !isDone && styles.slotPillRide,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.slotText,
+                  isDone && styles.slotTextDone,
+                  isRide && !isDone && styles.slotTextRide,
+                ]}
+              >
+                {item.slot}
+              </Text>
             </View>
             <View style={styles.rowMeta}>
               <Ionicons name="time-outline" size={13} color={colors.textMuted} />
@@ -135,6 +156,12 @@ export default function ProgramsScreen() {
               {item.coachNotes}
             </Text>
           </View>
+          {isRide && !isDone && (
+            <View style={styles.recordCta}>
+              <Ionicons name="bicycle" size={18} color={colors.background} />
+              <Text style={styles.recordCtaText}>Record Ride</Text>
+            </View>
+          )}
         </TouchableOpacity>
       );
     },
@@ -307,6 +334,32 @@ const styles = StyleSheet.create({
   rowDone: {
     opacity: 0.62,
     borderColor: colors.success + '3A',
+  },
+  rowRide: {
+    borderColor: colors.success + '4A',
+  },
+  slotPillRide: {
+    backgroundColor: colors.success + '26',
+  },
+  slotTextRide: {
+    color: colors.successLight,
+  },
+  recordCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.success,
+  },
+  recordCtaText: {
+    fontFamily: fonts.displayBlack,
+    fontSize: typography.base,
+    color: colors.background,
+    textTransform: 'uppercase',
+    letterSpacing: 1.4,
   },
   rowTop: {
     flexDirection: 'row',

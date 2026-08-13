@@ -1,4 +1,5 @@
 import type {
+  ActivityType,
   Circuit,
   CoolDownSection,
   EquipmentItem,
@@ -53,6 +54,8 @@ interface WorkoutSeed {
   restBetweenCircuits?: number;
   equipmentSetUsed?: string;
   partingWords: string;
+  /** Routes the day to a different recorder — 'ride' opens the GPS tracker. */
+  activityType?: ActivityType;
 }
 
 interface ProgramSeed extends WorkoutSeed {
@@ -229,6 +232,7 @@ function makeWorkout(seed: WorkoutSeed): GeneratedWorkout {
     focusAreas: seed.focusAreas,
     muscleGroupsTargeted: seed.muscleGroupsTargeted,
     partingWords: seed.partingWords,
+    activityType: seed.activityType,
   };
 }
 
@@ -1375,8 +1379,9 @@ function thursdayCardio(date: string, phase: Phase): ProgrammedWorkout {
     date,
     slot: 'Cardio',
     priority: 1,
-    coachNotes: `${phaseLabel} Thursday: default to steady road-bike Zone 2 for LDL, body composition, and aerobic base.`,
+    coachNotes: `${phaseLabel} Thursday: default to steady road-bike Zone 2 for LDL, body composition, and aerobic base. Hit Record Ride and let GPS log it.`,
     name: `${phaseLabel} Zone 2 Road Ride`,
+    activityType: 'ride',
     description:
       'A steady road-bike Zone 2 session for aerobic health, LDL support, and body composition. Keep the pace conversational and boring in the best possible way.',
     difficulty: 'intermediate',
@@ -2504,8 +2509,9 @@ function augustZone2(date: string, phase: AugustPhase): ProgrammedWorkout {
     date,
     slot: 'Cardio',
     priority: 1,
-    coachNotes: 'Road bike is the default while the arches settle. A run-walk substitution is fine only when both feet feel completely normal.',
+    coachNotes: 'Road bike is the default while the arches settle. Hit Record Ride and let GPS log it. A run-walk substitution is fine only when both feet feel completely normal.',
     name: `${AUGUST_PHASE_LABELS[phase]}: Zone 2 Aerobic Base`,
+    activityType: 'ride',
     description: 'A repeatable conversational aerobic session for cardiovascular fitness, recovery, and longevity.',
     difficulty: 'intermediate',
     targetDurationMinutes: 45,
