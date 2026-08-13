@@ -46,6 +46,10 @@ export default function HistoryScreen() {
     router.push('/workout/review');
   };
 
+  const handleOpenRide = (sessionId: string) => {
+    router.push(`/workout/ride-detail?sessionId=${sessionId}`);
+  };
+
   const handleEditFeedback = (sessionId: string) => {
     router.push(`/workout/edit-feedback?sessionId=${sessionId}`);
   };
@@ -178,7 +182,11 @@ export default function HistoryScreen() {
         </View>
 
         {ride && (
-          <View style={styles.ridePanel}>
+          <TouchableOpacity
+            style={styles.ridePanel}
+            onPress={() => handleOpenRide(item.id)}
+            activeOpacity={0.75}
+          >
             {ride.points.length > 1 && (
               <View style={styles.rideTrace}>
                 <RouteTrace points={ride.points} width={78} height={64} strokeWidth={2} />
@@ -204,7 +212,8 @@ export default function HistoryScreen() {
                 <Text style={styles.rideStatLabel}>{elevationUnit(rideUnits)} climb</Text>
               </View>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
         )}
 
         {item.workout.focusAreas.length > 0 && (

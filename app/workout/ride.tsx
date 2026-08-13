@@ -18,7 +18,7 @@ import { colors, fonts, spacing, typography, borderRadius, shadows } from '@/the
 import { useRideStore } from '@/stores/useRideStore';
 import { useHistoryStore, useUserStore } from '@/stores';
 import { useRideRecorder, isRideRecordingSupported } from '@/hooks/useRideRecorder';
-import { RouteTrace } from '@/components/ride/RouteTrace';
+import { RouteMap } from '@/components/ride';
 import { PROGRAMMED_WORKOUTS } from '@/data/programmedWorkouts';
 import { createRideWorkoutSession } from '@/utils/createRideWorkoutSession';
 import { loadRideDraft, clearRideDraft } from '@/utils/rideDraft';
@@ -255,7 +255,8 @@ export default function RideScreen() {
 
   // ─── Post-ride summary ────────────────────────────────────────────────────
   if (status === 'finished') {
-    const traceWidth = width - spacing.lg * 2 - spacing.md * 2;
+    // The map sits flush in the scroll body now, so it only loses the page gutter.
+    const traceWidth = width - spacing.lg * 2;
     return (
       <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
         <ScreenHeader title="Ride Complete" />
@@ -266,14 +267,7 @@ export default function RideScreen() {
           </View>
 
           {points.length > 1 && (
-            <View style={styles.traceCard}>
-              <RouteTrace
-                points={points}
-                width={traceWidth}
-                height={traceWidth * 0.62}
-                showEndpoints
-              />
-            </View>
+            <RouteMap points={points} width={traceWidth} height={traceWidth * 0.68} />
           )}
 
           <View style={styles.summaryGrid}>
@@ -857,14 +851,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingTop: 0,
     gap: spacing.md,
-  },
-  traceCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    alignItems: 'center',
   },
   summaryGrid: {
     flexDirection: 'row',
