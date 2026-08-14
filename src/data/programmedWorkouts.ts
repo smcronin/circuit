@@ -2702,35 +2702,57 @@ function augustCottageDensity(date: string): ProgrammedWorkout {
   });
 }
 
-function augustCottageCardio(date: string): ProgrammedWorkout {
+function augustCottageFullBodyB(date: string): ProgrammedWorkout {
   return programmedWorkout({
-    id: `program-2026-08-cottage-cardio-${date}`,
+    id: `program-2026-08-cottage-full-body-b-${date}`,
     date,
-    slot: 'Cardio',
+    slot: 'Main',
     priority: 1,
-    coachNotes: 'Choose an easy swim when conditions are safe; otherwise use an easy walk. This is restorative, not a time trial.',
-    name: 'Cottage Easy Swim or Walk',
-    description: 'A conversational recovery session with a short no-equipment mobility finish.',
-    difficulty: 'beginner',
-    targetDurationMinutes: 30,
-    estimatedCalories: 190,
-    calorieRange: { low: 125, high: 260 },
-    focusAreas: ['cardio', 'recovery', 'travel'],
-    muscleGroupsTargeted: ['cardiovascular system', 'shoulders', 'hips', 'legs'],
-    circuits: [{
-      name: 'Easy Aerobic Choice',
-      rounds: 1,
-      restBetweenRounds: 0,
-      restBetweenExercises: 0,
-      exercises: [ex('Easy Swim or Brisk Walk', 1320, 'Stay conversational for about 20-22 minutes. In the water, prioritize safe conditions and relaxed strokes.', ['cardiovascular system', 'shoulders', 'hips', 'legs'])],
-    }],
-    coolDown: [
-      ex('Standing Forward Fold Sway', 60, 'Bend the knees and sway gently without forcing the hamstrings.', ['hamstrings', 'back']),
-      ex('Standing Quad Stretch', 80, 'Stretch left, then switch right halfway.', ['quads', 'hip flexors'], undefined, { switchSides: true }),
-      ex('Standing Chest Opener', 60, 'Clasp the hands or reach them back and breathe easily.', ['chest', 'shoulders']),
-      ex('Box Breathing', 90, 'Use even inhales, holds, exhales, and holds to downshift.', ['diaphragm', 'nervous system']),
+    coachNotes: 'Second no-equipment cottage strength session. Keep it at RPE 6-7, use the mini band only if you brought it, and leave enough in reserve for the return-drive reset tomorrow.',
+    name: 'Cottage Full-Body Calisthenics B',
+    description: 'A complementary no-equipment full-body session: squat pattern, horizontal push, hamstrings, upper-back work, and lateral trunk strength without climbing-specific prep.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 24,
+    estimatedCalories: 175,
+    calorieRange: { low: 140, high: 220 },
+    focusAreas: ['strength', 'conditioning', 'travel', 'core'],
+    muscleGroupsTargeted: ['quads', 'glutes', 'hamstrings', 'chest', 'triceps', 'upper back', 'core'],
+    warmUp: [
+      ex('Fast March with Arm Swing', 60, 'Raise temperature without jumping and keep the feet comfortable.', ['hips', 'calves', 'shoulders', 'core']),
+      ex('Lateral Squat Shift', 50, 'Shift gently left and right, keeping one heel down and using a comfortable range.', ['adductors', 'glutes', 'quads']),
+      ex('Scapular Pushup', 45, 'Keep elbows straight and glide the shoulder blades without shrugging.', ['serratus', 'shoulders', 'upper back']),
     ],
-    partingWords: 'Easy aerobic work, some movement after, and no recovery debt before the drive home.',
+    circuits: [
+      {
+        name: 'Cottage Full-Body Block',
+        rounds: 3,
+        restBetweenRounds: 35,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Tempo Bodyweight Squat', 45, 'Lower for three seconds, pause briefly, then stand tall with a quiet torso.', ['quads', 'glutes', 'core'], undefined, { targetReps: 10 }),
+          ex('Pushup', 40, 'Use floor, knees, or a sturdy counter height that keeps every rep smooth and pain-free.', ['chest', 'triceps', 'shoulders', 'core'], undefined, { targetReps: 8 }),
+          ex('Hamstring Walkout', 45, 'Bridge the hips, walk the heels out slowly, then walk them back in with control.', ['hamstrings', 'glutes', 'core']),
+          ex('Prone W-to-Reach', 45, 'Lift lightly into a W, pull elbows toward ribs, then reach long without cranking the neck.', ['upper back', 'rear delts', 'lats']),
+          ex('Side Plank Knee Drive - Alternating', 50, 'Start on the left side, then switch right halfway. Keep the hips lifted as the top knee drives forward.', ['obliques', 'glutes', 'shoulders', 'core'], undefined, { switchSides: true }),
+        ],
+      },
+      {
+        name: 'Optional Mini-Band Finish',
+        rounds: 2,
+        restBetweenRounds: 20,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Mini Band Pull-Apart or Prone T Raise', 45, 'If you brought the mini band, pull it apart at chest height; otherwise lift the arms into a prone T with thumbs up.', ['upper back', 'rear delts', 'rotator cuff']),
+          ex('Bear Hover Shoulder Tap', 45, 'Hover the knees just off the floor and tap opposite shoulder slowly; raise the knees or use a high plank if needed.', ['core', 'shoulders', 'quads']),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Figure-4 Hip Stretch - Alternating', 70, 'Cross the left ankle first, then switch right halfway and keep the stretch easy.', ['glutes', 'hips'], undefined, { switchSides: true }),
+      ex('Thread the Needle - Alternating', 70, 'Reach the left arm under first, then switch to the right and breathe into the upper back.', ['upper back', 'shoulders', 'thoracic spine'], undefined, { switchSides: true }),
+      ex('Box Breathing', 75, 'Use even inhales, holds, exhales, and holds to downshift.', ['diaphragm', 'nervous system']),
+    ],
+    partingWords: 'Two cottage strength days, two different jobs, no equipment dependency. Save the optional rope for play, not obligation.',
   });
 }
 
@@ -2821,7 +2843,7 @@ const AUGUST_TRAVEL_OVERRIDE_END_DATE = '2026-08-17';
 const AUGUST_TRAVEL_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   augustDriveReset('2026-08-14', 'Departure'),
   augustCottageDensity('2026-08-15'),
-  augustCottageCardio('2026-08-16'),
+  augustCottageFullBodyB('2026-08-16'),
   augustDriveReset('2026-08-17', 'Return'),
 ];
 
