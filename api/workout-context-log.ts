@@ -20,9 +20,23 @@ interface SnapshotRow {
   server_updated_at: string;
 }
 
+type JsonObject = Record<string, unknown>;
+
+interface SessionRow {
+  status: string | null;
+  workout_name: string | null;
+  workout_at: string | null;
+  duration_seconds: number | null;
+  rpe: number | null;
+  notes: string | null;
+  session: JsonObject;
+}
+
 const EXPORT_MARKER = 'CIRCUIT_CONTEXT_EXPORT_c7a4f19e';
 const GRANT_MARKER = 'CIRCUIT_CONTEXT_GRANT_c7a4f19e';
-const SESSION_LIMIT = 60;
+const DEFAULT_SESSION_LIMIT = 20;
+const MAX_SESSION_LIMIT = 40;
+const MAX_SESSION_OFFSET = 2_000;
 const GRANT_LIFETIME_MS = 5 * 60 * 1_000;
 const MAX_FUTURE_EXPIRY_MS = 10 * 60 * 1_000;
 const NONCE_PATTERN = /^[a-f0-9]{32,128}$/i;
@@ -90,6 +104,84 @@ function hasValidGrant(req: VercelRequest): boolean {
   return tokensMatch(token, createGrantToken(nonce, expires));
 }
 
+function asObject(value: unknown): JsonObject | undefined {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as JsonObject)
+    : undefined;
+}
+
+function asObjectArray(value: unknown): JsonObject[] {
+  return Array.isArray(value)
+    ? value.map(asObject).filter((item): item is JsonObject => Boolean(item))
+    : [];
+}
+
+function parseBoundedInteger(
+  requestUrl: URL,
+  name: string,
+  fallback: number,
+  maximum: number,
+): number {
+  const parsed = Number.parseInt(requestUrl.searchParams.get(name) || '', 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(Math.max(parsed, 0), maximum);
+}
+
+function exerciseNames(session: JsonObject): string[] {
+  const workout = asObject(session.workout);
+  if (!workout) return [];
+
+  const exercises: JsonObject[] = [];
+  const warmUp = asObject(workout.warmUp);
+  const coolDown = asObject(workout.coolDown);
+  exercises.push(...asObjectArray(warmUp?.exercises));
+  for (const circuit of asObjectArray(workout.circuits)) {
+    exercises.push(...asObjectArray(circuit.exercises));
+  }
+  exercises.push(...asObjectArray(coolDown?.exercises));
+
+  return [
+    ...new Set(
+      exercises
+        .map((exercise) => exercise.name)
+        .filter((name): name is string => typeof name === 'string' && name.length > 0),
+    ),
+  ];
+}
+
+function compactSession(row: SessionRow, index: number) {
+  const workout = asObject(row.session.workout);
+  const ride = asObject(row.session.ride);
+  const gaps = ride ? asObjectArray(ride.gaps) : [];
+
+  return {
+    kind: 'session',
+    index,
+    sessionId: row.session.id,
+    status: row.status,
+    workoutName: row.workout_name,
+    workoutAt: row.workout_at,
+    durationSeconds: row.duration_seconds,
+    percentComplete: row.session.percentComplete,
+    rpe: row.rpe,
+    notes: row.notes,
+    activityType: workout?.activityType,
+    targetDurationSeconds: workout?.targetDuration,
+    focusAreas: workout?.focusAreas,
+    muscleGroups: workout?.muscleGroupsTargeted,
+    exercises: exerciseNames(row.session),
+    ride: ride
+      ? {
+          startedAt: ride.startedAt,
+          endedAt: ride.endedAt,
+          calorieModel: ride.calorieModel,
+          stats: ride.stats,
+          gapCount: gaps.length,
+        }
+      : undefined,
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
@@ -106,6 +198,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const sql = getSql();
+    const requestUrl = new URL(req.url || '/', 'https://circuit.invalid');
+    const limit = Math.max(
+      1,
+      parseBoundedInteger(
+        requestUrl,
+        'limit',
+        DEFAULT_SESSION_LIMIT,
+        MAX_SESSION_LIMIT,
+      ),
+    );
+    const offset = parseBoundedInteger(
+      requestUrl,
+      'offset',
+      0,
+      MAX_SESSION_OFFSET,
+    );
     const snapshots = (await sql`
       SELECT
         owner_hash,
@@ -124,7 +232,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, loggedSessions: 0 });
     }
 
-    const sessions = await sql`
+    const sessions = (await sql`
       SELECT
         status,
         workout_name,
@@ -136,8 +244,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       FROM circuit_workout_sessions
       WHERE owner_hash = ${snapshot.owner_hash}
       ORDER BY workout_at DESC NULLS LAST
-      LIMIT ${SESSION_LIMIT}
-    `;
+      LIMIT ${limit}
+      OFFSET ${offset}
+    `) as SessionRow[];
 
     console.info(
       EXPORT_MARKER,
@@ -145,6 +254,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         kind: 'meta',
         sessionCount: snapshot.session_count,
         returnedSessions: sessions.length,
+        offset,
+        limit,
         workoutSummary: snapshot.workout_summary,
         sourceUpdatedAt: snapshot.source_updated_at,
         serverUpdatedAt: snapshot.server_updated_at,
@@ -153,11 +264,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     sessions.forEach((session, index) => {
       console.info(
         EXPORT_MARKER,
-        JSON.stringify({ kind: 'session', index, ...session }),
+        JSON.stringify(compactSession(session, offset + index)),
       );
     });
 
-    return res.status(200).json({ ok: true, loggedSessions: sessions.length });
+    return res.status(200).json({
+      ok: true,
+      loggedSessions: sessions.length,
+      offset,
+      nextOffset: offset + sessions.length,
+    });
   } catch (error) {
     console.error(EXPORT_MARKER, 'failed', error);
     return res.status(503).json({ ok: false, error: 'Workout context export failed' });
