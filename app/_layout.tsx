@@ -13,6 +13,7 @@ import {
   BarlowCondensed_800ExtraBold,
 } from '@expo-google-fonts/barlow-condensed';
 import { colors } from '@/theme';
+import { initializeHistorySync } from '@/services/historySync';
 
 export default function RootLayout() {
   // Load Ionicons (needed on web) plus the Circuit display typeface
@@ -28,6 +29,9 @@ export default function RootLayout() {
   // Initialize audio on app start
   useEffect(() => {
     soundManager.initialize();
+    const stopHistorySync = initializeHistorySync();
+
+    return stopHistorySync;
   }, []);
 
   if (!fontsLoaded) {
