@@ -40,12 +40,15 @@ User preferences:
 - Start ordinary strength warm-ups with jump rope when feasible. Treat that warm-up rope as a fun body-temperature ramp, not interval conditioning or a substitute for the Saturday high-aerobic session.
 - Hangboard max-hang style work is acceptable up to twice weekly when fingers feel good.
 - Avoid repetitive same-pattern circuits, especially demanding unilateral leg work or high-skill calisthenics on adjacent days.
+- Treat three controlled 50 lb kettlebell clean-and-press reps per side as established capacity as of August 2026. Program crisp submaximal triples with quiet catches, and use swings, hinges, carries, high pulls, rack work, and other kettlebell variations to broaden the stimulus instead of rebuilding toward a single-rep milestone.
+- Seth responds well to purposeful novelty. Within the stable weekly anchors, give each strength day a distinct conjugate emphasis by rotating calisthenics skills, grips, joint angles, contraction types, unilateral/bilateral patterns, and trunk demands.
 
 ## Programming Principles
 
 Use a coached monthly structure:
 - Keep stable weekly anchors so the program is coherent.
 - Use conjugate-style variation inside that structure: rotate exercise variations, joint prep, mobility patterns, grips, unilateral/bilateral emphasis, and trunk patterns.
+- Keep recognizable movement-pattern coverage while changing the exercise selection and sequence enough that consecutive weeks do not feel like minor copies. Draw from pull-up and ring variations, dips and supports, lever and inversion progressions, climbing-specific body tension, kettlebell power and strength, posture work, and whole-body longevity training.
 - Progress the month with clear phases such as base, build, density/intensification, deload, and peak/benchmark, unless the user asks for a different periodization model.
 - Cover major movement patterns weekly: vertical/horizontal pull, push, hinge, squat/lunge, trunk anti-extension, trunk anti-rotation/lateral flexion, loaded/support positions, aerobic base, and mobility.
 - Prefer variation by movement pattern, not random novelty. A new exercise should have a job.
@@ -110,6 +113,7 @@ Warm-ups and cooldowns:
 Before finalizing a monthly program, confirm:
 - The first week matches the user's immediate calendar and current body status.
 - No adjacent main sessions repeat the same demanding exercise.
+- Remaining strength days have distinct names, skill problems, exercise sequences, and joint angles rather than repeating a weekly template with small parameter changes.
 - Monday and Tuesday are complementary, not copies.
 - Friday is a second strength exposure with different angles and tissue stress.
 - Warm-ups are varied but still recognizable and efficient.

@@ -2804,62 +2804,405 @@ function augustSaturdayJumpRopeVo2(date: string, workIntervalSeconds: 120 | 180)
   });
 }
 
-function augustCleanPressBenchmark(date: string): ProgrammedWorkout {
+type RemainingAugustClimbingStyle = 'high-step' | 'lock-off' | 'tension' | 'flow';
+
+function augustConjugateClimbingWarmup(
+  date: string,
+  style: RemainingAugustClimbingStyle
+): ProgrammedWorkout {
+  const variants: Record<RemainingAugustClimbingStyle, {
+    name: string;
+    coachNotes: string;
+    exercises: ExerciseSeed[];
+  }> = {
+    'high-step': {
+      name: 'High-Step and Compression Climbing Primer',
+      coachNotes: 'Climbing preparation only: open the hips, wake up compression, and keep every finger and shoulder drill easy.',
+      exercises: [
+        augustRopeRamp(40),
+        ex('Wrist Rocks and Finger Waves', 45, 'Rock gently through the wrists, then open and close the fingers without fatigue.', ['wrists', 'forearms']),
+        ex('Scapular Pull-ups', 40, 'Move only through the shoulder blades and keep the elbows straight.', ['lats', 'lower traps', 'shoulders'], ['Pull-up Bar']),
+        ex('Hangboard Large-Edge Active Hang', 45, 'Use a comfortable large edge and lightly set the shoulders. Stop for any finger or elbow warning.', ['forearms', 'lats', 'shoulders'], ['Hangboard']),
+        ex('Cossack to High-Step Reach', 60, 'Shift toward the left hip and reach high, then switch toward the right hip halfway.', ['hips', 'adductors', 'quads', 'core'], ['Yoga Mat'], { switchSides: true }),
+        ex('Hollow Tuck Compression', 40, 'Pull the knees toward the chest while keeping the low back heavy and shoulders relaxed.', ['core', 'hip flexors'], ['Yoga Mat']),
+      ],
+    },
+    'lock-off': {
+      name: 'Lock-Off and Hip-Turn Climbing Primer',
+      coachNotes: 'Sunday primer: rehearse quiet lock-off positions and hip turns without creating pull fatigue before climbing.',
+      exercises: [
+        augustRopeRamp(40),
+        ex('Finger Tendon Glides', 40, 'Move through open hand, hook, fist, and straight-fist shapes without squeezing hard.', ['fingers', 'forearms']),
+        ex('Band Face Pull to Press-Out', 50, 'Pull to eye level, then press the band forward while the shoulder blades stay controlled.', ['upper back', 'rear delts', 'rotator cuff'], ['Resistance Bands']),
+        ex('Foot-Assisted Lock-Off - Alternating', 60, 'Use the feet to hold an easy left-arm lock-off, then switch to the right arm halfway.', ['lats', 'biceps', 'shoulders'], ['Gymnastic Rings'], { switchSides: true }),
+        ex('Hip Turn and Flag Step', 60, 'Practice turning the left hip toward an imaginary wall, then switch to the right halfway.', ['hips', 'glutes', 'obliques'], ['Yoga Mat'], { switchSides: true }),
+        ex('Dead Bug Band Pulldown', 45, 'Hold a light band toward the thighs while alternating leg reaches and keeping the ribs down.', ['core', 'lats'], ['Resistance Bands', 'Yoga Mat']),
+      ],
+    },
+    tension: {
+      name: 'Body-Tension and Flagging Climbing Primer',
+      coachNotes: 'Climbing preparation only: connect shoulders, trunk, and hips, but leave grip strength for the wall.',
+      exercises: [
+        augustRopeRamp(40),
+        ex('Wrist CARs and Finger Pulses', 45, 'Circle both wrists slowly, then use easy open-hand finger pulses.', ['wrists', 'forearms']),
+        ex('Band Straight-Arm Pulldown', 45, 'Pull the band toward the thighs with straight elbows and ribs stacked.', ['lats', 'shoulders', 'core'], ['Resistance Bands']),
+        ex('Active Hang Knee-Tuck Rehearsal', 45, 'Use a comfortable grip for two or three easy knee tucks. Stop well before grip fatigue.', ['lats', 'forearms', 'core'], ['Pull-up Bar']),
+        ex('Side Plank Flag Line - Alternating', 60, 'Hold a short left side-plank line, then switch to the right halfway without straining the shoulder.', ['obliques', 'shoulders', 'glutes'], ['Yoga Mat'], { switchSides: true }),
+        ex('90/90 Hip Switch to Reach', 55, 'Flow through both hips and add a relaxed overhead reach without forcing range.', ['hips', 'adductors', 'thoracic spine'], ['Yoga Mat']),
+      ],
+    },
+    flow: {
+      name: 'Scapular Flow and Quiet-Feet Climbing Primer',
+      coachNotes: 'End-of-month climbing primer: smooth scapular rhythm, mobile hips, and precise feet with no pre-climb fatigue.',
+      exercises: [
+        augustRopeRamp(40),
+        ex('Finger Waves and Wrist Extension Rocks', 45, 'Warm the fingers, then rock gently through a pain-free wrist range.', ['fingers', 'wrists', 'forearms']),
+        ex('Scapular Pushup Wave', 45, 'Move from protraction to retraction with straight elbows and a quiet trunk.', ['serratus', 'shoulders', 'upper back'], ['Yoga Mat']),
+        ex('Easy Ring Row Acceleration', 45, 'Use foot assistance for three or four smooth rows with fast intent up and full control down.', ['lats', 'back', 'biceps'], ['Gymnastic Rings']),
+        ex('Shinbox to High-Step Stand', 60, 'Rise from the left shinbox position, then switch to the right halfway and use hand support as needed.', ['hips', 'glutes', 'core'], ['Yoga Mat'], { switchSides: true }),
+        ex('Cross-Body Dead Bug', 50, 'Extend opposite arm and leg while the ribs stay heavy and breathing stays easy.', ['core', 'obliques', 'hip flexors'], ['Yoga Mat']),
+      ],
+    },
+  };
+  const variant = variants[style];
+
   return programmedWorkout({
-    id: `program-2026-08-clean-press-benchmark-${date}`,
+    id: `program-2026-08-conjugate-climbing-${style}-${date}`,
+    date,
+    slot: 'Warm-up',
+    priority: 1,
+    coachNotes: variant.coachNotes,
+    name: variant.name,
+    description: 'A date-specific, low-fatigue climbing primer that changes the movement problem without stealing performance from the wall.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 7,
+    estimatedCalories: 50,
+    calorieRange: { low: 35, high: 70 },
+    focusAreas: ['climbing', 'mobility', 'skill', 'warm-up'],
+    muscleGroupsTargeted: ['forearms', 'shoulders', 'back', 'hips', 'core'],
+    warmUp: variant.exercises,
+    partingWords: 'Warm, coordinated, and ready. The climbing session is still the hard work today.',
+  });
+}
+
+function augustConjugateAntagonistSnack(
+  date: string,
+  style: 'ring-support' | 'scapular-balance'
+): ProgrammedWorkout {
+  const isRingSupport = style === 'ring-support';
+  return programmedWorkout({
+    id: `program-2026-08-conjugate-snack-${style}-${date}`,
+    date,
+    slot: 'Snack',
+    priority: 2,
+    coachNotes: 'Optional after climbing or later. Keep this restorative and skip any movement that reproduces shoulder, elbow, wrist, or finger discomfort.',
+    name: isRingSupport ? 'Ring Support and Posture Snack' : 'Scapular Balance and Extension Snack',
+    description: isRingSupport
+      ? 'A small ring-support, serratus, and upper-back dose that balances climbing without becoming another workout.'
+      : 'A different low-cost shoulder-balance stack for pressing, external rotation, thoracic extension, and trunk support.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 8,
+    estimatedCalories: 50,
+    calorieRange: { low: 35, high: 70 },
+    focusAreas: ['antagonist strength', 'shoulder health', 'posture', 'recovery'],
+    muscleGroupsTargeted: ['chest', 'serratus', 'rotator cuff', 'rear delts', 'triceps', 'core'],
+    circuits: [{
+      name: isRingSupport ? 'Support and Serratus Reset' : 'Scapular Balance Reset',
+      rounds: 2,
+      restBetweenRounds: 25,
+      restBetweenExercises: 8,
+      exercises: isRingSupport
+        ? [
+            ex('Foot-Assisted Ring Support Hold', 35, 'Use the feet to unload the rings, press tall, and keep the rings quiet.', ['chest', 'triceps', 'shoulders', 'core'], ['Gymnastic Rings']),
+            ex('Pushup Plus', 35, 'Use a wall, bench, or floor and finish each rep by spreading the shoulder blades.', ['serratus', 'chest', 'triceps'], ['Yoga Mat'], { targetReps: 10 }),
+            ex('Ring Reverse Fly Easy Range', 35, 'Use a tall body angle and open the arms only as far as the shoulders stay comfortable.', ['rear delts', 'upper back', 'rotator cuff'], ['Gymnastic Rings'], { targetReps: 8 }),
+            ex('Prone Y-T-W', 50, 'Move through Y, T, and W shapes with very light effort and a relaxed neck.', ['lower traps', 'rear delts', 'rotator cuff'], ['Yoga Mat']),
+          ]
+        : [
+            ex('Ring Pushup with Scapular Finish', 35, 'Use an easy angle and add a controlled protraction at the top.', ['chest', 'triceps', 'serratus'], ['Gymnastic Rings'], { targetReps: 8 }),
+            ex('Band External Rotation - Alternating', 60, 'Rotate the left arm with light tension, then switch to the right halfway.', ['rotator cuff', 'rear delts'], ['Resistance Bands'], { switchSides: true }),
+            ex('Reverse Plank March', 40, 'Lift the chest and alternate small marches without shrugging.', ['posterior chain', 'shoulders', 'triceps', 'core'], ['Yoga Mat']),
+            ex('Yoga Wheel Thoracic Reach', 45, 'Support the upper back on the wheel and reach overhead without forcing the shoulders.', ['thoracic spine', 'chest', 'shoulders'], ['Yoga wheel']),
+          ],
+    }],
+    partingWords: 'Small maintenance dose complete. Save adaptation capacity for the main sessions.',
+  });
+}
+
+function augustRingsPowerConjugate(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-08-conjugate-rings-power-${date}`,
     date,
     slot: 'Main',
     priority: 1,
-    coachNotes: 'Benchmark day, not a test of will. Attempt one strict 50 lb press per side only after clean racks and warm-up presses are smooth. A push press plus controlled eccentric is a valid current marker.',
-    name: 'August Clean and Press Benchmark',
-    description: 'A controlled end-of-month check of the 50 lb clean and press, followed by a compact whole-body consolidation circuit.',
+    coachNotes: 'Fresh post-travel conjugate session: kettlebell power, vertical pulling, ring support, loaded posture, and trunk strength. Keep it RPE 6-7 before Saturday intervals.',
+    name: 'Conjugate Rings, Pull-ups, and Kettlebell Power',
+    description: 'A whole-body return session built around power, ring support, a new pull-up angle, loaded posture, and shoulder-balance work rather than the prior Friday template.',
     difficulty: 'advanced',
     targetDurationMinutes: 30,
-    estimatedCalories: 225,
-    calorieRange: { low: 185, high: 275 },
-    focusAreas: ['strength', 'clean and press', 'benchmark', 'full body'],
-    muscleGroupsTargeted: ['glutes', 'hamstrings', 'shoulders', 'triceps', 'back', 'chest', 'core'],
+    estimatedCalories: 235,
+    calorieRange: { low: 195, high: 285 },
+    focusAreas: ['strength', 'power', 'advanced calisthenics', 'posture', 'core'],
+    muscleGroupsTargeted: ['glutes', 'hamstrings', 'lats', 'back', 'chest', 'triceps', 'shoulders', 'core'],
     warmUp: [
       augustRopeRamp(),
-      ex('Kettlebell Deadlift and Hike Prep', 50, 'Alternate smooth deadlifts and controlled hike-pass rehearsals.', ['hamstrings', 'glutes', 'back'], ['Kettlebell']),
-      ex('Band Shoulder Press-Out', 45, 'Press a light band forward and overhead while the ribs stay stacked.', ['shoulders', 'serratus', 'core'], ['Resistance Bands']),
-      ex('Scapular Pull-ups', 40, 'Set the shoulder blades without bending the elbows.', ['lats', 'lower traps', 'shoulders'], ['Pull-up Bar']),
-      ex('Half-Kneeling Dumbbell Press', 70, 'Warm the left press first and switch right halfway. Use clean submaximal reps.', ['shoulders', 'triceps', 'core'], ['Dumbbells', 'Yoga Mat'], { switchSides: true }),
+      ex('Kettlebell Deadlift to Hike Prep', 45, 'Alternate controlled deadlifts with two or three crisp hike rehearsals.', ['hamstrings', 'glutes', 'back'], ['Kettlebell']),
+      ex('Scapular Pull-ups', 40, 'Move only through the shoulder blades and keep the neck long.', ['lats', 'lower traps', 'shoulders'], ['Pull-up Bar']),
+      ex('Foot-Assisted Ring Support Scap Press', 40, 'Use the feet and practice pressing tall through quiet rings.', ['shoulders', 'chest', 'triceps'], ['Gymnastic Rings']),
+      ex('Half-Kneeling Hip Flexor Reach', 60, 'Open the left hip with a tall reach, then switch to the right halfway.', ['hip flexors', 'quads', 'side body'], ['Yoga Mat'], { switchSides: true }),
     ],
     circuits: [
       {
-        name: 'Rack Readiness',
+        name: 'Power, Pull, and Support',
+        rounds: 3,
+        restBetweenRounds: 60,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Dead-Stop Kettlebell Swing', 45, 'Use eight to ten crisp reps, rebuild the hike each set, and stop before snap fades.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 10 }),
+          ex('Ring Dips', 40, 'Use a shoulder-friendly depth and leave one or two clean reps in reserve.', ['chest', 'triceps', 'shoulders'], ['Gymnastic Rings'], { targetReps: 6 }),
+          ex('Commando Pull-ups - Alternating Lead', 40, 'Pull toward one side of the bar, alternate the lead side each rep, and stop before rotation becomes sloppy.', ['lats', 'back', 'biceps', 'obliques'], ['Pull-up Bar'], { targetReps: 6 }),
+          ex('Kettlebell Front-Rack March - Alternating', 60, 'March with the bell racked on the left, then switch to the right halfway. Keep the wrist neutral and use two hands to assist the change.', ['core', 'obliques', 'shoulders', 'hips'], ['Kettlebell'], { switchSides: true }),
+          ex('Hollow-to-Tuck Rock', 40, 'Rock through a controlled hollow shape and tuck before the low back lifts.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Posture and Posterior Balance',
+        rounds: 2,
+        restBetweenRounds: 35,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Ring Face Pull to External Rotation', 45, 'Pull toward the eyes, rotate smoothly, and keep the neck relaxed.', ['upper back', 'rear delts', 'rotator cuff'], ['Gymnastic Rings'], { targetReps: 10 }),
+          ex('Single-Leg Glute Bridge - Alternating', 60, 'Bridge on the left leg, then switch to the right halfway and keep the pelvis level.', ['glutes', 'hamstrings', 'core'], ['Yoga Mat'], { switchSides: true }),
+          ex('Band Chop - Alternating', 60, 'Chop from high to low on the left, then switch to the right halfway without twisting the knees.', ['obliques', 'lats', 'shoulders'], ['Resistance Bands'], { switchSides: true }),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Forearm Extensor Stretch - Alternating', 60, 'Stretch the left forearm gently, then switch to the right halfway.', ['forearms', 'wrists'], undefined, { switchSides: true }),
+      ex('Lat and Triceps Prayer Stretch', 70, 'Bias the left side, then switch toward the right halfway and breathe into the ribs.', ['lats', 'triceps', 'shoulders'], ['Yoga Mat'], { switchSides: true }),
+      ex('Crocodile Breathing', 60, 'Breathe into the floor and let the trunk downshift.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'Power, rings, pull-ups, posture, and trunk all got a distinct signal. Leave the legs springy for Saturday.',
+  });
+}
+
+function augustLeverAndCleanPressConjugate(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-08-conjugate-lever-clean-press-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Monday conjugate emphasis: lever pulling and offset hinging first, then crisp three-rep clean-and-press sets per side. No grinding or wrist impact.',
+    name: 'Front Lever, Offset Hinge, and Clean-Press Triples',
+    description: 'A climbing-relevant pull and trunk session that pairs lever practice with a new offset hinge angle and treats three clean-and-press reps per side as established training capacity.',
+    difficulty: 'advanced',
+    targetDurationMinutes: 30,
+    estimatedCalories: 240,
+    calorieRange: { low: 200, high: 290 },
+    focusAreas: ['advanced calisthenics', 'strength', 'posterior chain', 'clean and press', 'climbing'],
+    muscleGroupsTargeted: ['lats', 'back', 'biceps', 'hamstrings', 'glutes', 'shoulders', 'triceps', 'core'],
+    warmUp: [
+      augustRopeRamp(),
+      ex('Wrist Tendon Glides', 45, 'Move through open hand, hook, fist, and straight-fist shapes without strain.', ['wrists', 'forearms']),
+      ex('Scapular Pull-up to Hollow', 45, 'Set the shoulder blades, then briefly connect the ribs and pelvis into a hollow line.', ['lats', 'lower traps', 'core'], ['Pull-up Bar']),
+      ex('Kettlebell Kickstand Hinge Groove', 60, 'Hinge with the left leg loaded, then switch to the right halfway using the back toes for balance.', ['hamstrings', 'glutes', 'core'], ['Kettlebell'], { switchSides: true }),
+      ex('Ring Pushup Turnout Rehearsal', 40, 'Use an easy angle and practice a quiet turnout only at full support.', ['chest', 'triceps', 'shoulders', 'core'], ['Gymnastic Rings']),
+    ],
+    circuits: [
+      {
+        name: 'Lever and Offset Strength',
+        rounds: 3,
+        restBetweenRounds: 60,
+        restBetweenExercises: 12,
+        exercises: [
+          ex('Tuck Front Lever Pulls', 40, 'Pull from an active hang toward a compact tuck lever and stop before the shoulders lose position.', ['lats', 'back', 'biceps', 'core'], ['Pull-up Bar'], { targetReps: 5 }),
+          ex('Ring Pushups with Turnout', 45, 'Lower under control, press cleanly, and turn the rings out only at the top.', ['chest', 'triceps', 'shoulders', 'core'], ['Gymnastic Rings'], { targetReps: 10 }),
+          ex('Kickstand Kettlebell Romanian Deadlift - Alternating', 60, 'Load the left leg with the back toes down, then switch to the right halfway and keep the pelvis square.', ['hamstrings', 'glutes', 'core'], ['Kettlebell'], { switchSides: true }),
+          ex('Fitness Ball Stir-the-Pot', 45, 'Draw small circles in both directions without letting the ribs flare.', ['core', 'shoulders'], ['Fitness Ball', 'Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Established Clean-Press Capacity',
         rounds: 2,
         restBetweenRounds: 60,
-        restBetweenExercises: 20,
+        restBetweenExercises: 15,
         exercises: [
-          ex('Kettlebell Clean to Rack - Right', 40, 'Perform two crisp singles and hold the final rack for five seconds.', ['glutes', 'back', 'biceps', 'core'], ['Kettlebell'], { targetReps: 2 }),
-          ex('Kettlebell Clean to Rack - Left', 40, 'Match the right side with no wrist impact and a vertical forearm.', ['glutes', 'back', 'biceps', 'core'], ['Kettlebell'], { targetReps: 2 }),
-          ex('Kettlebell Rack March', 70, 'March with the bell racked on the left, then switch right halfway. Use two hands to assist the transition.', ['core', 'obliques', 'shoulders', 'hips'], ['Kettlebell'], { switchSides: true }),
-          ex('Pike Handstand Pushup Eccentric', 40, 'Use one or two slow, controlled lowering reps and stop before fatigue.', ['shoulders', 'triceps', 'core'], ['Yoga Mat'], { targetReps: 3 }),
+          ex('50 lb Kettlebell Clean and Press - Right', 50, 'Perform up to three crisp right-side reps with a quiet catch and stable lockout. Stop before grinding or wrist impact.', ['glutes', 'back', 'shoulders', 'triceps', 'core'], ['Kettlebell'], { targetReps: 3 }),
+          ex('50 lb Kettlebell Clean and Press - Left', 50, 'Match the right side with up to three crisp left-side reps. Use fewer reps if the rack or overhead path changes.', ['glutes', 'back', 'shoulders', 'triceps', 'core'], ['Kettlebell'], { targetReps: 3 }),
+          ex('Ring L-Sit or Tuck Support', 40, 'Press tall through the rings and hold the hardest clean tuck or L-sit variation available.', ['core', 'hip flexors', 'shoulders', 'triceps'], ['Gymnastic Rings']),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Forearm and Wrist Reset', 60, 'Move both wrists gently through flexion, extension, and circles.', ['forearms', 'wrists']),
+      ex('Hamstring Floss - Alternating', 70, 'Floss the left hamstring gently, then switch to the right halfway without forcing range.', ['hamstrings', 'calves'], ['Yoga Mat'], { switchSides: true }),
+      ex('Lat Prayer Breathing', 60, 'Sink back, breathe into the side ribs, and let the shoulders soften.', ['lats', 'shoulders', 'diaphragm'], ['Yoga Mat']),
+    ],
+    partingWords: 'The clean and press is now training, not a one-rep goal. Quality triples and lever control move the baseline forward.',
+  });
+}
+
+function augustHandstandSkinTheCatConjugate(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-08-conjugate-handstand-skin-the-cat-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Post-blood-draw session: train after eating and hydrating, keep RPE 6-7, and use this as skill practice rather than a conditioning test.',
+    name: 'Handstand Line, Skin the Cat, and Unilateral Legs',
+    description: 'A moderate conjugate skill day for vertical pressing, shoulder extension, supported single-leg strength, anti-rotation, and knee-friendly lower-leg capacity.',
+    difficulty: 'advanced',
+    targetDurationMinutes: 30,
+    estimatedCalories: 210,
+    calorieRange: { low: 170, high: 255 },
+    focusAreas: ['advanced calisthenics', 'skill', 'shoulder mobility', 'unilateral strength', 'longevity'],
+    muscleGroupsTargeted: ['shoulders', 'triceps', 'back', 'quads', 'glutes', 'calves', 'core'],
+    warmUp: [
+      augustRopeRamp(),
+      ex('Ankle Rockers and Tibialis Raises', 60, 'Alternate smooth ankle rocks with easy wall-supported tibialis raises. Stop if the left knee becomes uncomfortable.', ['ankles', 'tibialis anterior', 'calves', 'knees']),
+      ex('Wrist Rocks and Palm Lifts', 45, 'Warm wrist extension gradually and keep pressure comfortable.', ['wrists', 'forearms'], ['Yoga Mat']),
+      ex('Wall Handstand Line Drill', 45, 'Use a chest-to-wall or pike setup and practice stacked ribs, hips, and shoulders without fatigue.', ['shoulders', 'core', 'triceps'], ['Yoga Mat']),
+      ex('Ring Shoulder-Extension Rehearsal', 45, 'Use low rings and foot support to explore a shallow, pain-free shoulder-extension range.', ['shoulders', 'chest', 'biceps'], ['Gymnastic Rings']),
+    ],
+    circuits: [
+      {
+        name: 'Calisthenics Skill Rotation',
+        rounds: 3,
+        restBetweenRounds: 70,
+        restBetweenExercises: 15,
+        exercises: [
+          ex('Supported Pistol Squat - Right', 45, 'Use the rings for balance and perform controlled right-leg reps with two reps in reserve.', ['quads', 'glutes', 'core'], ['Gymnastic Rings'], { targetReps: 5 }),
+          ex('Supported Pistol Squat - Left', 45, 'Use the same assistance on the left and stop for any knee discomfort.', ['quads', 'glutes', 'core'], ['Gymnastic Rings'], { targetReps: 4 }),
+          ex('Pike Handstand Pushups', 40, 'Use a high-hip pike or wall-assisted variation and stop before the line changes.', ['shoulders', 'triceps', 'upper chest', 'core'], ['Yoga Mat'], { targetReps: 6 }),
+          ex('Skin the Cat Progression', 45, 'Use low rings and foot assistance as needed. Move through a comfortable range without dropping into the shoulders.', ['shoulders', 'lats', 'chest', 'core'], ['Gymnastic Rings'], { targetReps: 3 }),
+          ex('Band Pallof Press - Alternating', 60, 'Press from the left side, then switch to the right halfway while resisting rotation.', ['core', 'obliques', 'shoulders'], ['Resistance Bands'], { switchSides: true }),
         ],
       },
       {
-        name: 'One-Rep Benchmark',
-        rounds: 1,
-        restBetweenRounds: 0,
-        restBetweenExercises: 45,
+        name: 'Knee and Groin Capacity',
+        rounds: 2,
+        restBetweenRounds: 35,
+        restBetweenExercises: 10,
         exercises: [
-          ex('50 lb Clean and Press Attempt - Right', 75, 'Clean once, settle the rack, then attempt one strict press only if position feels excellent. Otherwise push press and lower for five seconds. No second grinder.', ['glutes', 'shoulders', 'triceps', 'core'], ['Kettlebell'], { targetReps: 1 }),
-          ex('50 lb Clean and Press Attempt - Left', 75, 'Use the same standard on the left: one clean attempt, one quality overhead decision, and no missed-repeat chasing.', ['glutes', 'shoulders', 'triceps', 'core'], ['Kettlebell'], { targetReps: 1 }),
+          ex('Wall Tibialis Raise', 45, 'Lift the toes toward the shins with the heels planted and use a small pain-free range.', ['tibialis anterior', 'ankles'], undefined, { targetReps: 15 }),
+          ex('Copenhagen Plank - Alternating', 60, 'Use a short-lever left-side hold, then switch to the right halfway and keep the shoulder stacked.', ['adductors', 'obliques', 'shoulders'], ['Yoga Mat'], { switchSides: true }),
+          ex('Band Reverse Fly', 45, 'Open the band at chest height with soft elbows and a relaxed neck.', ['rear delts', 'upper back'], ['Resistance Bands'], { targetReps: 12 }),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Couch Stretch - Alternating', 90, 'Open the left hip and quad, then switch to the right halfway.', ['hip flexors', 'quads'], ['Yoga Mat'], { switchSides: true }),
+      ex('Wrist Flexor Stretch - Alternating', 60, 'Stretch the left wrist gently, then switch to the right halfway.', ['forearms', 'wrists'], undefined, { switchSides: true }),
+      ex('Supine Breathing', 60, 'Lie down and lengthen the exhale until breathing feels settled.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'New skills, different angles, and no need to turn a blood-draw day into a toughness test.',
+  });
+}
+
+function augustRingTransitionConjugate(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-08-conjugate-ring-transition-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Friday skill-density session: learn a ring transition and kettlebell high-pull pattern at RPE 7, leaving the calves and feet fresh for Saturday intervals.',
+    name: 'Ring Transition, Archer Push, and Kettlebell High Pull',
+    description: 'A distinct whole-body skill session combining assisted ring-transition mechanics, a new pressing angle, lateral leg strength, kettlebell power, and trunk control.',
+    difficulty: 'advanced',
+    targetDurationMinutes: 30,
+    estimatedCalories: 235,
+    calorieRange: { low: 195, high: 285 },
+    focusAreas: ['advanced calisthenics', 'skill', 'power', 'full body', 'core'],
+    muscleGroupsTargeted: ['back', 'lats', 'chest', 'shoulders', 'triceps', 'glutes', 'hamstrings', 'quads', 'core'],
+    warmUp: [
+      augustRopeRamp(),
+      ex('False-Grip Wrist Prep', 50, 'Use the rings lightly to explore a comfortable false-grip angle without loading body weight.', ['wrists', 'forearms'], ['Gymnastic Rings']),
+      ex('Kettlebell Hike to High-Pull Path', 45, 'Rehearse a close, powerful path without muscling the bell with the arms.', ['glutes', 'hamstrings', 'upper back'], ['Kettlebell']),
+      ex('Ring Support Scap Shrugs', 40, 'Use foot assistance and move only through the shoulder blades.', ['shoulders', 'chest', 'upper back'], ['Gymnastic Rings']),
+      ex('Lateral Squat Shift', 60, 'Shift toward the left hip, then the right, keeping both feet planted and the left knee comfortable.', ['adductors', 'quads', 'glutes'], ['Yoga Mat']),
+    ],
+    circuits: [
+      {
+        name: 'Transition and Power Skill',
+        rounds: 3,
+        restBetweenRounds: 60,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Foot-Assisted Ring Muscle-Up Transition', 45, 'Keep the feet down, pull the rings toward the ribs, and rotate smoothly into a supported dip position.', ['lats', 'back', 'biceps', 'chest', 'triceps'], ['Gymnastic Rings'], { targetReps: 5 }),
+          ex('Kettlebell High Pull Technique', 45, 'Use five to eight hip-driven reps with a relaxed grip. Keep the bell close and stop if the arm starts muscling it.', ['glutes', 'hamstrings', 'upper back', 'core'], ['Kettlebell'], { targetReps: 8 }),
+          ex('Ring Archer Pushup', 40, 'Shift toward one ring, alternate sides each rep, and use a body angle that keeps both shoulders controlled.', ['chest', 'triceps', 'shoulders', 'core'], ['Gymnastic Rings'], { targetReps: 8 }),
+          ex('Supported Cossack Squat - Alternating', 60, 'Use the rings and move toward the left leg, then switch toward the right halfway. Keep the range pain-free.', ['quads', 'glutes', 'adductors'], ['Gymnastic Rings'], { switchSides: true }),
+          ex('Ring Body Saw', 45, 'Use forearms or hands in the rings and glide through a short range without sagging.', ['core', 'shoulders', 'lats'], ['Gymnastic Rings']),
         ],
       },
       {
-        name: 'Whole-Body Consolidation',
+        name: 'Rotation and Shoulder Finish',
+        rounds: 2,
+        restBetweenRounds: 40,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Half-Kneeling Dumbbell Windmill - Alternating', 60, 'Hold a light dumbbell on the left and rotate slowly, then switch to the right halfway.', ['obliques', 'shoulders', 'hips'], ['Dumbbells', 'Yoga Mat'], { switchSides: true }),
+          ex('Ring Tuck Support Hold', 40, 'Press tall and float one or both feet only while the rings stay quiet.', ['core', 'hip flexors', 'triceps', 'shoulders'], ['Gymnastic Rings']),
+          ex('Band No-Money Drill', 45, 'Rotate the hands apart with elbows near the ribs and the neck relaxed.', ['rotator cuff', 'rear delts'], ['Resistance Bands'], { targetReps: 12 }),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Pigeon Pose - Alternating', 90, 'Open the left hip, then switch to the right halfway without forcing range.', ['glutes', 'hips'], ['Yoga Mat'], { switchSides: true }),
+      ex('Forearm Flexor Stretch - Alternating', 60, 'Stretch the left forearm gently, then switch to the right halfway.', ['forearms', 'wrists'], undefined, { switchSides: true }),
+      ex('Box Breathing', 60, 'Use easy equal-count inhales, holds, exhales, and pauses.', ['diaphragm', 'core'], ['Yoga Mat']),
+    ],
+    partingWords: 'A new ring pathway, a new kettlebell pathway, and enough restraint to hit Saturday well.',
+  });
+}
+
+function augustConjugateSkillCheckpoint(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-08-conjugate-skill-checkpoint-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'End-of-month conjugate checkpoint, not a max test: repeat established clean-press triples, then sample pull-up, rings, skin-the-cat, pistol, and trunk skills with clean technique.',
+    name: 'August Conjugate Whole-Body Skill Checkpoint',
+    description: 'A broad quality check across kettlebell power, clean-and-press capacity, advanced pulling, ring support, unilateral legs, shoulder mobility, and trunk strength.',
+    difficulty: 'advanced',
+    targetDurationMinutes: 30,
+    estimatedCalories: 245,
+    calorieRange: { low: 205, high: 295 },
+    focusAreas: ['advanced calisthenics', 'strength', 'clean and press', 'skill checkpoint', 'full body'],
+    muscleGroupsTargeted: ['glutes', 'hamstrings', 'quads', 'shoulders', 'triceps', 'back', 'lats', 'chest', 'core'],
+    warmUp: [
+      augustRopeRamp(),
+      ex('Kettlebell Hike and Clean Path Prep', 45, 'Rehearse a crisp hike, then a close clean path with a quiet catch.', ['hamstrings', 'glutes', 'back', 'shoulders'], ['Kettlebell']),
+      ex('Ring Support and Turnout Prep', 45, 'Use the feet to assist a tall support and gentle turnout.', ['shoulders', 'chest', 'triceps'], ['Gymnastic Rings']),
+      ex('Scapular Pull-up to Tuck', 45, 'Set the shoulder blades and add one or two easy tuck raises.', ['lats', 'shoulders', 'core'], ['Pull-up Bar']),
+      ex('Supported Squat-to-Pistol Shift', 45, 'Use the rings to shift toward each leg and check that the left knee feels normal.', ['quads', 'glutes', 'core'], ['Gymnastic Rings']),
+    ],
+    circuits: [
+      {
+        name: 'Power, Pull, and Press Baseline',
+        rounds: 2,
+        restBetweenRounds: 75,
+        restBetweenExercises: 15,
+        exercises: [
+          ex('Two-Hand Kettlebell Swing', 45, 'Use ten to twelve crisp reps and park the bell before power fades.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 12 }),
+          ex('Chest-to-Bar Pull-ups', 40, 'Use strict high pulls while speed and shoulder position stay consistent.', ['lats', 'back', 'biceps'], ['Pull-up Bar'], { targetReps: 5 }),
+          ex('Ring Dips', 40, 'Use a controlled shoulder-friendly depth and leave a rep in reserve.', ['chest', 'triceps', 'shoulders'], ['Gymnastic Rings'], { targetReps: 6 }),
+          ex('50 lb Kettlebell Clean and Press - Right', 50, 'Perform up to three crisp right-side reps with a quiet catch. No grinding.', ['glutes', 'back', 'shoulders', 'triceps', 'core'], ['Kettlebell'], { targetReps: 3 }),
+          ex('50 lb Kettlebell Clean and Press - Left', 50, 'Match the right side with up to three crisp left-side reps and no wrist impact.', ['glutes', 'back', 'shoulders', 'triceps', 'core'], ['Kettlebell'], { targetReps: 3 }),
+        ],
+      },
+      {
+        name: 'Mobility, Single-Leg, and Support Skills',
         rounds: 2,
         restBetweenRounds: 50,
         restBetweenExercises: 10,
         exercises: [
-          ex('Two-Hand Kettlebell Swing', 45, 'Finish with 10-12 crisp reps and park the bell cleanly.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 12 }),
-          ex('Chest-to-Bar Pull-ups', 40, 'Use strict high pulls while speed stays present.', ['lats', 'back', 'biceps'], ['Pull-up Bar'], { targetReps: 5 }),
-          ex('Ring Pushups with Turnout', 40, 'Use a controlled range and stable rings.', ['chest', 'triceps', 'core'], ['Gymnastic Rings'], { targetReps: 10 }),
-          ex('Kettlebell Goblet Squat', 45, 'Hold the bell close and move through eight strong reps.', ['quads', 'glutes', 'core'], ['Kettlebell'], { targetReps: 8 }),
-          ex('Fitness Ball Stir-the-Pot', 45, 'Draw controlled circles without letting the trunk move.', ['core', 'shoulders'], ['Fitness Ball', 'Yoga Mat']),
+          ex('Skin the Cat Progression', 45, 'Use foot assistance and a pain-free shoulder range for two or three controlled reps.', ['shoulders', 'lats', 'chest', 'core'], ['Gymnastic Rings'], { targetReps: 3 }),
+          ex('Supported Pistol Squat - Right', 40, 'Use the rings for controlled right-leg reps with no grinding.', ['quads', 'glutes', 'core'], ['Gymnastic Rings'], { targetReps: 5 }),
+          ex('Supported Pistol Squat - Left', 40, 'Use the same assistance on the left and stop for any knee warning.', ['quads', 'glutes', 'core'], ['Gymnastic Rings'], { targetReps: 4 }),
+          ex('Ring L-Sit or Tuck Support', 35, 'Press tall and hold the hardest clean variation that keeps the rings quiet.', ['core', 'hip flexors', 'shoulders', 'triceps'], ['Gymnastic Rings']),
+          ex('Kettlebell Suitcase March - Alternating', 60, 'March with the bell on the left, then switch to the right halfway without leaning.', ['obliques', 'grip', 'hips'], ['Kettlebell'], { switchSides: true }),
         ],
       },
     ],
@@ -2868,7 +3211,7 @@ function augustCleanPressBenchmark(date: string): ProgrammedWorkout {
       ex('Yoga Wheel Chest Opener', 55, 'Let the chest and shoulders relax over the wheel.', ['chest', 'shoulders', 'thoracic spine'], ['Yoga wheel']),
       ex('Crocodile Breathing', 70, 'Breathe into the floor and let the whole trunk downshift.', ['diaphragm', 'low back'], ['Yoga Mat']),
     ],
-    partingWords: 'One clean data point per side is enough. Whether it was strict, push press, or not yet, September now has an honest starting point.',
+    partingWords: 'This is the new baseline: broad skill, strong positions, balanced tissue stress, and no need to chase a one-rep milestone already surpassed.',
   });
 }
 
@@ -2914,15 +3257,34 @@ const AUGUST_HOME_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...buildAugustHomeWeek('2026-08-24', 4),
 ].filter(
   (programmedWorkout) =>
-    programmedWorkout.date < AUGUST_TRAVEL_OVERRIDE_START_DATE ||
-    programmedWorkout.date > AUGUST_TRAVEL_OVERRIDE_END_DATE
+    (programmedWorkout.date < AUGUST_TRAVEL_OVERRIDE_START_DATE ||
+      programmedWorkout.date > AUGUST_TRAVEL_OVERRIDE_END_DATE) &&
+    programmedWorkout.date < '2026-08-19'
 );
+
+const AUGUST_REMAINING_CONJUGATE_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+  augustConjugateClimbingWarmup('2026-08-19', 'high-step'),
+  augustConjugateAntagonistSnack('2026-08-19', 'ring-support'),
+  augustZone2('2026-08-20', 3),
+  augustRingsPowerConjugate('2026-08-21'),
+  augustSaturdayJumpRopeVo2('2026-08-22', 120),
+  augustConjugateClimbingWarmup('2026-08-23', 'lock-off'),
+  augustLeverAndCleanPressConjugate('2026-08-24'),
+  augustHandstandSkinTheCatConjugate('2026-08-25'),
+  augustConjugateClimbingWarmup('2026-08-26', 'tension'),
+  augustConjugateAntagonistSnack('2026-08-26', 'scapular-balance'),
+  augustZone2('2026-08-27', 4),
+  augustRingTransitionConjugate('2026-08-28'),
+  augustSaturdayJumpRopeVo2('2026-08-29', 180),
+  augustConjugateClimbingWarmup('2026-08-30', 'flow'),
+  augustConjugateSkillCheckpoint('2026-08-31'),
+];
 
 const AUGUST_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...AUGUST_TRANSITION_PROGRAMMED_WORKOUTS,
   ...AUGUST_HOME_PROGRAMMED_WORKOUTS,
   ...AUGUST_TRAVEL_PROGRAMMED_WORKOUTS,
-  augustCleanPressBenchmark('2026-08-31'),
+  ...AUGUST_REMAINING_CONJUGATE_PROGRAMMED_WORKOUTS,
 ];
 
 function buildTrainingWeek(startDate: string, phase: Phase, includeWeekend: boolean): ProgrammedWorkout[] {
