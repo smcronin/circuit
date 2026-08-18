@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SectionList, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,11 +43,14 @@ export default function ProgramsScreen() {
   const { setCurrentWorkout, setFlattenedWorkout } = useWorkoutStore();
   const historySessions = useHistoryStore((state) => state.history.sessions);
   const [showPast, setShowPast] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<{ todayKey: string; tomorrowKey: string } | null>(null);
 
-  const todayKey = getLocalDateKey();
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowKey = getLocalDateKey(tomorrow);
+  useEffect(() => {
+    const todayKey = getLocalDateKey();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setCalendarDate({ todayKey, tomorrowKey: getLocalDateKey(tomorrow) });
+  }, []);
 
   const completedIds = useMemo(() => {
     const ids = new Set<string>();
@@ -67,6 +70,11 @@ export default function ProgramsScreen() {
   }, [historySessions]);
 
   const { upcoming, past } = useMemo(() => {
+    if (!calendarDate) {
+      return { upcoming: [], past: [] };
+    }
+
+    const { todayKey, tomorrowKey } = calendarDate;
     const byDate = new Map<string, ProgrammedWorkout[]>();
     PROGRAMMED_WORKOUTS.forEach((pw) => {
       const list = byDate.get(pw.date) || [];
@@ -90,7 +98,7 @@ export default function ProgramsScreen() {
     // Most recent past days first, right below the toggle
     pastSections.sort((a, b) => b.date.localeCompare(a.date));
     return { upcoming: upcomingSections, past: pastSections };
-  }, [todayKey, tomorrowKey]);
+  }, [calendarDate]);
 
   const sections = showPast ? [...upcoming, ...past] : upcoming;
 
@@ -228,13 +236,18 @@ export default function ProgramsScreen() {
     </View>
   );
 
-  const ListEmpty = (
+  const ListEmpty = calendarDate ? (
     <View style={styles.empty}>
       <Ionicons name="calendar-outline" size={56} color={colors.surfaceHighlight} />
       <Text style={styles.emptyTitle}>Nothing scheduled</Text>
       <Text style={styles.emptyText}>
         The current block has wrapped. Check back when the next program drops.
       </Text>
+    </View>
+  ) : (
+    <View style={styles.empty}>
+      <Ionicons name="calendar-outline" size={56} color={colors.surfaceHighlight} />
+      <Text style={styles.emptyTitle}>Loading program</Text>
     </View>
   );
 
