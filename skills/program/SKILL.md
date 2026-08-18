@@ -21,7 +21,7 @@ Default weekly structure:
 - Wednesday: climbing warm-up plus optional antagonist/mobility snack.
 - Thursday: 30-45 minute Zone 2 road-bike cardio plus optional mobility/conditioning snack.
 - Friday: strength/calisthenics.
-- Saturday: rest day or 10-minute movement snack.
+- Saturday: primary high-aerobic interval anchor, normally a controlled jump-rope VO2-max session.
 - Sunday: climbing warm-up plus optional post-climb mobility.
 
 Known equipment:
@@ -37,7 +37,7 @@ Known equipment:
 - Hangboard when explicitly appropriate
 
 User preferences:
-- Start warm-ups with jump rope when feasible. Treat it as a fun body-temperature ramp, not mandatory conditioning.
+- Start ordinary strength warm-ups with jump rope when feasible. Treat that warm-up rope as a fun body-temperature ramp, not interval conditioning or a substitute for the Saturday high-aerobic session.
 - Hangboard max-hang style work is acceptable up to twice weekly when fingers feel good.
 - Avoid repetitive same-pattern circuits, especially demanding unilateral leg work or high-skill calisthenics on adjacent days.
 
@@ -56,6 +56,11 @@ Use a coached monthly structure:
   - If the same body region appears on adjacent days, change intensity, joint angle, contraction type, or purpose.
 - Keep Wednesday/Sunday climbing warm-ups as preparation, not workouts.
 - Keep Thursday Zone 2 boring and repeatable. Vary cooldown/mobility around it rather than turning it into intervals by default.
+- Use Saturday as the primary high-aerobic interval slot because it is the most reliable opening. Wednesday after climbing may be a fallback when Saturday is missed, but never schedule duplicate interval workouts on both days.
+- Program jump-rope VO2 work as controlled high-aerobic training, not all-out sprinting: approximately RPE 8/10, hard breathing with only a few words possible, and enough cadence control to complete the final interval without collapse. Heart rate may take 1-2 minutes to rise.
+- Use basic low-bounce or alternating-foot skipping for interval sessions. Avoid boxer step because of prior arch sensitivity.
+- Keep three minutes of walking or marching between 4x4-style work intervals. If foot, calf, Achilles, or knee discomfort appears, or coordination becomes the limiting factor, substitute fast low-impact step-ups or running/marching in place. Stop for sharp or escalating pain.
+- Progress the first September exposure to 4 x 4 minutes only if both August 22 (4 x 2 minutes) and August 29 (4 x 3 minutes) were completed without foot, calf, Achilles, knee, or coordination problems. Thereafter, default to one 4 x 4 session weekly or every 7-10 days, backing off when recovery or symptoms warrant.
 
 Warm-ups and cooldowns:
 - Start strength and climbing warm-ups with jump rope or a clear no-rope substitute.
@@ -69,6 +74,7 @@ Warm-ups and cooldowns:
   - Tuesday: quads/hip flexors/pecs/wrists.
   - Friday: hips/spine/breathing downshift.
   - Cardio: calves/hips/T-spine/breathing rotation across phases.
+- For Saturday high-aerobic intervals, use approximately eight progressive warm-up minutes: brisk marching, ankle/calf preparation, and easy rope. Finish with approximately five minutes of easy walking, calf mobility, and breathing.
 
 ## Implementation Workflow
 
@@ -109,7 +115,8 @@ Before finalizing a monthly program, confirm:
 - Warm-ups are varied but still recognizable and efficient.
 - Cooldowns are varied and targeted to the day.
 - Zone 2 remains a health anchor.
+- Saturday is the single scheduled high-aerobic interval anchor, with no duplicate Wednesday interval session or same-day mobility snack.
+- Jump-rope interval progression is gated by completion, stable coordination, and no foot, calf, Achilles, or knee warning signs.
 - Climbing warm-ups prepare without stealing climbing performance.
 - Deload week actually reduces intensity or complexity.
 - The final week has a clear purpose without reckless peak loading.
-

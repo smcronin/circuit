@@ -2756,6 +2756,54 @@ function augustCottageFullBodyB(date: string): ProgrammedWorkout {
   });
 }
 
+function augustSaturdayJumpRopeVo2(date: string, workIntervalSeconds: 120 | 180): ProgrammedWorkout {
+  const intervalMinutes = workIntervalSeconds / 60;
+  const isIntroductory = workIntervalSeconds === 120;
+
+  return programmedWorkout({
+    id: `program-2026-08-saturday-jump-rope-vo2-${intervalMinutes}min-${date}`,
+    date,
+    slot: 'Cardio',
+    priority: 1,
+    coachNotes: `Saturday high-aerobic anchor: 4 x ${intervalMinutes}-minute controlled jump-rope intervals at about RPE 8 with 3 minutes of active recovery. If Saturday is missed, Wednesday after climbing is the fallback; complete it once, not on both days.`,
+    name: `${isIntroductory ? 'Introductory' : 'Build'} Jump-Rope VO₂ Intervals: 4 × ${intervalMinutes} Minutes`,
+    description: `A controlled high-aerobic jump-rope session with four ${intervalMinutes}-minute work intervals and walking or marching recovery. This is not an all-out effort: heart rate may take 1-2 minutes to rise, and cadence should remain stable through the final interval. Use basic low-bounce or alternating-foot skipping, not boxer step. If foot, calf, Achilles, or knee discomfort appears, or rope coordination becomes the limiting factor, switch to fast low-impact step-ups or running/marching in place. Stop for sharp or escalating pain.`,
+    difficulty: 'intermediate',
+    targetDurationMinutes: isIntroductory ? 30 : 34,
+    estimatedCalories: isIntroductory ? 260 : 310,
+    calorieRange: isIntroductory ? { low: 210, high: 320 } : { low: 250, high: 380 },
+    focusAreas: ['cardio', 'VO2 max', 'high-aerobic conditioning', 'coordination'],
+    muscleGroupsTargeted: ['cardiovascular system', 'calves', 'quads', 'glutes', 'core'],
+    warmUp: [
+      ex('Brisk Marching Ramp', 120, 'Start easy and build to a brisk march with relaxed arm swing and progressively deeper breathing.', ['cardiovascular system', 'hips', 'calves']),
+      ex('Ankle Rockers and Calf Raises', 120, 'Alternate controlled ankle rockers with easy calf raises. Keep the feet relaxed and use a pain-free range.', ['ankles', 'calves', 'feet']),
+      ex('Easy Low-Bounce Rope', 120, 'Use basic low-bounce or alternating-foot skipping at an easy pace. Do not use boxer step; fast marching is the no-rope option.', ['cardiovascular system', 'calves', 'coordination'], ['Jump Rope']),
+      ex('Progressive Rope Primer', 120, 'Gradually approach workout cadence without straining. Finish warm, springy, and coordinated rather than fatigued.', ['cardiovascular system', 'calves', 'coordination'], ['Jump Rope']),
+    ],
+    circuits: [{
+      name: `Controlled 4 × ${intervalMinutes}-Minute High-Aerobic Intervals`,
+      rounds: 4,
+      restBetweenRounds: 180,
+      restBetweenExercises: 0,
+      exercises: [
+        ex(
+          `Jump Rope VO₂ Interval - ${intervalMinutes} Minutes`,
+          workIntervalSeconds,
+          'Work at about RPE 8/10: hard breathing with only a few words possible, but controlled enough to finish the fourth interval without cadence collapsing. This is not an all-out sprint, and heart rate may take 1-2 minutes to rise. Use basic low-bounce or alternating-foot skipping, not boxer step. During each three-minute round recovery, keep moving with easy walking or marching. If discomfort or coordination limits the rope, substitute fast low-impact step-ups or running/marching in place.',
+          ['cardiovascular system', 'calves', 'quads', 'glutes', 'core'],
+          ['Jump Rope']
+        ),
+      ],
+    }],
+    coolDown: [
+      ex('Easy Walking Downshift', 150, 'Walk easily and let breathing and heart rate settle without stopping abruptly.', ['cardiovascular system', 'calves', 'hips']),
+      ex('Calf Mobility - Alternating', 90, 'Use a gentle calf stretch on the left, then switch to the right halfway. Stay well below pain.', ['calves', 'ankles'], undefined, { switchSides: true }),
+      ex('Standing Recovery Breathing', 60, 'Breathe slowly through the nose if comfortable, lengthening the exhale while the shoulders relax.', ['diaphragm', 'cardiovascular system']),
+    ],
+    partingWords: `Four controlled ${intervalMinutes}-minute intervals are the win. Record RPE, cadence quality, coordination, and any foot, calf, Achilles, or knee response so the next exposure can progress safely.`,
+  });
+}
+
 function augustCleanPressBenchmark(date: string): ProgrammedWorkout {
   return programmedWorkout({
     id: `program-2026-08-clean-press-benchmark-${date}`,
@@ -2825,6 +2873,13 @@ function augustCleanPressBenchmark(date: string): ProgrammedWorkout {
 }
 
 function buildAugustHomeWeek(startDate: string, phase: AugustPhase): ProgrammedWorkout[] {
+  const saturdayDate = addDays(startDate, 5);
+  const saturdayWorkout = saturdayDate === '2026-08-22'
+    ? augustSaturdayJumpRopeVo2(saturdayDate, 120)
+    : saturdayDate === '2026-08-29'
+      ? augustSaturdayJumpRopeVo2(saturdayDate, 180)
+      : augustSaturdayMobility(saturdayDate);
+
   return [
     augustMondayStrength(startDate, phase),
     augustTuesdayStrength(addDays(startDate, 1), phase),
@@ -2832,7 +2887,7 @@ function buildAugustHomeWeek(startDate: string, phase: AugustPhase): ProgrammedW
     augustAntagonistSnack(addDays(startDate, 2)),
     augustZone2(addDays(startDate, 3), phase),
     augustFridayStrength(addDays(startDate, 4), phase),
-    augustSaturdayMobility(addDays(startDate, 5)),
+    saturdayWorkout,
     augustClimbingWarmup(addDays(startDate, 6), true),
   ];
 }
