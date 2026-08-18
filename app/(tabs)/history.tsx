@@ -7,7 +7,8 @@ import { Card, Chip } from '@/components/common';
 import { ManualWorkoutModal } from '@/components/history';
 import { RouteTrace } from '@/components/ride';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
-import { useHistoryStore, useWorkoutStore, useUserStore } from '@/stores';
+import { useHistoryStore, useWorkoutStore } from '@/stores';
+import { useRideUnits } from '@/hooks/useRideUnits';
 import { WorkoutSession } from '@/types/workout';
 import { formatDate, formatDuration, flattenWorkout, formatCompactNumber } from '@/utils';
 import {
@@ -20,13 +21,7 @@ import {
 } from '@/utils/rideFormat';
 import { DIFFICULTY_COLORS } from '@/utils/constants';
 import { confirmAction } from '@/utils/confirm';
-
-function getRpeColor(value: number): string {
-  if (value <= 3) return colors.success;
-  if (value <= 6) return colors.warning;
-  if (value <= 8) return colors.accent;
-  return colors.error;
-}
+import { getRpeColor } from '@/utils/rpe';
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
@@ -34,10 +29,8 @@ export default function HistoryScreen() {
   const history = useHistoryStore((state) => state.history);
   const removeSession = useHistoryStore((state) => state.removeSession);
   const { setCurrentWorkout, setFlattenedWorkout } = useWorkoutStore();
-  const weightUnit = useUserStore((state) => state.profile?.weightUnit);
   const [showManualModal, setShowManualModal] = useState(false);
-
-  const rideUnits = useMemo(() => ({ imperial: (weightUnit ?? 'lbs') !== 'kg' }), [weightUnit]);
+  const rideUnits = useRideUnits();
 
   const handleReplay = (session: WorkoutSession) => {
     const workout = session.workout;

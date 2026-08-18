@@ -96,9 +96,9 @@ export default function ProgramsScreen() {
 
   const handleOpen = useCallback(
     (pw: ProgrammedWorkout) => {
-      // Rides skip the circuit timer entirely — there are no intervals to run,
-      // just GPS to record.
-      if (pw.workout.activityType === 'ride') {
+      // Recorded activities skip the circuit timer entirely — there are no
+      // intervals to run, just GPS to record.
+      if (pw.workout.activityType) {
         router.push({ pathname: '/workout/ride', params: { programId: pw.id } });
         return;
       }
@@ -112,7 +112,7 @@ export default function ProgramsScreen() {
   const renderItem = useCallback(
     ({ item }: { item: ProgrammedWorkout }) => {
       const isDone = completedIds.has(item.id);
-      const isRide = item.workout.activityType === 'ride';
+      const isRide = Boolean(item.workout.activityType);
       return (
         <TouchableOpacity
           style={[styles.row, isDone && styles.rowDone, isRide && !isDone && styles.rowRide]}

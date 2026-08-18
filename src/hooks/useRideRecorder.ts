@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useRideStore, snapshotRide } from '@/stores/useRideStore';
 import { saveRideDraft } from '@/utils/rideDraft';
-import type { RidePoint, RideSignal } from '@/types/ride';
+import type { RecordedActivity, RidePoint, RideSignal } from '@/types/ride';
 import type { RiderParams } from '@/utils/cycling';
 
 const KEEP_AWAKE_TAG = 'circuit-ride';
@@ -51,7 +51,7 @@ export interface UseRideRecorder {
   signal: RideSignal;
   /** True when the screen wake lock could not be held — recording will die on lock. */
   wakeLockLost: boolean;
-  begin: (params: RiderParams) => void;
+  begin: (params: RiderParams, activity: RecordedActivity, programId?: string) => void;
   pause: () => void;
   resume: () => void;
   stop: () => void;
@@ -167,10 +167,13 @@ export function useRideRecorder(): UseRideRecorder {
     return () => clearInterval(id);
   }, [isRecording]);
 
-  const begin = useCallback((params: RiderParams) => {
-    setError(isRideRecordingSupported() ? null : 'unsupported');
-    useRideStore.getState().start(params);
-  }, []);
+  const begin = useCallback(
+    (params: RiderParams, activity: RecordedActivity, programId?: string) => {
+      setError(isRideRecordingSupported() ? null : 'unsupported');
+      useRideStore.getState().start(params, activity, programId);
+    },
+    []
+  );
 
   const pause = useCallback(() => {
     useRideStore.getState().pause();

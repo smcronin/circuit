@@ -1,29 +1,13 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Pressable,
-  RefreshControl,
-  KeyboardAvoidingView,
-  Platform,
-  Modal,
-  TextInput,
-} from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Chip, Input } from '@/components/common';
+import { Button, Card } from '@/components/common';
 import { CircuitLogo } from '@/components/CircuitLogo';
-import { GeneratingWorkoutModal } from '@/components/GeneratingWorkoutModal';
-import { CustomInstructionsHistoryModal } from '@/components/home/CustomInstructionsHistoryModal';
 import { ProgrammedWorkoutsCard } from '@/components/home/ProgrammedWorkoutsCard';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
-import { DURATION_OPTIONS, WARMUP_COOLDOWN_THRESHOLD } from '@/utils/constants';
-import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
-import { generateWorkout, WorkoutSummary } from '@/services/openrouter';
+import { useWorkoutStore, useHistoryStore } from '@/stores';
 import { flattenWorkout } from '@/utils';
 import { getLocalDateKey, getProgrammedWorkoutsForHome } from '@/data/programmedWorkouts';
 import type { ProgrammedWorkout } from '@/data/programmedWorkouts';
@@ -42,76 +26,25 @@ function completedSessionDateKey(session: WorkoutSession): string | null {
   return getLocalDateKey(completedAt);
 }
 
+/**
+ * Home is a launcher: today's program, then the two ways to start something —
+ * generate a circuit, or record a GPS workout. The generator's controls live
+ * on /workout/generate now.
+ */
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const profile = useUserStore((state) => state.profile);
-  const savedCustomInstructions = useUserStore((state) => state.savedCustomInstructions);
-  const addCustomInstruction = useUserStore((state) => state.addCustomInstruction);
-  const clearCustomInstructions = useUserStore((state) => state.clearCustomInstructions);
-  const {
-    isGenerating,
-    setIsGenerating,
-    setGenerationError,
-    generationError,
-    setCurrentWorkout,
-    setFlattenedWorkout,
-    selectedEquipmentSetId,
-    setSelectedEquipmentSetId,
-    selectedDuration,
-    setSelectedDuration,
-    customInstructions,
-    setCustomInstructions,
-    includeWarmup,
-    setIncludeWarmup,
-    includeCooldown,
-    setIncludeCooldown,
-    isCustomDuration,
-    setIsCustomDuration,
-  } = useWorkoutStore();
-  const getRecentSessions = useHistoryStore((state) => state.getRecentSessions);
+  // Field selectors, not the whole store: home stays mounted beneath the
+  // pushed generator screen, and a whole-store subscription would re-render it
+  // (and re-scan the program table below) on every keystroke typed there.
+  const setCurrentWorkout = useWorkoutStore((state) => state.setCurrentWorkout);
+  const setFlattenedWorkout = useWorkoutStore((state) => state.setFlattenedWorkout);
   const historySessions = useHistoryStore((state) => state.history.sessions);
-  const workoutSummary = useHistoryStore((state) => state.workoutSummary);
 
-  const [refreshing, setRefreshing] = useState(false);
-  const [showCustomDuration, setShowCustomDuration] = useState(false);
-  const [customDurationInput, setCustomDurationInput] = useState('');
-  const [showInstructionsHistory, setShowInstructionsHistory] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
-
-  // The footer CTA follows the content: while the program card is in view it
-  // starts today's program; once the user scrolls into the generator controls
-  // (Equipment / Duration / ...) it becomes Generate Workout.
-  const [scrolledToGenerator, setScrolledToGenerator] = useState(false);
-  const generatorStartY = useRef(Number.MAX_SAFE_INTEGER);
-
-  const handleScroll = useCallback(
-    (event: { nativeEvent: { contentOffset: { y: number } } }) => {
-      const y = event.nativeEvent.contentOffset.y;
-      // Swap once the Equipment card approaches the upper half of the screen,
-      // with a little hysteresis so the button doesn't flicker at the edge.
-      const threshold = generatorStartY.current - 320;
-      setScrolledToGenerator((prev) =>
-        prev ? y > threshold - 40 : y > threshold
-      );
-    },
-    []
-  );
-
-  // Helper to update warmup/cooldown defaults based on duration
-  const updateDurationWithDefaults = useCallback((duration: number) => {
-    setSelectedDuration(duration);
-    const shouldEnable = duration >= WARMUP_COOLDOWN_THRESHOLD;
-    setIncludeWarmup(shouldEnable);
-    setIncludeCooldown(shouldEnable);
-  }, [setSelectedDuration, setIncludeWarmup, setIncludeCooldown]);
-
-  const equipmentSets = profile?.equipmentSets || [];
-  const selectedSet = equipmentSets.find((s) => s.id === selectedEquipmentSetId) ||
-    equipmentSets.find((s) => s.isDefault) ||
-    equipmentSets[0];
-  const programmedHome = getProgrammedWorkoutsForHome();
+  // The program schedule only changes with the date; computing it per render
+  // hands a fresh array identity to every memo below.
+  const programmedHome = useMemo(() => getProgrammedWorkoutsForHome(), []);
   const completedProgrammedWorkoutIds = useMemo(() => {
     if (!programmedHome?.isToday) {
       return new Set<string>();
@@ -144,8 +77,7 @@ export default function HomeScreen() {
     return completedIds;
   }, [historySessions, programmedHome]);
 
-  // Today's next unfinished programmed workout — the footer's primary action
-  // while the program card is in view.
+  // Today's next unfinished programmed workout — the footer's primary action.
   const pendingProgrammedWorkout = useMemo(() => {
     if (!programmedHome?.isToday) return undefined;
     return programmedHome.workouts.find(
@@ -153,95 +85,32 @@ export default function HomeScreen() {
     );
   }, [programmedHome, completedProgrammedWorkoutIds]);
 
-  const showProgramCta = Boolean(pendingProgrammedWorkout) && !scrolledToGenerator;
+  const handleOpenProgrammedWorkout = useCallback(
+    (programmedWorkout: ProgrammedWorkout) => {
+      const workout = programmedWorkout.workout;
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setGenerationError(null);
-    setTimeout(() => setRefreshing(false), 500);
-  }, []);
-
-  const handleOpenProgrammedWorkout = useCallback((programmedWorkout: ProgrammedWorkout) => {
-    const workout = programmedWorkout.workout;
-    const flattened = flattenWorkout(workout);
-
-    setCurrentWorkout(workout);
-    setFlattenedWorkout(flattened);
-    router.push('/workout/review');
-  }, [router, setCurrentWorkout, setFlattenedWorkout]);
-
-  const handleGenerateWorkout = async () => {
-    if (!profile) return;
-
-    setIsGenerating(true);
-    setGenerationError(null);
-
-    try {
-      // Get recent 5 workouts for full context (including RPE/notes)
-      const recentSessions = getRecentSessions(5);
-      const recentWorkouts: WorkoutSummary[] = recentSessions.map((s) => ({
-        name: s.workout.name,
-        focusAreas: s.workout.focusAreas,
-        exercisesUsed: s.workout.circuits.flatMap((c) =>
-          c.exercises.map((e) => e.name)
-        ),
-        completedAt: s.completedAt || s.startedAt || '',
-        rpe: s.feedback?.rpe,
-        notes: s.feedback?.notes,
-      }));
-
-      const workout = await generateWorkout({
-        userGoals: profile.fitnessGoals,
-        equipmentAvailable: selectedSet?.equipment || [],
-        equipmentNotes: selectedSet?.notes,
-        trainingNotes: profile.trainingNotes,
-        requestedDuration: selectedDuration,
-        recentWorkouts,
-        olderWorkoutsSummary: workoutSummary,
-        userAge: profile.age,
-        userWeight: profile.weight,
-        customInstructions: customInstructions || undefined,
-        includeWarmup,
-        includeCooldown,
-      });
-
-      const flattened = flattenWorkout(workout);
-
-      // Save custom instructions to history (if provided)
-      if (customInstructions) {
-        addCustomInstruction(customInstructions);
+      // Recorded-activity days go to the GPS recorder, not the circuit timer.
+      if (workout.activityType) {
+        router.push({
+          pathname: '/workout/ride',
+          params: { programId: programmedWorkout.id },
+        });
+        return;
       }
 
       setCurrentWorkout(workout);
-      setFlattenedWorkout(flattened);
+      setFlattenedWorkout(flattenWorkout(workout));
       router.push('/workout/review');
-    } catch (error) {
-      console.error('Workout generation failed:', error);
-      setGenerationError(
-        error instanceof Error ? error.message : 'Failed to generate workout'
-      );
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+    },
+    [router, setCurrentWorkout, setFlattenedWorkout]
+  );
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
-        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
-        keyboardDismissMode="interactive"
-        keyboardShouldPersistTaps="handled"
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text} />
-        }
       >
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -274,186 +143,25 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Equipment Selection — its position marks the start of the
-            generator controls for the footer CTA swap */}
-        <View
-          onLayout={(event) => {
-            generatorStartY.current = event.nativeEvent.layout.y;
-          }}
+        <ActionCard
+          icon="flash"
+          iconColor={colors.primary}
+          title="Generate Workout"
+          subtitle="An AI-built circuit for your equipment, time, and goals"
+          onPress={() => router.push('/workout/generate')}
         />
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="fitness-outline" size={20} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Equipment</Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chipRow}>
-              {equipmentSets.length === 0 ? (
-                <Chip label="Bodyweight Only" selected />
-              ) : (
-                equipmentSets.map((set) => (
-                  <Chip
-                    key={set.id}
-                    label={set.name}
-                    selected={set.id === (selectedSet?.id)}
-                    onPress={() => setSelectedEquipmentSetId(set.id)}
-                  />
-                ))
-              )}
-              <Chip
-                label="Add Set"
-                icon="add"
-                onPress={() => router.push('/(tabs)/profile')}
-              />
-            </View>
-          </ScrollView>
-          {selectedSet && selectedSet.equipment.length > 0 && (
-            <Text style={styles.equipmentList}>
-              {selectedSet.equipment.slice(0, 4).join(', ')}
-              {selectedSet.equipment.length > 4 && ` +${selectedSet.equipment.length - 4} more`}
-            </Text>
-          )}
-        </Card>
 
-        {/* Duration Selection */}
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="time-outline" size={20} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Duration</Text>
-          </View>
-          <View style={styles.durationGrid}>
-            {DURATION_OPTIONS.map((option) => {
-              const isSelected = selectedDuration === option.value && isCustomDuration === false;
-              return (
-                <Pressable
-                  key={option.value}
-                  style={({ pressed }) => [
-                    styles.durationOption,
-                    isSelected && styles.durationOptionSelected,
-                    pressed && styles.durationOptionPressed,
-                  ]}
-                  onPress={() => {
-                    setIsCustomDuration(false);
-                    updateDurationWithDefaults(option.value);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.durationValue,
-                      isSelected && styles.durationValueSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-            {/* Custom Duration Button */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.durationOption,
-                isCustomDuration && styles.durationOptionSelected,
-                pressed && styles.durationOptionPressed,
-              ]}
-              onPress={() => {
-                setCustomDurationInput(isCustomDuration ? String(selectedDuration) : '');
-                setShowCustomDuration(true);
-              }}
-            >
-              {isCustomDuration ? (
-                <Text style={[styles.durationValue, styles.durationValueSelected]}>
-                  {selectedDuration} min
-                </Text>
-              ) : (
-                <Ionicons name="add" size={20} color={colors.textSecondary} />
-              )}
-            </Pressable>
-          </View>
-
-          {/* Warmup/Cooldown Toggles */}
-          <View style={styles.workoutOptionsRow}>
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              onPress={() => setIncludeWarmup(!includeWarmup)}
-            >
-              <View style={[styles.checkbox, includeWarmup && styles.checkboxChecked]}>
-                {includeWarmup && <Ionicons name="checkmark" size={14} color={colors.text} />}
-              </View>
-              <Text style={styles.checkboxLabel}>Warmup</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              onPress={() => setIncludeCooldown(!includeCooldown)}
-            >
-              <View style={[styles.checkbox, includeCooldown && styles.checkboxChecked]}>
-                {includeCooldown && <Ionicons name="checkmark" size={14} color={colors.text} />}
-              </View>
-              <Text style={styles.checkboxLabel}>Cooldown</Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-
-        {/* Goals Preview */}
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="flag-outline" size={20} color={colors.primary} />
-            <Text style={styles.sectionTitle}>Your Goals</Text>
-          </View>
-          <Text style={styles.goalsText} numberOfLines={2}>
-            {profile?.fitnessGoals || 'No goals set'}
-          </Text>
-        </Card>
-
-        {/* Custom Instructions */}
-        <Card style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { flex: 1 }]}>Custom Instructions</Text>
-            <View style={styles.instructionsActions}>
-              {customInstructions ? (
-                <TouchableOpacity
-                  style={styles.instructionsActionButton}
-                  onPress={() => setCustomInstructions('')}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-                </TouchableOpacity>
-              ) : null}
-              <TouchableOpacity
-                style={styles.instructionsActionButton}
-                onPress={() => setShowInstructionsHistory(true)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="time-outline" size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <Input
-            placeholder="e.g., Focus on upper body, include pull-ups, no jumping..."
-            blurOnSubmit={true}
-            value={customInstructions}
-            onChangeText={setCustomInstructions}
-            onFocus={() => {
-              setTimeout(() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }, 100);
-            }}
-            multiline
-            numberOfLines={3}
-          />
-        </Card>
-
-        {generationError && (
-          <Card style={styles.errorCard}>
-            <Ionicons name="warning-outline" size={24} color={colors.error} />
-            <Text style={styles.errorText}>{generationError}</Text>
-          </Card>
-        )}
+        <ActionCard
+          icon="navigate"
+          iconColor={colors.success}
+          title="Record Workout"
+          subtitle="Track a ride, run, walk, or hike with your phone's GPS"
+          onPress={() => router.push('/workout/ride')}
+        />
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-        {showProgramCta && pendingProgrammedWorkout ? (
+      {pendingProgrammedWorkout && (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
           <Button
             title="Start Today's Program"
             onPress={() => handleOpenProgrammedWorkout(pendingProgrammedWorkout)}
@@ -461,71 +169,34 @@ export default function HomeScreen() {
             fullWidth
             icon={<Ionicons name="play" size={20} color={colors.text} />}
           />
-        ) : (
-          <Button
-            title={isGenerating ? 'Generating...' : 'Generate Workout'}
-            onPress={handleGenerateWorkout}
-            size="lg"
-            fullWidth
-            loading={isGenerating}
-            disabled={isGenerating}
-            icon={!isGenerating && <Ionicons name="flash" size={20} color={colors.text} />}
-          />
-        )}
-      </View>
-
-      {/* Custom Duration Modal */}
-      <Modal visible={showCustomDuration} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Custom Duration</Text>
-            <TextInput
-              style={styles.customInput}
-              keyboardType="number-pad"
-              placeholder="Minutes"
-              placeholderTextColor={colors.textMuted}
-              value={customDurationInput}
-              onChangeText={setCustomDurationInput}
-              maxLength={3}
-              autoFocus
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => setShowCustomDuration(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonPrimary]}
-                onPress={() => {
-                  const mins = parseInt(customDurationInput, 10);
-                  if (mins > 0 && mins <= 120) {
-                    setSelectedDuration(mins);
-                    setIsCustomDuration(true);
-                    setShowCustomDuration(false);
-                  }
-                }}
-              >
-                <Text style={[styles.modalButtonText, styles.modalButtonTextPrimary]}>Set</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
-      </Modal>
+      )}
+    </View>
+  );
+}
 
-      {/* Custom Instructions History Modal */}
-      <CustomInstructionsHistoryModal
-        visible={showInstructionsHistory}
-        onClose={() => setShowInstructionsHistory(false)}
-        instructions={savedCustomInstructions}
-        onSelect={setCustomInstructions}
-        onClear={clearCustomInstructions}
-      />
+interface ActionCardProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor: string;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+}
 
-      {/* Generating Workout Modal */}
-      <GeneratingWorkoutModal visible={isGenerating} />
-    </KeyboardAvoidingView>
+function ActionCard({ icon, iconColor, title, subtitle, onPress }: ActionCardProps) {
+  return (
+    <Card onPress={onPress} style={styles.actionCard}>
+      <View style={styles.actionRow}>
+        <View style={[styles.actionIcon, { backgroundColor: iconColor + '1F' }]}>
+          <Ionicons name={icon} size={26} color={iconColor} />
+        </View>
+        <View style={styles.actionCopy}>
+          <Text style={styles.actionTitle}>{title}</Text>
+          <Text style={styles.actionSubtitle}>{subtitle}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </View>
+    </Card>
   );
 }
 
@@ -558,101 +229,47 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     color: colors.text,
     textTransform: 'uppercase',
-    letterSpacing: 2.5,
+    letterSpacing: 2,
   },
   subtitle: {
     fontSize: 11,
     fontWeight: typography.semibold,
     color: colors.primaryLight,
-    letterSpacing: 2,
-    marginTop: 3,
+    letterSpacing: 1.5,
   },
   profileButton: {
-    padding: spacing.xs,
+    padding: 4,
   },
-  section: {
-    marginBottom: spacing.lg,
+  actionCard: {
+    marginTop: spacing.md,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    fontFamily: fonts.displaySemiBold,
-    fontSize: typography.lg,
-    color: colors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-  },
-  optionalLabel: {
-    fontSize: typography.sm,
-    color: colors.textMuted,
-    flex: 1,
-  },
-  instructionsActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  instructionsActionButton: {
-    padding: spacing.xs,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  equipmentList: {
-    fontSize: typography.sm,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-  },
-  durationGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  durationOption: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-  },
-  durationOptionSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primaryLight,
-  },
-  durationOptionPressed: {
-    opacity: 0.7,
-  },
-  durationValue: {
-    fontSize: typography.sm,
-    fontWeight: typography.semibold,
-    color: colors.textSecondary,
-  },
-  durationValueSelected: {
-    color: colors.text,
-  },
-  goalsText: {
-    fontSize: typography.sm,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  errorCard: {
+  actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: colors.error,
   },
-  errorText: {
+  actionIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionCopy: {
     flex: 1,
-    fontSize: typography.sm,
-    color: colors.error,
+    gap: 2,
+  },
+  actionTitle: {
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xl,
+    color: colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  actionSubtitle: {
+    fontSize: typography.xs,
+    color: colors.textMuted,
+    lineHeight: 17,
   },
   footer: {
     padding: spacing.lg,
@@ -660,89 +277,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.hairline,
     backgroundColor: colors.background,
-  },
-  workoutOptionsRow: {
-    flexDirection: 'row',
-    gap: spacing.xl,
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: borderRadius.sm,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  checkboxLabel: {
-    fontSize: typography.sm,
-    color: colors.text,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(2, 4, 10, 0.82)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    padding: spacing.xl,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    width: '80%',
-    maxWidth: 300,
-  },
-  modalTitle: {
-    fontFamily: fonts.displaySemiBold,
-    fontSize: typography.xl,
-    color: colors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  customInput: {
-    backgroundColor: colors.surfaceLight,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.xl,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'flex-end',
-  },
-  modalButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-  },
-  modalButtonPrimary: {
-    backgroundColor: colors.primary,
-  },
-  modalButtonText: {
-    fontSize: typography.sm,
-    fontWeight: typography.semibold,
-    color: colors.textSecondary,
-  },
-  modalButtonTextPrimary: {
-    color: colors.text,
   },
 });

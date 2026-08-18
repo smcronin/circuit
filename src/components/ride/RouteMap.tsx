@@ -35,7 +35,7 @@ interface RouteMapProps {
  * trace rather than showing an empty box — the route shape is the point, the
  * streets underneath are a bonus.
  */
-export function RouteMap({ points, width, height, trackBudget = 400 }: RouteMapProps) {
+function RouteMapImpl({ points, width, height, trackBudget = 400 }: RouteMapProps) {
   const [failedTiles, setFailedTiles] = useState<Record<string, boolean>>({});
 
   const model = useMemo(() => {
@@ -116,6 +116,12 @@ export function RouteMap({ points, width, height, trackBudget = 400 }: RouteMapP
     </View>
   );
 }
+
+/**
+ * Memoized: the save screen re-renders on every Notes keystroke, and without
+ * this the tile grid and the ~400-coordinate polylines re-reconcile each time.
+ */
+export const RouteMap = React.memo(RouteMapImpl);
 
 const styles = StyleSheet.create({
   frame: {

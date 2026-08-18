@@ -57,6 +57,12 @@ export interface RideAccumulators {
 
 export type RideStatus = 'idle' | 'recording' | 'paused' | 'finished';
 
+/**
+ * What kind of workout the GPS recorder is tracking. Determines the energy
+ * model (physics for the bike, MET tables for foot travel) and the labels.
+ */
+export type RecordedActivity = 'ride' | 'run' | 'walk' | 'hike';
+
 /** GPS signal quality, derived from the most recent fix's accuracy. */
 export type RideSignal = 'none' | 'acquiring' | 'weak' | 'good';
 
@@ -72,4 +78,6 @@ export interface RideSummary {
   endedAt: string;
   /** Which calorie model produced `stats.kcal` — surfaced so the number is auditable. */
   calorieModel: 'physics' | 'met';
+  /** Absent on rides recorded before activities existed — read as 'ride'. */
+  activity?: RecordedActivity;
 }

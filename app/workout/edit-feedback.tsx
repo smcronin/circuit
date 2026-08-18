@@ -3,25 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingV
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Input } from '@/components/common';
+import { Button, Card, Input, RpeSelector } from '@/components/common';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore } from '@/stores';
 import { formatDate, formatDuration } from '@/utils';
-
-function getRpeColor(value: number): string {
-  if (value <= 3) return colors.success;
-  if (value <= 6) return colors.warning;
-  if (value <= 8) return colors.accent;
-  return colors.error;
-}
-
-function getRpeLabel(value: number): string {
-  if (value <= 2) return 'Very Easy';
-  if (value <= 4) return 'Easy';
-  if (value <= 6) return 'Moderate';
-  if (value <= 8) return 'Hard';
-  return 'Maximum';
-}
 
 export default function EditFeedbackScreen() {
   const router = useRouter();
@@ -101,46 +86,7 @@ export default function EditFeedbackScreen() {
           <Text style={styles.feedbackTitle}>How did it feel?</Text>
           <Text style={styles.feedbackSubtitle}>Rate your perceived exertion</Text>
 
-          <View style={styles.rpeContainer}>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-              <TouchableOpacity
-                key={value}
-                style={[
-                  styles.rpeButton,
-                  {
-                    backgroundColor:
-                      rpe === value ? getRpeColor(value) : getRpeColor(value) + '30',
-                    borderColor: rpe === value ? getRpeColor(value) : 'transparent',
-                  },
-                ]}
-                onPress={() => setRpe(rpe === value ? undefined : value)}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.rpeText,
-                    { color: rpe === value ? colors.text : getRpeColor(value) },
-                  ]}
-                >
-                  {value}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={styles.rpeLabels}>
-            <Text style={styles.rpeLabel}>Easy</Text>
-            <Text style={styles.rpeLabel}>Moderate</Text>
-            <Text style={styles.rpeLabel}>Maximum</Text>
-          </View>
-
-          {rpe !== undefined && (
-            <View style={styles.rpeSelectedContainer}>
-              <Text style={[styles.rpeSelectedText, { color: getRpeColor(rpe) }]}>
-                RPE {rpe}: {getRpeLabel(rpe)}
-              </Text>
-            </View>
-          )}
+          <RpeSelector value={rpe} onChange={setRpe} />
         </Card>
 
         {/* Notes Input */}
@@ -230,41 +176,6 @@ const styles = StyleSheet.create({
     fontSize: typography.sm,
     color: colors.textMuted,
     marginBottom: spacing.md,
-  },
-  rpeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.xs,
-  },
-  rpeButton: {
-    flex: 1,
-    aspectRatio: 1,
-    maxWidth: 32,
-    borderRadius: borderRadius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-  },
-  rpeText: {
-    fontSize: typography.sm,
-    fontWeight: typography.bold,
-  },
-  rpeLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.sm,
-  },
-  rpeLabel: {
-    fontSize: typography.xs,
-    color: colors.textMuted,
-  },
-  rpeSelectedContainer: {
-    marginTop: spacing.md,
-    alignItems: 'center',
-  },
-  rpeSelectedText: {
-    fontSize: typography.sm,
-    fontWeight: typography.semibold,
   },
   notesInput: {
     marginTop: spacing.xs,

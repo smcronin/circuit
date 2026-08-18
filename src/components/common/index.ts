@@ -8,3 +8,4 @@ export { Header } from './Header';
 export { BookmarkButton } from './BookmarkButton';
 export { MarqueeText } from './MarqueeText';
 export { VerticalAutoScroll } from './VerticalAutoScroll';
+export { RpeSelector } from './RpeSelector';

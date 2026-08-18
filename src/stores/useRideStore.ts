@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  RecordedActivity,
   RideAccumulators,
   RideGap,
   RidePoint,
@@ -14,10 +15,11 @@ import {
   MOVING_THRESHOLD_MPS,
   accumulateElevationGain,
   evaluateFix,
-  gradeBetween,
+  smoothedGradeBetween,
   resolveSpeedMps,
 } from '@/utils/geo';
-import { defaultRiderParams, energyForInterval, type RiderParams } from '@/utils/cycling';
+import { defaultRiderParams, type RiderParams } from '@/utils/cycling';
+import { activityEnergyForInterval } from '@/utils/activities';
 
 // Stats are folded forward one fix at a time rather than recomputed from the
 // full point list. A 2-hour ride is ~7,000 points and this runs on every fix
@@ -60,15 +62,20 @@ interface RideState {
    */
   awaitingAnchor: boolean;
   riderParams: RiderParams;
+  activity: RecordedActivity;
+  /** The programmed workout this recording satisfies, if launched from one. */
+  programId: string | null;
   /** Pocket lock — swallows touches so denim doesn't end the ride. */
   locked: boolean;
 
-  start: (params: RiderParams) => void;
+  start: (params: RiderParams, activity: RecordedActivity, programId?: string) => void;
   addFix: (point: RidePoint) => void;
   tick: () => void;
   pause: () => void;
   resume: () => void;
   finish: () => void;
+  /** Undo an accidental End tap: back to recording, with the pause not counted. */
+  unfinish: () => void;
   reset: () => void;
   setLocked: (locked: boolean) => void;
   restore: (snapshot: RideSnapshot) => void;
@@ -87,6 +94,10 @@ export interface RideSnapshot {
   pausedMs: number;
   lastFixAt: number | null;
   riderParams: RiderParams;
+  /** Missing on drafts saved before activities existed — read as 'ride'. */
+  activity?: RecordedActivity;
+  /** Persisted so a recovered programmed workout still marks its day complete. */
+  programId?: string | null;
 }
 
 export const useRideStore = create<RideState>()((set, get) => ({
@@ -102,10 +113,12 @@ export const useRideStore = create<RideState>()((set, get) => ({
   lastFixAt: null,
   lastAccuracy: null,
   riderParams: defaultRiderParams(),
+  activity: 'ride',
+  programId: null,
   locked: false,
   awaitingAnchor: false,
 
-  start: (params) =>
+  start: (params, activity, programId) =>
     set({
       status: 'recording',
       startedAt: Date.now(),
@@ -119,6 +132,8 @@ export const useRideStore = create<RideState>()((set, get) => ({
       lastFixAt: null,
       lastAccuracy: null,
       riderParams: params,
+      activity,
+      programId: programId ?? null,
       locked: false,
       awaitingAnchor: false,
     }),
@@ -198,12 +213,27 @@ export const useRideStore = create<RideState>()((set, get) => ({
     stats.distanceMeters += decision.distanceMeters;
     stats.currentSpeedMps = isMoving ? speed : 0;
     stats.maxSpeedMps = Math.max(stats.maxSpeedMps, isMoving ? speed : 0);
+    // Capture the smoothed altitude before this fix folds in, so the energy
+    // grade below is computed from the EMA, not from raw per-fix jitter —
+    // integrating raw altitude noise banks phantom climbing calories.
+    const smoothedAltBefore = accum.smoothedAlt;
     stats.elevationGainMeters += accumulateElevationGain(accum, point.alt);
 
     if (isMoving && previous) {
       stats.movingSeconds += seconds;
-      const grade = gradeBetween(previous, point, decision.distanceMeters);
-      const energy = energyForInterval(speed, grade, seconds, state.riderParams);
+      const grade = smoothedGradeBetween(
+        smoothedAltBefore,
+        accum.smoothedAlt,
+        decision.distanceMeters
+      );
+      const energy = activityEnergyForInterval(
+        state.activity,
+        speed,
+        grade,
+        decision.distanceMeters,
+        seconds,
+        state.riderParams
+      );
       stats.workKJ += energy.workKJ;
       stats.kcal += energy.kcal;
     }
@@ -273,6 +303,21 @@ export const useRideStore = create<RideState>()((set, get) => ({
     });
   },
 
+  unfinish: () => {
+    const { status, endedAt, pausedMs } = get();
+    if (status !== 'finished' || endedAt === null) return;
+    set({
+      status: 'recording',
+      // The stretch between End and Keep Going was spent reading a dialog,
+      // not moving — treat it like a pause.
+      pausedMs: pausedMs + (Date.now() - endedAt),
+      endedAt: null,
+      lastFixAt: Date.now(),
+      awaitingAnchor: true,
+      locked: false,
+    });
+  },
+
   reset: () =>
     set({
       status: 'idle',
@@ -286,6 +331,7 @@ export const useRideStore = create<RideState>()((set, get) => ({
       pauseStartedAt: null,
       lastFixAt: null,
       lastAccuracy: null,
+      programId: null,
       locked: false,
       awaitingAnchor: false,
     }),
@@ -304,17 +350,21 @@ export const useRideStore = create<RideState>()((set, get) => ({
       pausedMs: snapshot.pausedMs,
       // Treat everything since the last recorded fix as paused time. Without
       // this, a ride recovered an hour after the crash would count that hour as
-      // elapsed ride time the moment it resumed.
-      pauseStartedAt: snapshot.lastFixAt ?? Date.now(),
+      // elapsed ride time the moment it resumed. A finished snapshot needs
+      // neither: its clock is closed by endedAt.
+      pauseStartedAt:
+        snapshot.status === 'finished' ? null : snapshot.lastFixAt ?? Date.now(),
       lastFixAt: snapshot.lastFixAt,
       lastAccuracy: null,
       riderParams: snapshot.riderParams,
+      activity: snapshot.activity ?? 'ride',
+      programId: snapshot.programId ?? null,
       locked: false,
-      awaitingAnchor: true,
+      awaitingAnchor: snapshot.status !== 'finished',
     }),
 
   buildSummary: () => {
-    const { startedAt, endedAt, points, gaps, stats } = get();
+    const { startedAt, endedAt, points, gaps, stats, activity } = get();
     if (startedAt === null) return null;
     return {
       stats,
@@ -322,7 +372,8 @@ export const useRideStore = create<RideState>()((set, get) => ({
       gaps,
       startedAt: new Date(startedAt).toISOString(),
       endedAt: new Date(endedAt ?? Date.now()).toISOString(),
-      calorieModel: 'physics',
+      calorieModel: activity === 'ride' ? 'physics' : 'met',
+      activity,
     };
   },
 }));
@@ -341,5 +392,7 @@ export function snapshotRide(): RideSnapshot {
     pausedMs: s.pausedMs,
     lastFixAt: s.lastFixAt,
     riderParams: s.riderParams,
+    activity: s.activity,
+    programId: s.programId,
   };
 }

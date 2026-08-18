@@ -130,14 +130,23 @@ export function accumulateElevationGain(
   return 0;
 }
 
-/** Grade (rise/run) between two points, clamped to what a road bike can actually be on. */
-export function gradeBetween(
-  previous: RidePoint,
-  next: RidePoint,
+/**
+ * Grade (rise/run) from the EMA-smoothed altitude, clamped to real-road range.
+ *
+ * Raw per-fix altitude deltas are dominated by GPS jitter: at walking speed a
+ * ±2m altitude wobble over a 1.4m step saturates the clamp on every fix, and
+ * an energy model that integrates max(0, grade) banks hundreds of phantom
+ * kilocalories on flat ground. The EMA (α=0.2) attenuates that noise ~5× while
+ * still tracking sustained grades — the per-fix delta of an EMA converges to
+ * the true slope on a steady climb.
+ */
+export function smoothedGradeBetween(
+  prevSmoothedAlt: number | null,
+  nextSmoothedAlt: number | null,
   distanceMeters: number
 ): number {
-  if (distanceMeters < 1 || previous.alt === null || next.alt === null) return 0;
-  const grade = (next.alt - previous.alt) / distanceMeters;
+  if (distanceMeters < 1 || prevSmoothedAlt === null || nextSmoothedAlt === null) return 0;
+  const grade = (nextSmoothedAlt - prevSmoothedAlt) / distanceMeters;
   return Math.max(-0.2, Math.min(0.2, grade));
 }
 

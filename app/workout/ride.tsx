@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,15 +13,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { colors, fonts, spacing, typography, borderRadius, shadows } from '@/theme';
-import { useRideStore } from '@/stores/useRideStore';
-import { useHistoryStore, useUserStore } from '@/stores';
+import { useRideStore, snapshotRide } from '@/stores/useRideStore';
 import { useRideRecorder, isRideRecordingSupported } from '@/hooks/useRideRecorder';
-import { RouteMap } from '@/components/ride';
-import { PROGRAMMED_WORKOUTS } from '@/data/programmedWorkouts';
-import { createRideWorkoutSession } from '@/utils/createRideWorkoutSession';
-import { loadRideDraft, clearRideDraft } from '@/utils/rideDraft';
+import { useRideUnits } from '@/hooks/useRideUnits';
+import { useUserStore } from '@/stores';
+import { StatTile } from '@/components/ride/StatTile';
+import { ACTIVITY_META, ACTIVITY_ORDER } from '@/utils/activities';
+import { loadRideDraft, clearRideDraft, saveRideDraft } from '@/utils/rideDraft';
 import { confirmAction } from '@/utils/confirm';
 import { defaultRiderParams, toKilograms } from '@/utils/cycling';
+import type { RecordedActivity } from '@/types/ride';
 import {
   formatDistance,
   formatSpeed,
@@ -39,43 +39,41 @@ const UNLOCK_HOLD_MS = 1500;
 export default function RideScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const { programId } = useLocalSearchParams<{ programId?: string }>();
 
   const profile = useUserStore((s) => s.profile);
-  const addSession = useHistoryStore((s) => s.addSession);
 
   const status = useRideStore((s) => s.status);
   const stats = useRideStore((s) => s.stats);
-  const points = useRideStore((s) => s.points);
+  const storedActivity = useRideStore((s) => s.activity);
   const gaps = useRideStore((s) => s.gaps);
   const locked = useRideStore((s) => s.locked);
   const setLocked = useRideStore((s) => s.setLocked);
   const restore = useRideStore((s) => s.restore);
-  const buildSummary = useRideStore((s) => s.buildSummary);
+  const unfinish = useRideStore((s) => s.unfinish);
   const resetRide = useRideStore((s) => s.reset);
 
   const { error, signal, wakeLockLost, begin, pause, resume, stop } = useRideRecorder();
 
   const [checkedDraft, setCheckedDraft] = useState(false);
+  // Activity choice on the intro screen. Program launches never render the
+  // picker, so this stays at its 'ride' default for them.
+  const [pickedActivity, setPickedActivity] = useState<RecordedActivity>('ride');
   const supported = useMemo(() => isRideRecordingSupported(), []);
+  const units = useRideUnits();
 
-  const units = useMemo(
-    () => ({ imperial: (profile?.weightUnit ?? 'lbs') !== 'kg' }),
-    [profile?.weightUnit]
-  );
-
-  const sourceWorkout = useMemo(() => {
-    if (!programId) return undefined;
-    return PROGRAMMED_WORKOUTS.find((pw) => pw.id === programId)?.workout;
-  }, [programId]);
+  const fromProgram = Boolean(programId);
+  // While recording (or ended), the store's activity is the truth; before
+  // that, the picker's.
+  const activity = status === 'idle' ? pickedActivity : storedActivity;
+  const activityMeta = ACTIVITY_META[activity];
 
   const riderParams = useMemo(
     () => defaultRiderParams(toKilograms(profile?.weight, profile?.weightUnit ?? 'lbs')),
     [profile?.weight, profile?.weightUnit]
   );
 
-  // ─── Recover an interrupted ride ──────────────────────────────────────────
+  // ─── Recover an interrupted recording ─────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -90,18 +88,26 @@ export default function RideScreen() {
         return;
       }
 
+      // A finished draft means the app died on the save screen. Nothing to
+      // ask — put the user right back at the end-of-workout confirmation.
+      if (draft.status === 'finished') {
+        restore(draft);
+        setCheckedDraft(true);
+        return;
+      }
+
       const minutes = Math.round((draft.stats.elapsedSeconds || 0) / 60);
-      const resume = await confirmAction({
-        title: 'Unfinished ride found',
-        message: `There's a ride in progress with ${minutes} min recorded. Pick it back up, or throw it away?`,
+      const resumeDraft = await confirmAction({
+        title: 'Unfinished workout found',
+        message: `There's a recording in progress with ${minutes} min logged. Pick it back up, or throw it away?`,
         confirmLabel: 'Resume',
         cancelLabel: 'Discard',
       });
       if (cancelled) return;
 
-      if (resume) {
+      if (resumeDraft) {
         // Come back paused: he's holding the phone reading this dialog, not
-        // riding, and resuming live would bank a bogus gap.
+        // moving, and resuming live would bank a bogus gap.
         restore({ ...draft, status: 'paused' });
       } else {
         void clearRideDraft();
@@ -117,31 +123,29 @@ export default function RideScreen() {
 
   const handleStart = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    begin(riderParams);
-  }, [begin, riderParams]);
+    begin(riderParams, activity, programId);
+  }, [begin, riderParams, activity, programId]);
 
-  const handleFinish = useCallback(() => {
+  // First click of the two-click finish: stop recording, show the confirm.
+  const handleEnd = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     stop();
   }, [stop]);
 
-  const handleSave = useCallback(() => {
-    const summary = buildSummary();
-    if (!summary) return;
-    const session = createRideWorkoutSession({
-      summary,
-      sourceWorkout,
-      imperial: units.imperial,
-    });
-    addSession(session);
-    void clearRideDraft();
-    resetRide();
-    router.replace('/(tabs)/history');
-  }, [addSession, buildSummary, resetRide, router, sourceWorkout, units.imperial]);
+  // Second click: hand off to the save screen, which generates metadata. No
+  // params -- the store carries programId, which (unlike a route param) also
+  // survives crash-recovery of a finished draft.
+  const handleFinish = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.replace('/workout/ride-complete');
+  }, [router]);
 
   const handleDiscard = useCallback(async () => {
+    // Destroying a recording (and its crash-recovery draft) warrants a real
+    // confirmation even though this button already lives on a confirm screen --
+    // it sits one mis-tap below Keep Going.
     const discard = await confirmAction({
-      title: 'Discard this ride?',
+      title: 'Discard this workout?',
       message: 'The recorded GPS data will be deleted for good.',
       confirmLabel: 'Discard',
       cancelLabel: 'Keep',
@@ -152,6 +156,14 @@ export default function RideScreen() {
     resetRide();
     router.back();
   }, [resetRide, router]);
+
+  const handleKeepGoing = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    unfinish();
+    // Persist immediately: the next automatic draft write waits for a clean
+    // GPS fix, and a crash before then would restore the stale finished state.
+    void saveRideDraft(snapshotRide(), true);
+  }, [unfinish]);
 
   const handleExit = useCallback(async () => {
     if (status === 'recording' || status === 'paused') {
@@ -190,13 +202,42 @@ export default function RideScreen() {
     );
   }
 
-  // ─── Pre-ride ─────────────────────────────────────────────────────────────
+  // ─── Pre-workout: pick the activity, read the caveats, start ──────────────
   if (status === 'idle') {
     return (
       <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
-        <ScreenHeader title="Record Ride" onClose={handleExit} />
+        <ScreenHeader title="Record Workout" onClose={handleExit} />
         <ScrollView contentContainerStyle={styles.introBody} showsVerticalScrollIndicator={false}>
-          <Text style={styles.introName}>{sourceWorkout?.name ?? 'Road Ride'}</Text>
+          {fromProgram ? (
+            <Text style={styles.introName}>Today's Programmed Ride</Text>
+          ) : (
+            <View style={styles.activityRow}>
+              {ACTIVITY_ORDER.map((key) => {
+                const meta = ACTIVITY_META[key];
+                const selected = key === pickedActivity;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.activityChip, selected && styles.activityChipSelected]}
+                    onPress={() => setPickedActivity(key)}
+                    activeOpacity={0.75}
+                  >
+                    <Ionicons
+                      name={meta.icon as keyof typeof Ionicons.glyphMap}
+                      size={22}
+                      color={selected ? colors.text : colors.textMuted}
+                    />
+                    <Text
+                      style={[styles.activityChipText, selected && styles.activityChipTextSelected]}
+                    >
+                      {meta.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
           <Text style={styles.introCopy}>
             Circuit records straight from your phone's GPS — distance, speed, climbing, and
             calories, no Strava round trip.
@@ -207,7 +248,7 @@ export default function RideScreen() {
               tone="error"
               icon="alert-circle"
               title="GPS isn't available here"
-              body="Recording needs the browser location API. Open Circuit on your phone to record a ride."
+              body="Recording needs the browser location API. Open Circuit on your phone to record a workout."
             />
           )}
 
@@ -222,7 +263,7 @@ export default function RideScreen() {
             tone="muted"
             icon="battery-half-outline"
             title="Expect the battery hit"
-            body="Screen on plus high-accuracy GPS runs roughly 15-20% per hour. Fine for a 45 minute Zone 2; worth a top-up before anything longer."
+            body="Screen on plus high-accuracy GPS runs roughly 15-20% per hour. Fine for 45 minutes; worth a top-up before anything longer."
           />
 
           <TouchableOpacity
@@ -237,73 +278,41 @@ export default function RideScreen() {
               end={{ x: 1, y: 1 }}
               style={[styles.startGradient, !supported && styles.startDisabled]}
             >
-              <Ionicons name="bicycle" size={30} color={colors.text} />
-              <Text style={styles.startText}>Start Ride</Text>
+              <Ionicons
+                name={activityMeta.icon as keyof typeof Ionicons.glyphMap}
+                size={30}
+                color={colors.text}
+              />
+              <Text style={styles.startText}>Start {activityMeta.label}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           <Text style={styles.introFootnote}>
             Your track is stored on this phone, not uploaded anywhere. Map tiles come from
-            OpenStreetMap, so they see roughly where you ride.
+            OpenStreetMap, so they see roughly where you go.
           </Text>
         </ScrollView>
       </View>
     );
   }
 
-  // ─── Post-ride summary ────────────────────────────────────────────────────
+  // ─── Ended: confirm finish or discard (click two of two) ──────────────────
   if (status === 'finished') {
-    // The map sits flush in the scroll body now, so it only loses the page gutter.
-    const traceWidth = width - spacing.lg * 2;
     return (
       <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
-        <ScreenHeader title="Ride Complete" />
-        <ScrollView contentContainerStyle={styles.summaryBody} showsVerticalScrollIndicator={false}>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroValue}>{formatDistance(stats.distanceMeters, units)}</Text>
-            <Text style={styles.heroUnit}>{distanceUnit(units).toUpperCase()}</Text>
+        <ScreenHeader title="Workout Ended" />
+        <View style={styles.confirmBody}>
+          <View style={styles.confirmStats}>
+            <StatTile size="lg" label="Elapsed" value={formatRideClock(stats.elapsedSeconds)} />
+            <StatTile
+              size="lg"
+              label={distanceUnit(units)}
+              value={formatDistance(stats.distanceMeters, units)}
+            />
+            <StatTile size="lg" label="kcal est." value={String(Math.round(stats.kcal))} />
           </View>
 
-          {points.length > 1 && (
-            <RouteMap points={points} width={traceWidth} height={traceWidth * 0.68} />
-          )}
-
-          <View style={styles.summaryGrid}>
-            <SummaryTile label="Moving" value={formatRideClock(stats.movingSeconds)} />
-            <SummaryTile label="Elapsed" value={formatRideClock(stats.elapsedSeconds)} />
-            <SummaryTile
-              label={`Avg ${speedUnit(units)}`}
-              value={formatSpeed(stats.avgSpeedMps, units)}
-            />
-            <SummaryTile
-              label={`Max ${speedUnit(units)}`}
-              value={formatSpeed(stats.maxSpeedMps, units)}
-            />
-            <SummaryTile
-              label={`Climb ${elevationUnit(units)}`}
-              value={formatElevation(stats.elevationGainMeters, units)}
-            />
-            <SummaryTile label="Calories" value={Math.round(stats.kcal).toLocaleString('en-US')} />
-          </View>
-
-          <View style={styles.energyNote}>
-            <Ionicons name="flash-outline" size={14} color={colors.textMuted} />
-            <Text style={styles.energyNoteText}>
-              {Math.round(stats.workKJ).toLocaleString('en-US')} kJ of work, estimated from speed,
-              grade, and your weight. No power meter, so treat it as a good approximation.
-            </Text>
-          </View>
-
-          {missedMinutes >= 1 && (
-            <Notice
-              tone="warning"
-              icon="cloud-offline-outline"
-              title={`${Math.round(missedMinutes)} min not recorded`}
-              body="GPS went quiet for a stretch — usually the screen locking. That distance isn't counted, so the totals are on the low side."
-            />
-          )}
-
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleFinish} activeOpacity={0.85}>
             <LinearGradient
               colors={colors.gradientPrimary}
               start={{ x: 0, y: 0 }}
@@ -311,14 +320,23 @@ export default function RideScreen() {
               style={styles.saveGradient}
             >
               <Ionicons name="checkmark-circle" size={22} color={colors.text} />
-              <Text style={styles.saveText}>Save to History</Text>
+              <Text style={styles.saveText}>Finish & Save</Text>
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.discardButton} onPress={handleDiscard} activeOpacity={0.7}>
-            <Text style={styles.discardText}>Discard Ride</Text>
+          <TouchableOpacity
+            style={styles.keepGoingButton}
+            onPress={handleKeepGoing}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="play" size={16} color={colors.primaryLight} />
+            <Text style={styles.keepGoingText}>Keep Going</Text>
           </TouchableOpacity>
-        </ScrollView>
+
+          <TouchableOpacity style={styles.discardButton} onPress={handleDiscard} activeOpacity={0.7}>
+            <Text style={styles.discardText}>Discard Workout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -330,6 +348,7 @@ export default function RideScreen() {
     <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
       <View style={styles.liveHeader}>
         <SignalPill signal={signal} paused={isPaused} />
+        <Text style={styles.liveActivity}>{activityMeta.label.toUpperCase()}</Text>
         <TouchableOpacity onPress={handleExit} hitSlop={12}>
           <Ionicons name="close" size={24} color={colors.textMuted} />
         </TouchableOpacity>
@@ -375,7 +394,7 @@ export default function RideScreen() {
             tone="error"
             icon="location-outline"
             title="Location permission denied"
-            body="Allow location for Circuit in Settings › Safari › Location, then start the ride again."
+            body="Allow location for Circuit in Settings › Safari › Location, then start again."
           />
         )}
         {error === 'position-unavailable' && (
@@ -415,11 +434,11 @@ export default function RideScreen() {
 
           <TouchableOpacity
             style={[styles.controlButton, styles.finishButton]}
-            onPress={handleFinish}
+            onPress={handleEnd}
             activeOpacity={0.8}
           >
             <Ionicons name="flag" size={20} color={colors.text} />
-            <Text style={styles.controlText}>Finish</Text>
+            <Text style={styles.controlText}>End Workout</Text>
           </TouchableOpacity>
         </View>
 
@@ -445,8 +464,8 @@ export default function RideScreen() {
 
 // ─── Locked screen ──────────────────────────────────────────────────────────
 // Deliberately near-black and nearly empty: it swallows every touch so denim
-// can't pause the ride, and an OLED panel showing mostly black costs far less
-// battery over 45 minutes than the full stats view.
+// can't pause the workout, and an OLED panel showing mostly black costs far
+// less battery over 45 minutes than the full stats view.
 
 interface LockedOverlayProps {
   distance: string;
@@ -553,17 +572,6 @@ function LiveTile({ label, value, caption }: { label: string; value: string; cap
   );
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.summaryTile}>
-      <Text style={styles.summaryValue} numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
-      <Text style={styles.summaryLabel}>{label}</Text>
-    </View>
-  );
-}
-
 function Notice({
   tone,
   icon,
@@ -621,6 +629,34 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
+  activityRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  activityChip: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.hairline,
+    backgroundColor: colors.surface,
+  },
+  activityChipSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '1F',
+  },
+  activityChipText: {
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.xs,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  activityChipTextSelected: {
+    color: colors.text,
+  },
   introCopy: {
     fontSize: typography.sm,
     color: colors.textSecondary,
@@ -657,6 +693,37 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 
+  // End-of-workout confirmation
+  confirmBody: {
+    flex: 1,
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+    gap: spacing.md,
+  },
+  confirmStats: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  keepGoingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.primary + '4A',
+    backgroundColor: colors.primary + '14',
+  },
+  keepGoingText: {
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.sm,
+    color: colors.primaryLight,
+    textTransform: 'uppercase',
+    letterSpacing: 1.4,
+  },
+
   // Live
   liveHeader: {
     flexDirection: 'row',
@@ -664,6 +731,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
+  },
+  liveActivity: {
+    fontFamily: fonts.displaySemiBold,
+    fontSize: typography.sm,
+    color: colors.textMuted,
+    letterSpacing: 1.6,
   },
   liveBody: {
     paddingHorizontal: spacing.lg,
@@ -844,51 +917,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
 
-  // Summary
-  summaryBody: {
-    padding: spacing.lg,
-    paddingTop: 0,
-    gap: spacing.md,
-  },
-  summaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  summaryTile: {
-    flexGrow: 1,
-    flexBasis: '30%',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.xs,
-    alignItems: 'center',
-  },
-  summaryValue: {
-    fontFamily: fonts.display,
-    fontSize: 26,
-    color: colors.text,
-  },
-  summaryLabel: {
-    fontSize: 10,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  energyNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-  },
-  energyNoteText: {
-    flex: 1,
-    fontSize: typography.xs,
-    color: colors.textMuted,
-    lineHeight: 17,
-  },
+  // Save
   saveButton: {
     borderRadius: borderRadius.full,
     ...shadows.glowPrimary,

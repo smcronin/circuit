@@ -12,8 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
-import { useHistoryStore, useUserStore } from '@/stores';
-import { RouteMap } from '@/components/ride';
+import { useHistoryStore } from '@/stores';
+import { RouteMap, StatTile } from '@/components/ride';
+import { useRideUnits } from '@/hooks/useRideUnits';
+import { ACTIVITY_META, summaryActivity } from '@/utils/activities';
 import { formatDateFull } from '@/utils';
 import {
   formatDistance,
@@ -35,10 +37,10 @@ export default function RideDetailScreen() {
   const session = useHistoryStore((s) =>
     sessionId ? s.history.sessions.find((entry) => entry.id === sessionId) : undefined
   );
-  const weightUnit = useUserStore((s) => s.profile?.weightUnit);
-  const units = useMemo(() => ({ imperial: (weightUnit ?? 'lbs') !== 'kg' }), [weightUnit]);
+  const units = useRideUnits();
 
   const ride = session?.ride;
+  const activityMeta = ACTIVITY_META[summaryActivity(ride ?? {})];
 
   const missedMinutes = useMemo(
     () => (ride?.gaps ?? []).reduce((sum, g) => sum + (g.endedAt - g.startedAt), 0) / 60000,
@@ -48,10 +50,10 @@ export default function RideDetailScreen() {
   if (!session || !ride) {
     return (
       <View style={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
-        <Header onClose={() => router.back()} title="Ride" />
+        <Header onClose={() => router.back()} title="Workout" />
         <View style={styles.empty}>
-          <Ionicons name="bicycle-outline" size={48} color={colors.surfaceHighlight} />
-          <Text style={styles.emptyText}>This ride's GPS data is no longer available.</Text>
+          <Ionicons name="navigate-outline" size={48} color={colors.surfaceHighlight} />
+          <Text style={styles.emptyText}>This workout's GPS data is no longer available.</Text>
         </View>
       </View>
     );
@@ -62,7 +64,7 @@ export default function RideDetailScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
-      <Header onClose={() => router.back()} title="Ride" />
+      <Header onClose={() => router.back()} title={activityMeta.label} />
       <ScrollView
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.xl }]}
         showsVerticalScrollIndicator={false}
@@ -80,24 +82,32 @@ export default function RideDetailScreen() {
         )}
 
         <View style={styles.grid}>
-          <Tile label="Moving" value={formatRideClock(stats.movingSeconds)} />
-          <Tile label="Elapsed" value={formatRideClock(stats.elapsedSeconds)} />
-          <Tile label={`Avg ${speedUnit(units)}`} value={formatSpeed(stats.avgSpeedMps, units)} />
-          <Tile label={`Max ${speedUnit(units)}`} value={formatSpeed(stats.maxSpeedMps, units)} />
-          <Tile
+          <StatTile label="Moving" value={formatRideClock(stats.movingSeconds)} />
+          <StatTile label="Elapsed" value={formatRideClock(stats.elapsedSeconds)} />
+          <StatTile label={`Avg ${speedUnit(units)}`} value={formatSpeed(stats.avgSpeedMps, units)} />
+          <StatTile label={`Max ${speedUnit(units)}`} value={formatSpeed(stats.maxSpeedMps, units)} />
+          <StatTile
             label={`Climb ${elevationUnit(units)}`}
             value={formatElevation(stats.elevationGainMeters, units)}
           />
-          <Tile label="Calories" value={Math.round(stats.kcal).toLocaleString('en-US')} />
+          {/* The saved figure, not raw stats.kcal — the LLM-refined value the
+              history card and totals use. Two screens, one number. */}
+          <StatTile
+            label="Calories"
+            value={Math.round(session.estimatedCaloriesBurned).toLocaleString('en-US')}
+          />
         </View>
 
-        <View style={styles.note}>
-          <Ionicons name="flash-outline" size={14} color={colors.textMuted} />
-          <Text style={styles.noteText}>
-            {Math.round(stats.workKJ).toLocaleString('en-US')} kJ of work, estimated from speed,
-            grade, and your weight.
-          </Text>
-        </View>
+        {/* Wheel-work is a bike concept; foot activities record workKJ = 0. */}
+        {stats.workKJ >= 1 && (
+          <View style={styles.note}>
+            <Ionicons name="flash-outline" size={14} color={colors.textMuted} />
+            <Text style={styles.noteText}>
+              {Math.round(stats.workKJ).toLocaleString('en-US')} kJ of work, estimated from speed,
+              grade, and your weight.
+            </Text>
+          </View>
+        )}
 
         {missedMinutes >= 1 && (
           <View style={styles.warning}>
@@ -131,17 +141,6 @@ function Header({ title, onClose }: { title: string; onClose: () => void }) {
       <TouchableOpacity onPress={onClose} hitSlop={12}>
         <Ionicons name="close" size={24} color={colors.textMuted} />
       </TouchableOpacity>
-    </View>
-  );
-}
-
-function Tile({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.tile}>
-      <Text style={styles.tileValue} numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
-      <Text style={styles.tileLabel}>{label}</Text>
     </View>
   );
 }
@@ -202,29 +201,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  tile: {
-    flexGrow: 1,
-    flexBasis: '30%',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.hairline,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.xs,
-    alignItems: 'center',
-  },
-  tileValue: {
-    fontFamily: fonts.display,
-    fontSize: 26,
-    color: colors.text,
-  },
-  tileLabel: {
-    fontSize: 10,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 2,
   },
   note: {
     flexDirection: 'row',

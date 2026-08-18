@@ -40,9 +40,10 @@ export async function loadRideDraft(): Promise<RideSnapshot | null> {
       await clearRideDraft();
       return null;
     }
-    // Only an actually-started ride with data is worth restoring.
+    // Only an actually-started ride with data is worth restoring. Finished
+    // drafts ARE restorable: a crash on the save screen shouldn't lose the
+    // workout that was just recorded.
     if (!parsed.snapshot.startedAt || parsed.snapshot.points.length === 0) return null;
-    if (parsed.snapshot.status === 'finished') return null;
 
     return parsed.snapshot;
   } catch {

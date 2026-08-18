@@ -1,4 +1,4 @@
-import type { RideSummary } from './ride';
+import type { RecordedActivity, RideSummary } from './ride';
 
 // ============================================
 // CORE EXERCISE TYPES
@@ -75,10 +75,11 @@ export interface GeneratedWorkout {
 }
 
 /**
- * How a workout is performed. Absent means the standard circuit timer; 'ride'
- * routes to the GPS recorder instead.
+ * How a workout is performed. Absent means the standard circuit timer; any
+ * recorded activity routes to the GPS recorder instead — check truthiness, not
+ * a specific value, when routing.
  */
-export type ActivityType = 'ride';
+export type ActivityType = RecordedActivity;
 
 export interface EquipmentItem {
   name: string;

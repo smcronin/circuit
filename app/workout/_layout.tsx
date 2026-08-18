@@ -13,7 +13,9 @@ export default function WorkoutLayout() {
       <Stack.Screen name="review" />
       <Stack.Screen name="timer" />
       <Stack.Screen name="complete" />
+      <Stack.Screen name="generate" />
       <Stack.Screen name="ride" />
+      <Stack.Screen name="ride-complete" />
       <Stack.Screen name="ride-detail" />
     </Stack>
   );
