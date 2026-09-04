@@ -3965,6 +3965,312 @@ function septemberJumpRopeVo2(date: string, phase: 1 | 2 | 3 | 4): ProgrammedWor
   });
 }
 
+const CAPE_TRAVEL_START_DATE = '2026-09-06';
+const CAPE_TRAVEL_END_DATE = '2026-09-12';
+
+function capeDriveReset(date: string, direction: 'Departure' | 'Return'): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-09-cape-${direction.toLowerCase()}-reset-${date}`,
+    date,
+    slot: 'Mobility',
+    priority: 1,
+    coachNotes: `${direction} drive day. The calendar carries an eight-hour travel block, so this is a mobility reset rather than a training obligation.`,
+    name: `Cape ${direction}: Drive-Day Mobility Reset`,
+    description: 'A short, no-equipment sequence to restore circulation and unfold hips, hamstrings, shoulders, and the thoracic spine after the Cape drive.',
+    difficulty: 'beginner',
+    targetDurationMinutes: 12,
+    estimatedCalories: 45,
+    calorieRange: { low: 30, high: 65 },
+    focusAreas: ['mobility', 'travel recovery', 'circulation', 'longevity'],
+    muscleGroupsTargeted: ['hips', 'hamstrings', 'calves', 'thoracic spine', 'shoulders'],
+    equipmentSetUsed: 'Bodyweight Travel',
+    circuits: [{
+      name: 'Drive-Day Unfold',
+      rounds: 2,
+      restBetweenRounds: 10,
+      restBetweenExercises: 5,
+      exercises: [
+        ex('Walk or March Ramp', 50, 'Walk easily or march in place until the legs feel awake and breathing stays calm.', ['cardiovascular system', 'calves', 'hips']),
+        ex('Standing Hip Flexor Reach - Alternating', 60, 'Step the left leg back and reach tall, then switch to the right halfway without arching the low back.', ['hip flexors', 'quads', 'side body'], undefined, { switchSides: true }),
+        ex('Bodyweight Good Morning', 45, 'Hinge slowly with soft knees; use the first round to notice the right hamstring without forcing range.', ['hamstrings', 'glutes', 'back'], undefined, { targetReps: 10 }),
+        ex('World Greatest Stretch - Alternating', 70, 'Take the left side first, rotate gently, then switch to the right halfway.', ['hips', 'hamstrings', 'thoracic spine'], ['Yoga Mat'], { switchSides: true }),
+        ex('Deep Squat Breathing', 50, 'Use a doorframe only if desired and take slow breaths into the back ribs.', ['hips', 'quads', 'ankles', 'diaphragm']),
+      ],
+    }],
+    coolDown: [
+      ex('Standing Shoulder and Breath Reset', 60, 'Make easy shoulder circles and lengthen the exhale until the neck and jaw soften.', ['shoulders', 'upper back', 'diaphragm']),
+    ],
+    restBetweenCircuits: 0,
+    partingWords: 'The job was to undo the car, not manufacture fatigue. Go enjoy the Cape.',
+  });
+}
+
+function capeBodyweightStrengthA(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-09-cape-bodyweight-strength-a-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'First Cape strength day: a compact RPE 7 muscle-retention dose using tempo, unilateral legs, an optional mini-band pull, posterior chain, and trunk control.',
+    name: 'Cape Bodyweight Strength A: Push, Legs, and Trunk',
+    description: 'A mat-based whole-body strength session that replaces load with controlled tempo and short rests. Finish each set with one or two clean reps in reserve.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 30,
+    estimatedCalories: 210,
+    calorieRange: { low: 170, high: 265 },
+    focusAreas: ['strength', 'body composition', 'core', 'travel'],
+    muscleGroupsTargeted: ['chest', 'triceps', 'quads', 'glutes', 'hamstrings', 'upper back', 'core'],
+    equipmentSetUsed: 'Cape Travel Kit',
+    warmUp: [
+      ex('Easy Low-Bounce Rope or Fast March', 60, 'Use relaxed low-bounce skipping if space and calves feel good; otherwise march briskly.', ['cardiovascular system', 'calves', 'shoulders', 'core'], ['Jump Rope']),
+      ex('Wrist Rocks and Palm Lifts', 45, 'Rock gently over the hands, then lift the palms with fingers planted.', ['wrists', 'forearms', 'shoulders'], ['Yoga Mat']),
+      ex('Counterbalanced Cossack Shift', 60, 'Reach the arms forward as you shift left and right. The left squat side has felt strong; let the right hamstring lengthen without chasing depth.', ['adductors', 'quads', 'hamstrings', 'hips']),
+      ex('Scapular Pushup Wave', 45, 'Glide the shoulder blades, then add a small spine wave while keeping elbows straight.', ['serratus', 'upper back', 'shoulders'], ['Yoga Mat']),
+    ],
+    circuits: [
+      {
+        name: 'Tempo Strength',
+        rounds: 3,
+        restBetweenRounds: 45,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Slow Tempo Pushup', 45, 'Lower for three seconds, pause, and press smoothly. Use knees or a sturdy counter only if needed.', ['chest', 'triceps', 'shoulders', 'core'], ['Yoga Mat'], { targetReps: 8 }),
+          ex('Squat to Reverse Lunge', 50, 'Perform one controlled squat, then one reverse lunge per side with a quiet front knee.', ['quads', 'glutes', 'hamstrings', 'core'], ['Yoga Mat'], { targetReps: 6 }),
+          ex('Mini Band Seated Row or Prone Lat Sweep', 45, 'Row a mini band looped around the feet; if the setup is awkward, lie prone and sweep the arms from overhead toward the hips.', ['upper back', 'lats', 'rear delts'], ['Mini Bands', 'Yoga Mat'], { targetReps: 12 }),
+          ex('Glute Bridge Walkout', 45, 'Bridge up, walk the heels out two or three small steps, then return without dropping the hips.', ['hamstrings', 'glutes', 'core'], ['Yoga Mat'], { targetReps: 6 }),
+          ex('Hollow Body March', 40, 'Hold a compact hollow position and alternate slow marches without arching.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Posture and Lateral Core',
+        rounds: 2,
+        restBetweenRounds: 25,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Prone Y-T-W', 45, 'Move through Y, T, and W positions with thumbs up, shoulder blades active, and neck long.', ['upper back', 'rear delts', 'shoulders'], ['Yoga Mat']),
+          ex('Side Plank Thread - Alternating', 60, 'Thread from the left side, then switch to the right halfway while keeping the hips stacked.', ['obliques', 'shoulders', 'glutes'], ['Yoga Mat'], { switchSides: true }),
+          ex('Calf Raise Iso Ladder', 45, 'Rise, pause, and lower slowly; keep every rep springy and controlled.', ['calves', 'feet'], undefined, { targetReps: 15 }),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Hamstring Floss - Alternating', 70, 'Floss the right hamstring first, then switch left halfway; keep the range easy.', ['hamstrings', 'calves'], ['Yoga Mat'], { switchSides: true }),
+      ex('Thread the Needle - Alternating', 60, 'Rotate through the left upper back, then switch right halfway and breathe into the ribs.', ['thoracic spine', 'shoulders'], ['Yoga Mat'], { switchSides: true }),
+      ex('Crocodile Breathing', 60, 'Breathe into the mat and let the trunk relax.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'That is the useful travel dose: a real strength signal, no equipment drama, and plenty left for the day.',
+  });
+}
+
+function capeAnimalFlowSkill(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-09-cape-animal-flow-skill-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Moderate day between strength sessions. Keep this at RPE 5-6: smooth transitions, nasal breathing when practical, and no deep right-biceps or shoulder-extension position.',
+    name: 'Cape Animal Flow: Mobility and Ground Skill',
+    description: 'A low-friction animal-flow practice for hips, shoulders, rotation, and trunk coordination. The goal is better movement quality, not fatigue.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 25,
+    estimatedCalories: 155,
+    calorieRange: { low: 120, high: 200 },
+    focusAreas: ['mobility', 'coordination', 'core', 'recovery'],
+    muscleGroupsTargeted: ['hips', 'shoulders', 'thoracic spine', 'glutes', 'core', 'wrists'],
+    equipmentSetUsed: 'Cape Travel Kit',
+    warmUp: [
+      ex('Fast March with Arm Swing', 60, 'Build a little heat while keeping breathing easy.', ['cardiovascular system', 'hips', 'calves', 'shoulders']),
+      ex('Spinal Wave to Child Pose', 55, 'Move through cat-cow, then sit back and breathe into the side ribs.', ['spine', 'lats', 'shoulders'], ['Yoga Mat']),
+      ex('Loaded Beast Rock', 45, 'Hover the knees only if wrists and shoulders feel good, then rock hips toward heels.', ['quads', 'core', 'shoulders'], ['Yoga Mat']),
+      ex('Crab Reach Rehearsal', 45, 'Lift the hips modestly and rotate through the upper back without forcing shoulder extension.', ['glutes', 'thoracic spine', 'shoulders', 'core'], ['Yoga Mat']),
+    ],
+    circuits: [{
+      name: 'Controlled Ground Flow',
+      rounds: 4,
+      restBetweenRounds: 30,
+      restBetweenExercises: 8,
+      exercises: [
+        ex('Slow Beast to Down Dog', 45, 'Hover, press back to down dog, and return with deliberate shoulder control.', ['shoulders', 'core', 'hamstrings', 'calves'], ['Yoga Mat']),
+        ex('Shinbox to Hip Extension', 45, 'Switch the shinbox, then rise into a tall glute squeeze without rushing.', ['hips', 'glutes', 'adductors'], ['Yoga Mat']),
+        ex('Frogger Step-Through', 45, 'Step the feet outside the hands, then rotate one foot through; keep the landing quiet.', ['hips', 'quads', 'core', 'shoulders'], ['Yoga Mat']),
+        ex('Crab Reach - Alternating', 60, 'Reach from the left arm, then switch to the right halfway with only a comfortable shoulder range.', ['glutes', 'thoracic spine', 'shoulders', 'core'], ['Yoga Mat'], { switchSides: true }),
+        ex('Cross-Body Dead Bug', 45, 'Reach opposite arm and leg while the ribs and pelvis stay quiet.', ['core', 'hip flexors'], ['Yoga Mat']),
+      ],
+    }],
+    coolDown: [
+      ex('90/90 Hip Breathing', 70, 'Switch the hip position halfway and use long relaxed exhales.', ['hips', 'glutes'], ['Yoga Mat']),
+      ex('Open-Chain Shoulder CARs', 60, 'Make slow shoulder circles in a completely comfortable range.', ['shoulders', 'upper back']),
+      ex('Legs-Up Breathing', 90, 'Rest the calves on a couch or wall and let the nervous system settle.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'Clean transitions and easy breath were the win. Save the harder output for tomorrow.',
+  });
+}
+
+function capeBodyweightStrengthB(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-09-cape-bodyweight-strength-b-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Second Cape strength exposure: single-leg control, cautious handstand-pushup re-entry, posterior chain, upper-back posture, and anti-extension core at RPE 7.',
+    name: 'Cape Bodyweight Strength B: Handstand and Single-Leg Control',
+    description: 'A complementary mat-and-wall strength session. Use a clean chest-to-wall line, make the handstand eccentric shallow, and skip it at the first shoulder or right-biceps warning.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 30,
+    estimatedCalories: 205,
+    calorieRange: { low: 165, high: 260 },
+    focusAreas: ['strength', 'handstand skill', 'unilateral control', 'core'],
+    muscleGroupsTargeted: ['shoulders', 'triceps', 'quads', 'glutes', 'hamstrings', 'upper back', 'core'],
+    equipmentSetUsed: 'Cape Travel Kit',
+    warmUp: [
+      ex('Easy Low-Bounce Rope or Fast March', 55, 'Use quiet low-bounce skipping or a brisk march; this is only a temperature ramp.', ['cardiovascular system', 'calves', 'shoulders'], ['Jump Rope']),
+      ex('Hamstring Sweep Walk', 50, 'Sweep toward the right leg first, then alternate with soft knees and no stretch forcing.', ['hamstrings', 'calves', 'glutes']),
+      ex('Squat Pry to Tall Reach', 50, 'Sit into a comfortable squat, shift gently, then stand and reach tall.', ['hips', 'quads', 'thoracic spine']),
+      ex('Wall Handstand Line Drill', 60, 'Use chest-to-wall alignment with active shoulders and a short, crisp hold.', ['shoulders', 'triceps', 'core'], ['Yoga Mat']),
+    ],
+    circuits: [
+      {
+        name: 'Single-Leg and Vertical Press',
+        rounds: 3,
+        restBetweenRounds: 55,
+        restBetweenExercises: 12,
+        exercises: [
+          ex('Reverse Lunge to Knee Drive - Alternating', 60, 'Step back on the left, drive through to balance, then switch to the right halfway.', ['quads', 'glutes', 'hamstrings', 'core'], ['Yoga Mat'], { switchSides: true }),
+          ex('Wall Handstand Partial Eccentric', 35, 'From a stable chest-to-wall hold, bend the elbows only a few inches and press back out. Use pike pushups instead if control or comfort is uncertain.', ['shoulders', 'triceps', 'upper chest', 'core'], ['Yoga Mat'], { targetReps: 3 }),
+          ex('Single-Leg Hip Bridge - Alternating', 60, 'Drive through the left heel, then switch to the right halfway while keeping the pelvis level.', ['glutes', 'hamstrings', 'core'], ['Yoga Mat'], { switchSides: true }),
+          ex('Prone W-to-Reach', 45, 'Pull elbows into a W, then reach long with the neck relaxed.', ['upper back', 'rear delts', 'lats'], ['Yoga Mat']),
+          ex('Body Saw Forearm Plank', 40, 'Shift a few inches forward and back while the ribs stay stacked over the pelvis.', ['core', 'shoulders'], ['Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Hip and Shoulder Armor',
+        rounds: 2,
+        restBetweenRounds: 25,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Mini Band Lateral Walk or Side-Lying Leg Raise', 50, 'Travel left first, then right with the mini band above the knees; without it, perform a left side-lying leg raise, then switch to the right halfway.', ['glutes', 'hips'], ['Mini Bands', 'Yoga Mat'], { switchSides: true }),
+          ex('Mini Band No-Money Drill or Prone T Raise', 45, 'Rotate a mini band apart with elbows by the ribs; without it, use a prone T raise with thumbs up.', ['rotator cuff', 'upper back', 'rear delts'], ['Mini Bands', 'Yoga Mat']),
+          ex('Side Plank Knee Drive - Alternating', 60, 'Work from the left side, then switch right halfway while keeping the hips lifted.', ['obliques', 'glutes', 'shoulders', 'core'], ['Yoga Mat'], { switchSides: true }),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Low Lunge Quad Opener - Alternating', 70, 'Open the left hip and quad, then switch right halfway with an easy glute squeeze.', ['quads', 'hip flexors'], ['Yoga Mat'], { switchSides: true }),
+      ex('Supine Hamstring Floss - Alternating', 70, 'Floss the right leg first, then switch left halfway and keep the stretch mild.', ['hamstrings', 'calves'], ['Yoga Mat'], { switchSides: true }),
+      ex('Wrist Flexor Reset - Alternating', 60, 'Use light pressure on the left wrist, then switch to the right halfway.', ['wrists', 'forearms'], undefined, { switchSides: true }),
+    ],
+    partingWords: 'Strong lines, controlled single-leg work, and a careful first step back toward handstand pressing. That is enough.',
+  });
+}
+
+function capeAerobicBase(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-09-cape-aerobic-base-${date}`,
+    date,
+    slot: 'Cardio',
+    priority: 1,
+    coachNotes: 'Travel substitute for the road-bike anchor. Keep this conversational at RPE 4-5; the rope is a short cadence change, not an interval workout.',
+    name: 'Cape Aerobic Base: Brisk Walk and Rope Micro-Doses',
+    description: 'A portable Zone 2-style session using brisk walking and short low-bounce rope segments. If rope raises breathing too far or bothers the lower legs, march until conversational again.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 35,
+    estimatedCalories: 260,
+    calorieRange: { low: 205, high: 330 },
+    focusAreas: ['cardio', 'aerobic base', 'longevity', 'recovery'],
+    muscleGroupsTargeted: ['cardiovascular system', 'calves', 'quads', 'glutes', 'core'],
+    equipmentSetUsed: 'Cape Travel Kit',
+    warmUp: [
+      ex('Easy Walking Ramp', 180, 'Start almost too easy and gradually settle into a smooth stride.', ['cardiovascular system', 'hips', 'calves']),
+      ex('Ankle Rockers and Calf Raises', 90, 'Alternate ankle rocks with easy calf raises through a comfortable range.', ['ankles', 'calves', 'feet']),
+      ex('Easy Low-Bounce Rope Primer or Fast March', 90, 'Use basic low-bounce or alternating-foot skipping; march if space, coordination, or the lower legs disagree.', ['cardiovascular system', 'calves', 'coordination'], ['Jump Rope']),
+    ],
+    circuits: [{
+      name: 'Conversational Cape Aerobic Block',
+      rounds: 4,
+      restBetweenRounds: 15,
+      restBetweenExercises: 5,
+      exercises: [
+        ex('Brisk Walk', 240, 'Walk at a pace that still allows full-sentence conversation. Beach or uneven ground should make this slower, not harder.', ['cardiovascular system', 'quads', 'glutes', 'calves']),
+        ex('Low-Bounce Rope Cruise or Fast March', 60, 'Use relaxed rope cadence only while breathing stays conversational; otherwise march briskly.', ['cardiovascular system', 'calves', 'shoulders', 'coordination'], ['Jump Rope']),
+        ex('Nasal Walk Downshift', 60, 'Walk easily and let breathing settle before the next round.', ['cardiovascular system', 'calves', 'hips']),
+      ],
+    }],
+    coolDown: [
+      ex('Easy Walking Downshift', 120, 'Back off gradually rather than stopping abruptly.', ['cardiovascular system', 'calves', 'hips']),
+      ex('Calf Stretch - Alternating', 60, 'Stretch the left calf, then switch to the right halfway with light pressure.', ['calves', 'ankles'], undefined, { switchSides: true }),
+      ex('Standing Recovery Breathing', 60, 'Lengthen the exhale while the shoulders and jaw relax.', ['diaphragm', 'cardiovascular system']),
+    ],
+    partingWords: 'A clean aerobic deposit without the bike—and without borrowing from tomorrow.',
+  });
+}
+
+function capePrimalDensity(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-09-cape-primal-density-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Final Cape training day: RPE 7-8 locomotion density, posterior-chain strength, and trunk control. Stay crisp and leave the return-drive day untouched.',
+    name: 'Cape Primal Density: Crawl, Rotate, and Compress',
+    description: 'An athletic mat session inspired by the lake-house flow work, with enough density to feel trained and enough control to remain travel-friendly.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 28,
+    estimatedCalories: 225,
+    calorieRange: { low: 180, high: 285 },
+    focusAreas: ['conditioning', 'mobility', 'core', 'coordination'],
+    muscleGroupsTargeted: ['shoulders', 'core', 'hips', 'quads', 'glutes', 'hamstrings', 'upper back'],
+    equipmentSetUsed: 'Cape Travel Kit',
+    warmUp: [
+      ex('Easy Low-Bounce Rope or Fast March', 55, 'Find a relaxed rhythm without turning the warm-up into conditioning.', ['cardiovascular system', 'calves', 'shoulders'], ['Jump Rope']),
+      ex('Wrist Rockers to Palm Lifts', 45, 'Rock forward over the hands, then lift the palms with fingers down.', ['wrists', 'forearms', 'shoulders'], ['Yoga Mat']),
+      ex('Ape Reach to Lateral Shift', 50, 'Shift side to side from a squat and rotate through the ribs with control.', ['hips', 'adductors', 'thoracic spine'], ['Yoga Mat']),
+      ex('Scapular Pushup Wave', 45, 'Glide the shoulder blades, then add a small spine wave without bending the elbows.', ['serratus', 'upper back', 'shoulders'], ['Yoga Mat']),
+    ],
+    circuits: [
+      {
+        name: 'Locomotion Density',
+        rounds: 3,
+        restBetweenRounds: 40,
+        restBetweenExercises: 10,
+        exercises: [
+          ex('Bear Crawl Compass', 45, 'Crawl forward, sideways, back, and sideways again with quiet hips.', ['core', 'shoulders', 'quads'], ['Yoga Mat']),
+          ex('Lateral Ape Travel', 45, 'Travel side to side from a squat, planting the hands softly and landing quietly.', ['hips', 'adductors', 'shoulders'], ['Yoga Mat']),
+          ex('Crab Toe Touch', 40, 'Lift opposite hand and foot to touch while keeping the hips active.', ['core', 'glutes', 'shoulders'], ['Yoga Mat']),
+          ex('Panther Step Back', 40, 'Hover the knees and step one foot back at a time without twisting the pelvis.', ['core', 'quads', 'shoulders'], ['Yoga Mat']),
+          ex('Cossack Sweep', 45, 'Shift left and right with a floor sweep; respect the right hamstring rather than forcing depth.', ['adductors', 'quads', 'hamstrings', 'thoracic spine'], ['Yoga Mat']),
+        ],
+      },
+      {
+        name: 'Posterior Chain and Compression',
+        rounds: 2,
+        restBetweenRounds: 25,
+        restBetweenExercises: 8,
+        exercises: [
+          ex('Hamstring Walkout', 45, 'Bridge the hips, walk the heels away under control, then return before the back takes over.', ['hamstrings', 'glutes', 'core'], ['Yoga Mat']),
+          ex('Hollow-to-Arch Roll', 40, 'Roll from hollow to arch with bent knees if needed and no momentum.', ['core', 'low back', 'glutes'], ['Yoga Mat']),
+          ex('Prone Swimmer', 45, 'Sweep the arms overhead to the hips with a long neck and no shoulder pinch.', ['upper back', 'rear delts', 'shoulders'], ['Yoga Mat']),
+        ],
+      },
+    ],
+    coolDown: [
+      ex('Pigeon Pose - Alternating', 70, 'Settle on the left side, then switch right halfway without forcing the knee angle.', ['glutes', 'hips'], ['Yoga Mat'], { switchSides: true }),
+      ex('Forearm Flexor Reset - Alternating', 60, 'Use a gentle stretch on the left, then switch to the right halfway.', ['forearms', 'wrists'], undefined, { switchSides: true }),
+      ex('Crocodile Breathing', 75, 'Breathe into the mat and let the whole trunk soften.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'That was the capstone: coordinated, sweaty, equipment-light, and still kind to tomorrow’s drive.',
+  });
+}
+
+const CAPE_TRAVEL_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+  capeDriveReset('2026-09-06', 'Departure'),
+  capeBodyweightStrengthA('2026-09-07'),
+  capeAnimalFlowSkill('2026-09-08'),
+  capeBodyweightStrengthB('2026-09-09'),
+  capeAerobicBase('2026-09-10'),
+  capePrimalDensity('2026-09-11'),
+  capeDriveReset('2026-09-12', 'Return'),
+];
+
 function buildSeptemberWeek(
   startDate: string,
   phase: 2 | 3 | 4,
@@ -4014,7 +4320,10 @@ const SEPTEMBER_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...SEPTEMBER_BRIDGE_PROGRAMMED_WORKOUTS,
   ...SEPTEMBER_FULL_WEEKS_PROGRAMMED_WORKOUTS,
   ...SEPTEMBER_CONSOLIDATION_PROGRAMMED_WORKOUTS,
-];
+].filter(
+  (programmedWorkout) =>
+    programmedWorkout.date < CAPE_TRAVEL_START_DATE || programmedWorkout.date > CAPE_TRAVEL_END_DATE
+).concat(CAPE_TRAVEL_PROGRAMMED_WORKOUTS);
 
 function buildTrainingWeek(startDate: string, phase: Phase, includeWeekend: boolean): ProgrammedWorkout[] {
   const monday = startDate;
