@@ -3479,7 +3479,7 @@ function septemberTuesdayStrength(date: string, phase: SeptemberPhase): Programm
       description: 'A moderate bridge day for lateral hip range, handstand alignment, unilateral pressing, lower-leg capacity, and trunk control.',
       circuits: [
         { name: 'Recovery Skill', rounds: 2, restBetweenRounds: 60, restBetweenExercises: 12, exercises: [
-          ex('Supported Cossack Squat - Alternating', 60, 'Use the rings at one stable support height, move gently toward the restricted left side, then switch right halfway.', ['quads', 'glutes', 'adductors'], ['Gymnastic Rings'], { switchSides: true }),
+          ex('Supported Cossack Squat - Alternating', 60, 'Use the rings at one stable support height, move into the strong left squat side while the right hamstring lengthens, then switch right halfway.', ['quads', 'glutes', 'adductors', 'hamstrings'], ['Gymnastic Rings'], { switchSides: true }),
           ex('Wall Handstand Isometric', 35, 'Use a pike or wall position and hold a clean stacked line.', ['shoulders', 'triceps', 'core'], ['Yoga Mat']),
           ex('Half-Kneeling 30 lb Dumbbell Press - Alternating', 60, 'Press the 30 lb dumbbell on the left, then switch right halfway with ribs stacked.', ['shoulders', 'triceps', 'core'], ['Dumbbells', 'Yoga Mat'], { switchSides: true }),
           ex('Band Reverse Fly', 40, 'Open the band with a relaxed neck.', ['rear delts', 'upper back'], ['Resistance Bands'], { targetReps: 12 }),
@@ -3526,7 +3526,7 @@ function septemberTuesdayStrength(date: string, phase: SeptemberPhase): Programm
         ] },
         { name: 'Posterior Balance', rounds: 2, restBetweenRounds: 35, restBetweenExercises: 10, exercises: [
           ex('Single-Leg Glute Bridge - Alternating', 60, 'Bridge on the left, then switch right halfway.', ['glutes', 'hamstrings', 'core'], ['Yoga Mat'], { switchSides: true }),
-          ex('Supported Cossack Mobility - Alternating', 70, 'Explore the left side first without forcing depth, then switch to the right halfway.', ['adductors', 'quads', 'hips'], ['Gymnastic Rings'], { switchSides: true }),
+          ex('Supported Cossack Mobility - Alternating', 70, 'Move into the left squat side first and let the right hamstring lengthen without forcing depth, then switch to the right halfway.', ['adductors', 'quads', 'hips', 'hamstrings'], ['Gymnastic Rings'], { switchSides: true }),
           ex('Band External Rotation - Alternating', 60, 'Rotate on the left, then right, with the elbow near the ribs.', ['rotator cuff', 'rear delts'], ['Resistance Bands'], { switchSides: true }),
         ] },
       ],
@@ -3554,11 +3554,11 @@ function septemberTuesdayStrength(date: string, phase: SeptemberPhase): Programm
     },
     5: {
       name: 'Mobility Strength Deload',
-      coachNotes: 'Consolidation Tuesday at RPE 5-6. Reduce volume and use the session to check left lateral range, knee comfort, and shoulder freshness.',
+      coachNotes: 'Consolidation Tuesday at RPE 5-6. Reduce volume and use the session to check right-hamstring comfort, bilateral Cossack control, knee comfort, and shoulder freshness.',
       description: 'A reduced-volume blend of supported lateral strength, pressing, hip control, scapular work, and trunk coordination.',
       circuits: [
         { name: 'Deload Control', rounds: 2, restBetweenRounds: 65, restBetweenExercises: 12, exercises: [
-          ex('Supported Cossack Squat - Alternating', 70, 'Explore the left side first, then the right, without forcing depth.', ['quads', 'glutes', 'adductors'], ['Gymnastic Rings'], { switchSides: true }),
+          ex('Supported Cossack Squat - Alternating', 70, 'Move into the left squat side first while the right hamstring lengthens, then switch to the right without forcing depth.', ['quads', 'glutes', 'adductors', 'hamstrings'], ['Gymnastic Rings'], { switchSides: true }),
           ex('Half-Kneeling Dumbbell Press - Alternating', 60, 'Press a moderate load on the left, then switch to the right halfway.', ['shoulders', 'triceps', 'core'], ['Dumbbells', 'Yoga Mat'], { switchSides: true }),
           ex('Supported Hip Airplane - Alternating', 70, 'Rotate slowly on the left, then switch to the right halfway with support.', ['glutes', 'hips', 'core'], undefined, { switchSides: true }),
           ex('Bird Dog with Reach', 45, 'Reach the opposite arm and leg while keeping the pelvis level.', ['core', 'glutes', 'shoulders'], ['Yoga Mat']),
@@ -3716,7 +3716,7 @@ function septemberClimbingWarmup(
   const variants: Record<SeptemberClimbingStyle, { name: string; coachNotes: string; exercises: ExerciseSeed[] }> = {
     compression: {
       name: 'Compression and High-Step Climbing Primer',
-      coachNotes: 'Climbing preparation only. Explore the restricted left high-step gently and arrive at the wall fresher than you started.',
+      coachNotes: 'Climbing preparation only. Preserve the strong left high-step while letting the right hamstring lengthen gently, and arrive at the wall fresher than you started.',
       exercises: [
         septemberRopeRamp(40),
         ex('Wrist Rocks and Finger Waves', 40, 'Warm the wrists and fingers without squeezing hard.', ['wrists', 'forearms']),
@@ -3770,7 +3770,7 @@ function septemberClimbingWarmup(
         ex('Wrist Rocks and Finger Opens', 40, 'Open and close the hands while rocking gently through the wrists.', ['wrists', 'forearms']),
         ex('Band Wall Slides', 40, 'Slide overhead while the ribs stay stacked.', ['shoulders', 'serratus', 'upper back'], ['Resistance Bands']),
         ex('Wall Hip-Turn Rehearsal - Alternating', 60, 'Practice a left hip turn toward the wall, then switch to the right halfway with quiet foot pressure.', ['hips', 'glutes', 'core'], undefined, { switchSides: true }),
-        ex('Supported Lateral Squat Shift', 60, 'Shift toward the restricted left side first, then switch to the right halfway with support.', ['adductors', 'quads', 'glutes'], ['Gymnastic Rings'], { switchSides: true }),
+        ex('Supported Lateral Squat Shift', 60, 'Shift into the strong left squat side first while the right hamstring lengthens, then switch to the right halfway with support.', ['adductors', 'quads', 'glutes', 'hamstrings'], ['Gymnastic Rings'], { switchSides: true }),
         ex('Standing Calf Balance - Alternating', 50, 'Balance on the left, then the right, with a soft knee and quiet foot.', ['calves', 'ankles', 'feet'], undefined, { switchSides: true }),
       ],
     },
@@ -3886,7 +3886,7 @@ function septemberMobilitySnack(date: string, phase: SeptemberPhase, sunday = fa
     priority: 2,
     coachNotes: sunday
       ? 'Optional after climbing or before bed. Keep the right biceps/shoulder stretch shallow and symptom-free.'
-      : 'Optional after Zone 2 or later in the day. Give the restricted left lateral hip unhurried, pain-free time.',
+      : 'Optional after Zone 2 or later in the day. Give the right hamstring unhurried, pain-free range while preserving the strong left Cossack side.',
     name: `${SEPTEMBER_PHASE_LABELS[phase]}: ${sunday ? 'Post-Climb Downshift' : 'Aerobic-Day Mobility Reset'}`,
     description: 'A brief mobility and breathing option for hips, thoracic spine, calves, and shoulders.',
     difficulty: 'beginner',
@@ -3909,7 +3909,7 @@ function septemberMobilitySnack(date: string, phase: SeptemberPhase, sunday = fa
           ]
         : [
             ex('Calf Stretch - Alternating', 60, 'Stretch the left calf, then right, without forcing range.', ['calves', 'ankles'], undefined, { switchSides: true }),
-            ex('Supported Cossack Rock - Alternating', 70, 'Explore the left side gently, then switch right halfway.', ['adductors', 'quads', 'hips'], ['Gymnastic Rings'], { switchSides: true }),
+            ex('Supported Cossack Rock - Alternating', 70, 'Rock into the left squat side while the right hamstring lengthens gently, then switch to the right halfway.', ['adductors', 'quads', 'hips', 'hamstrings'], ['Gymnastic Rings'], { switchSides: true }),
             ex('Thoracic Open Book - Alternating', 60, 'Rotate left, then right, and keep breathing easy.', ['thoracic spine', 'chest'], ['Yoga Mat'], { switchSides: true }),
             ex('Crocodile Breathing', 55, 'Breathe into the floor and let the trunk settle.', ['diaphragm', 'low back'], ['Yoga Mat']),
           ],
