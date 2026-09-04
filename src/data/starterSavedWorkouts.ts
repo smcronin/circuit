@@ -185,6 +185,139 @@ export const STARTER_SAVED_WORKOUTS: GeneratedWorkout[] = [
     partingWords: 'Small window, real work. Ten focused minutes absolutely counts.',
   },
   {
+    id: 'saved-jump-rope-vo2-4x4',
+    createdAt: '2026-09-03T12:00:00.000Z',
+    name: 'Norwegian 4×4 Jump-Rope VO₂',
+    description:
+      'Four controlled four-minute jump-rope intervals at about RPE 8, each separated by three minutes of active walking or marching. Keep cadence stable rather than sprinting, and use basic low-bounce or alternating-foot skipping—never boxer step.',
+    difficulty: 'advanced',
+    targetDuration: 2280,
+    actualDuration: 2280,
+    equipmentSetUsed: 'Jump Rope',
+    equipmentRequired: ['Jump Rope'],
+    equipment: [
+      {
+        name: 'Jump Rope',
+        notes:
+          'Use a rope length that clears easily with relaxed shoulders. Fast low-impact step-ups or running or marching in place are the no-rope substitutions.',
+      },
+    ],
+    warmUp: {
+      type: 'warmup',
+      exercises: [
+        {
+          id: 'saved-jump-rope-vo2-4x4-march',
+          name: 'Brisk Marching Ramp',
+          duration: 120,
+          description:
+            'Start easy and build to a brisk march with relaxed arm swing and progressively deeper breathing.',
+          muscleGroups: ['cardiovascular system', 'hips', 'calves'],
+        },
+        {
+          id: 'saved-jump-rope-vo2-4x4-ankles',
+          name: 'Ankle Rockers and Calf Raises',
+          duration: 120,
+          description:
+            'Alternate controlled ankle rockers with easy calf raises. Keep the feet relaxed and use a pain-free range.',
+          muscleGroups: ['ankles', 'calves', 'feet'],
+        },
+        {
+          id: 'saved-jump-rope-vo2-4x4-easy-rope',
+          name: 'Easy Low-Bounce Rope',
+          duration: 120,
+          description:
+            'Use basic low-bounce or alternating-foot skipping at an easy pace. Do not use boxer step; fast marching is the no-rope option.',
+          muscleGroups: ['cardiovascular system', 'calves', 'coordination'],
+          equipment: ['Jump Rope'],
+        },
+        {
+          id: 'saved-jump-rope-vo2-4x4-primer',
+          name: 'Progressive Rope Primer',
+          duration: 120,
+          description:
+            'Gradually approach workout cadence without straining. Finish warm, springy, and coordinated rather than fatigued.',
+          muscleGroups: ['cardiovascular system', 'calves', 'coordination'],
+          equipment: ['Jump Rope'],
+        },
+      ],
+      totalDuration: 480,
+    },
+    circuits: [
+      {
+        id: 'saved-jump-rope-vo2-4x4-intervals',
+        name: 'Controlled 4 × 4-Minute High-Aerobic Intervals',
+        rounds: 4,
+        restBetweenRounds: 180,
+        restBetweenExercises: 0,
+        totalDuration: 1500,
+        exercises: [
+          {
+            id: 'saved-jump-rope-vo2-4x4-work',
+            name: 'Jump Rope VO₂ Interval - 4 Minutes',
+            duration: 240,
+            description:
+              'Work at about RPE 8: hard breathing with only a few words possible, but controlled enough to preserve cadence through round four. During each three-minute recovery, walk or march easily. If foot, calf, Achilles, knee, or coordination trouble appears, switch to fast low-impact step-ups or running or marching in place. Stop for sharp or escalating pain.',
+            muscleGroups: [
+              'cardiovascular system',
+              'calves',
+              'quads',
+              'glutes',
+              'core',
+            ],
+            equipment: ['Jump Rope'],
+            modifications: {
+              easier:
+                'Alternate short rope bouts with fast marching while keeping the interval controlled and continuous.',
+              harder:
+                'Keep the same RPE target and make the cadence more even; do not turn the early rounds into sprints.',
+            },
+          },
+        ],
+      },
+    ],
+    coolDown: {
+      type: 'cooldown',
+      exercises: [
+        {
+          id: 'saved-jump-rope-vo2-4x4-walk',
+          name: 'Easy Walking Downshift',
+          duration: 150,
+          description: 'Walk easily and let breathing settle without stopping abruptly.',
+          muscleGroups: ['cardiovascular system', 'calves', 'hips'],
+        },
+        {
+          id: 'saved-jump-rope-vo2-4x4-calf',
+          name: 'Calf Mobility - Alternating',
+          duration: 90,
+          description: 'Stretch the left calf, then the right, gently.',
+          muscleGroups: ['calves', 'ankles'],
+          switchSides: true,
+        },
+        {
+          id: 'saved-jump-rope-vo2-4x4-breathing',
+          name: 'Standing Recovery Breathing',
+          duration: 60,
+          description: 'Lengthen the exhale while the shoulders relax.',
+          muscleGroups: ['diaphragm', 'cardiovascular system'],
+        },
+      ],
+      totalDuration: 300,
+    },
+    restBetweenCircuits: 0,
+    estimatedCalories: 335,
+    calorieRange: { low: 270, high: 410 },
+    focusAreas: ['cardio', 'VO2 max', 'high-aerobic conditioning', 'coordination'],
+    muscleGroupsTargeted: [
+      'cardiovascular system',
+      'calves',
+      'quads',
+      'glutes',
+      'core',
+    ],
+    partingWords:
+      'Four controlled fours are in the bank. Record RPE, cadence, and every lower-leg signal.',
+  },
+  {
     id: 'saved-night-mobility-10',
     createdAt: '2026-07-23T12:00:00.000Z',
     name: '10-Minute Restorative Night Mobility',

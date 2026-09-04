@@ -21,7 +21,10 @@ function getSavedWorkoutVisual(workoutId: string): {
     };
   }
 
-  if (workoutId === 'saved-jump-rope-snack-10') {
+  if (
+    workoutId === 'saved-jump-rope-snack-10' ||
+    workoutId === 'saved-jump-rope-vo2-4x4'
+  ) {
     return {
       icon: 'pulse-outline',
       color: colors.accent,
