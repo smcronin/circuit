@@ -18,6 +18,10 @@ Circuit is a personal workout app. Shipping useful features quickly is more impo
 - Preserve unrelated user changes and stage only the files that belong to the requested feature.
 - Confirm the pushed commit matches `origin/master` and that the production deployment is Ready.
 
+## Standing Weekly Schedule
+
+Effective September 14, 2026 and for future programs: Monday strength/calisthenics; Tuesday Zone 2 cardio plus optional mobility; Wednesday climbing preparation; Thursday compact strength/calisthenics; Friday strength/calisthenics; Saturday high-aerobic rope work; Sunday climbing preparation. Thursday has a recurring 9 AM meeting, so keep its strength session compact. Keep Thursday and Friday complementary and check adjacent-day exercise overlap.
+
 ## Coaching Feedback Loop
 
 Circuit is a single-user coaching product. New monthly programming must be grounded in the user's actual completed-workout feedback, not only the written goals.

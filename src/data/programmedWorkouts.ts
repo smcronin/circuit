@@ -3534,15 +3534,15 @@ function septemberTuesdayStrength(date: string, phase: SeptemberPhase): Programm
     },
     4: {
       name: 'Pistol Eccentrics and Press Density',
-      coachNotes: 'Density Tuesday at RPE 7: control unilateral lowering and vertical pressing while keeping deep shoulder extension out of the session.',
-      description: 'Slow pistol eccentrics, elevated pike pressing, high-ring support, anti-rotation, and lower-leg capacity.',
+      coachNotes: 'Density Thursday at RPE 7: control unilateral lowering and vertical pressing while keeping deep shoulder extension out of the session.',
+      description: 'Slow pistol eccentrics, elevated pike pressing, high-ring support, diagonal trunk control, and lower-leg capacity.',
       circuits: [
         { name: 'Controlled Density', rounds: 3, restBetweenRounds: 55, restBetweenExercises: 10, exercises: [
           ex('Pistol Eccentric to Box - Right', 40, 'Lower for four seconds to a safe target, use both legs to stand, and keep two reps in reserve.', ['quads', 'glutes', 'core'], ['Yoga Mat'], { targetReps: 4 }),
           ex('Pistol Eccentric to Box - Left', 40, 'Match the right with a comfortable depth and clean knee tracking.', ['quads', 'glutes', 'core'], ['Yoga Mat'], { targetReps: 4 }),
           ex('Elevated Pike Handstand Pushup', 40, 'Use six to ten controlled reps without losing the stacked shoulder line.', ['shoulders', 'triceps', 'upper chest', 'core'], ['Yoga Mat'], { targetReps: 8 }),
           ex('High-Ring Support Scap Press', 35, 'Keep the rings at one fixed support height and move only through the shoulder blades.', ['shoulders', 'chest', 'triceps'], ['Gymnastic Rings']),
-          ex('Heavy-Band Pallof Press - Alternating', 60, 'Press from the left side with a challenging band, then switch to the right halfway.', ['core', 'obliques', 'shoulders'], ['Resistance Bands'], { switchSides: true }),
+          ex('Heavy-Band Half-Kneeling Chop - Alternating', 60, 'Chop from the left with the purple or next-heavier band, then switch to the right halfway. Keep the trunk controlled for a different angle from Friday Pallof work.', ['obliques', 'shoulders', 'hips'], ['Resistance Bands', 'Yoga Mat'], { switchSides: true }),
         ] },
         { name: 'Tendon-Friendly Finish', rounds: 2, restBetweenRounds: 35, restBetweenExercises: 10, exercises: [
           ex('Wall Tibialis Raise', 40, 'Use smooth toe raises in a pain-free range.', ['tibialis anterior', 'ankles'], undefined, { targetReps: 15 }),
@@ -3554,7 +3554,7 @@ function septemberTuesdayStrength(date: string, phase: SeptemberPhase): Programm
     },
     5: {
       name: 'Mobility Strength Deload',
-      coachNotes: 'Consolidation Tuesday at RPE 5-6. Reduce volume and use the session to check right-hamstring comfort, bilateral Cossack control, knee comfort, and shoulder freshness.',
+      coachNotes: 'Consolidation Thursday at RPE 5-6. Reduce volume and use the session to check right-hamstring comfort, bilateral Cossack control, knee comfort, and shoulder freshness.',
       description: 'A reduced-volume blend of supported lateral strength, pressing, hip control, scapular work, and trunk coordination.',
       circuits: [
         { name: 'Deload Control', rounds: 2, restBetweenRounds: 65, restBetweenExercises: 12, exercises: [
@@ -4277,13 +4277,16 @@ function buildSeptemberWeek(
   wednesdayStyle: SeptemberClimbingStyle,
   sundayStyle: SeptemberClimbingStyle
 ): ProgrammedWorkout[] {
+  // Keep past prescriptions intact; Tuesday cardio starts with the September 14 week.
+  const strengthOffset = startDate >= '2026-09-14' ? 3 : 1;
+  const cardioOffset = startDate >= '2026-09-14' ? 1 : 3;
   return [
     septemberMondayStrength(startDate, phase),
-    septemberTuesdayStrength(addDays(startDate, 1), phase),
+    septemberTuesdayStrength(addDays(startDate, strengthOffset), phase),
     septemberClimbingWarmup(addDays(startDate, 2), phase, wednesdayStyle),
     septemberAntagonistSnack(addDays(startDate, 2), phase),
-    septemberZone2(addDays(startDate, 3), phase),
-    septemberMobilitySnack(addDays(startDate, 3), phase),
+    septemberZone2(addDays(startDate, cardioOffset), phase),
+    septemberMobilitySnack(addDays(startDate, cardioOffset), phase),
     septemberFridayStrength(addDays(startDate, 4), phase),
     septemberJumpRopeVo2(addDays(startDate, 5), phase),
     septemberClimbingWarmup(addDays(startDate, 6), phase, sundayStyle, true),
@@ -4311,7 +4314,9 @@ const SEPTEMBER_FULL_WEEKS_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
 
 const SEPTEMBER_CONSOLIDATION_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   septemberMondayStrength('2026-09-28', 5),
-  septemberTuesdayStrength('2026-09-29', 5),
+  septemberZone2('2026-09-29', 5),
+  septemberMobilitySnack('2026-09-29', 5),
+  septemberTuesdayStrength('2026-10-01', 5),
   septemberClimbingWarmup('2026-09-30', 5, 'tension'),
   septemberAntagonistSnack('2026-09-30', 5),
 ];
@@ -4356,7 +4361,7 @@ function buildTrainingWeek(startDate: string, phase: Phase, includeWeekend: bool
 }
 
 export const PROGRAM_START_DATE = '2026-06-29';
-export const PROGRAM_END_DATE = '2026-09-30';
+export const PROGRAM_END_DATE = '2026-10-01';
 
 const BASE_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...buildTrainingWeek('2026-06-29', 1, true),
