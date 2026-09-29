@@ -32,6 +32,8 @@ export const MAX_ACCURACY_M = 25;
 export const MAX_PLAUSIBLE_SPEED_MPS = 30;
 /** Below this we call it stopped, so it stops accruing moving time. ~1.8 mph. */
 export const MOVING_THRESHOLD_MPS = 0.8;
+/** Below this we hold off banking distance — slower than any real walk, even uphill. ~0.7 mph. */
+export const STILL_SPEED_MPS = 0.3;
 /** Ignore sub-second fixes; they add noise and no information. */
 export const MIN_FIX_INTERVAL_MS = 500;
 /** No fix for this long means the recorder was suspended — log a gap. */
@@ -51,48 +53,77 @@ export type FixRejection =
 export interface FixDecision {
   accept: boolean;
   reason?: FixRejection;
-  /** Metres travelled since the previous accepted point (0 for the first). */
+  /** Metres to bank: straight line from the anchor (0 for the first, or within noise). */
   distanceMeters: number;
-  /** Milliseconds since the previous accepted point (0 for the first). */
+  /** Straight-line metres from the anchor, reported even when within noise. */
+  displacementMeters: number;
+  /** Milliseconds since the anchor — the span `distanceMeters` covers (0 for the first). */
   elapsedMs: number;
 }
+
+const reject = (reason: FixRejection): FixDecision => ({
+  accept: false,
+  reason,
+  distanceMeters: 0,
+  displacementMeters: 0,
+  elapsedMs: 0,
+});
 
 /**
  * Decide whether a new fix is real movement or noise.
  *
  * The `within-noise` rule is the one that matters most: a stationary phone
  * reporting ±10m accuracy will produce a random walk that silently inflates
- * distance by a mile over a coffee stop. Requiring the step to clear a fraction
- * of the reported accuracy filters that out without discarding slow riding.
+ * distance by a mile over a coffee stop. Requiring movement to clear a fraction
+ * of the reported accuracy filters that out.
+ *
+ * Crucially, that movement is measured from the `anchor` — the last point that
+ * banked distance — not from the previous fix. At 1 fix/second a walker covers
+ * ~1.4m and a runner ~3m per fix, both under the noise floor; comparing
+ * consecutive fixes threw away nearly every step of a run. Measuring from the
+ * anchor lets slow progress accumulate across fixes until it clears the floor,
+ * while a stationary phone's jitter stays pinned near the anchor.
  */
-export function evaluateFix(previous: RidePoint | null, next: RidePoint): FixDecision {
+export function evaluateFix(
+  previous: RidePoint | null,
+  next: RidePoint,
+  anchor: RidePoint | null = previous
+): FixDecision {
   if (next.acc > MAX_ACCURACY_M) {
-    return { accept: false, reason: 'inaccurate', distanceMeters: 0, elapsedMs: 0 };
+    return reject('inaccurate');
   }
   if (!previous) {
-    return { accept: true, distanceMeters: 0, elapsedMs: 0 };
+    return { accept: true, distanceMeters: 0, displacementMeters: 0, elapsedMs: 0 };
   }
 
-  const elapsedMs = next.t - previous.t;
-  if (elapsedMs < MIN_FIX_INTERVAL_MS) {
-    return { accept: false, reason: 'too-soon', distanceMeters: 0, elapsedMs };
+  const stepMs = next.t - previous.t;
+  if (stepMs < MIN_FIX_INTERVAL_MS) {
+    return reject('too-soon');
   }
 
-  const distanceMeters = haversineMeters(previous.lat, previous.lon, next.lat, next.lon);
-  const impliedSpeed = distanceMeters / (elapsedMs / 1000);
-
-  if (impliedSpeed > MAX_PLAUSIBLE_SPEED_MPS) {
-    return { accept: false, reason: 'implausible-speed', distanceMeters: 0, elapsedMs };
+  // Teleport check is per fix: a single bad fix shouldn't be averaged away over the span.
+  const stepMeters = haversineMeters(previous.lat, previous.lon, next.lat, next.lon);
+  if (stepMeters / (stepMs / 1000) > MAX_PLAUSIBLE_SPEED_MPS) {
+    return reject('implausible-speed');
   }
+
+  const from = anchor ?? previous;
+  const elapsedMs = next.t - from.t;
+  const displacementMeters = haversineMeters(from.lat, from.lon, next.lat, next.lon);
 
   // Noise floor scales with the reported accuracy of the *worse* of the two fixes.
-  const noiseFloor = Math.max(3, Math.max(previous.acc, next.acc) * 0.5);
-  if (distanceMeters < noiseFloor) {
-    // Genuinely stopped (or noise) — keep the timestamp moving but bank no distance.
-    return { accept: true, reason: 'within-noise', distanceMeters: 0, elapsedMs };
+  const noiseFloor = Math.max(3, Math.max(from.acc, next.acc) * 0.5);
+  // A stationary phone's jitter can still wander past the floor, but it does so
+  // slowly — and the device's Doppler speed knows it's standing still. Holding
+  // the anchor only delays banking: real movement is credited in full once the
+  // pace since the anchor shows it.
+  const stillish = resolveSpeedMps(next, displacementMeters, elapsedMs) < STILL_SPEED_MPS;
+  if (displacementMeters < noiseFloor || stillish) {
+    // Stopped, or not yet far enough to tell — keep the anchor and bank nothing yet.
+    return { accept: true, reason: 'within-noise', distanceMeters: 0, displacementMeters, elapsedMs };
   }
 
-  return { accept: true, distanceMeters, elapsedMs };
+  return { accept: true, distanceMeters: displacementMeters, displacementMeters, elapsedMs };
 }
 
 /**

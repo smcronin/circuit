@@ -53,6 +53,14 @@ export interface RideAccumulators {
   smoothedAlt: number | null;
   /** Last altitude confirmed as a real change, metres. */
   altReference: number | null;
+  /**
+   * Last point that banked distance; the next fix is measured from here so slow
+   * movement accumulates across fixes. Absent on drafts saved before anchoring
+   * existed — read as the last point.
+   */
+  anchor?: RidePoint | null;
+  /** `smoothedAlt` when the anchor was set, for grade across the anchor span. */
+  anchorSmoothedAlt?: number | null;
 }
 
 export type RideStatus = 'idle' | 'recording' | 'paused' | 'finished';

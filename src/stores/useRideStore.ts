@@ -15,6 +15,7 @@ import {
   MOVING_THRESHOLD_MPS,
   accumulateElevationGain,
   evaluateFix,
+  haversineMeters,
   smoothedGradeBetween,
   resolveSpeedMps,
 } from '@/utils/geo';
@@ -38,7 +39,18 @@ const emptyStats = (): RideStats => ({
   kcal: 0,
 });
 
-const emptyAccum = (): RideAccumulators => ({ smoothedAlt: null, altReference: null });
+const emptyAccum = (): RideAccumulators => ({
+  smoothedAlt: null,
+  altReference: null,
+  anchor: null,
+  anchorSmoothedAlt: null,
+});
+
+/** Make `point` the anchor the next fix's distance is measured from. */
+function setAnchor(accum: RideAccumulators, point: RidePoint) {
+  accum.anchor = point;
+  accum.anchorSmoothedAlt = accum.smoothedAlt;
+}
 
 interface RideState {
   status: RideStatus;
@@ -152,6 +164,7 @@ export const useRideStore = create<RideState>()((set, get) => ({
       }
       const accum = { ...state.accum };
       accumulateElevationGain(accum, point.alt);
+      setAnchor(accum, point);
       set({
         points: [...state.points, point],
         accum,
@@ -163,7 +176,9 @@ export const useRideStore = create<RideState>()((set, get) => ({
       return;
     }
 
-    const decision = evaluateFix(previous, point);
+    // Drafts saved before anchoring existed carry no anchor: measure from the last point.
+    const anchor = state.accum.anchor ?? previous;
+    const decision = evaluateFix(previous, point, anchor);
 
     if (!decision.accept) {
       // Still worth showing the user that a fix arrived and how bad it was.
@@ -188,10 +203,11 @@ export const useRideStore = create<RideState>()((set, get) => ({
         {
           startedAt: state.lastFixAt as number,
           endedAt: point.t,
-          skippedMeters: decision.distanceMeters,
+          skippedMeters: haversineMeters(previous.lat, previous.lon, point.lat, point.lon),
         },
       ];
       accumulateElevationGain(accum, point.alt);
+      setAnchor(accum, point);
       set({
         points: [...state.points, point],
         gaps: nextGaps,
@@ -203,26 +219,36 @@ export const useRideStore = create<RideState>()((set, get) => ({
       return;
     }
 
+    // Distance, time and energy are banked over the whole anchor-to-fix span,
+    // which at walking pace covers several fixes.
     const seconds = decision.elapsedMs / 1000;
     const speed = Math.min(
       MAX_PLAUSIBLE_SPEED_MPS,
-      resolveSpeedMps(point, decision.distanceMeters, decision.elapsedMs)
+      resolveSpeedMps(point, decision.displacementMeters, decision.elapsedMs)
     );
-    const isMoving = speed >= MOVING_THRESHOLD_MPS && decision.distanceMeters > 0;
+    const banked = decision.distanceMeters > 0;
+    // The span's average pace must clear the threshold too: the first step after
+    // a long stop banks distance, but must not credit the stop as moving time.
+    const spanSpeed = seconds > 0 ? decision.distanceMeters / seconds : 0;
+    const isMoving = banked && speed >= MOVING_THRESHOLD_MPS && spanSpeed >= MOVING_THRESHOLD_MPS;
 
     stats.distanceMeters += decision.distanceMeters;
-    stats.currentSpeedMps = isMoving ? speed : 0;
+    // Between banked fixes the live readout still tracks the device's speed, so a
+    // walker's pace doesn't flicker to zero on every fix inside the noise floor.
+    stats.currentSpeedMps = speed >= MOVING_THRESHOLD_MPS ? speed : 0;
     stats.maxSpeedMps = Math.max(stats.maxSpeedMps, isMoving ? speed : 0);
-    // Capture the smoothed altitude before this fix folds in, so the energy
-    // grade below is computed from the EMA, not from raw per-fix jitter —
-    // integrating raw altitude noise banks phantom climbing calories.
-    const smoothedAltBefore = accum.smoothedAlt;
+    // Grade comes from the EMA-smoothed altitude at the anchor, not from raw
+    // per-fix jitter — integrating raw altitude noise banks phantom climbing
+    // calories.
+    const anchorSmoothedAlt = state.accum.anchor
+      ? state.accum.anchorSmoothedAlt ?? null
+      : accum.smoothedAlt;
     stats.elevationGainMeters += accumulateElevationGain(accum, point.alt);
 
     if (isMoving && previous) {
       stats.movingSeconds += seconds;
       const grade = smoothedGradeBetween(
-        smoothedAltBefore,
+        anchorSmoothedAlt,
         accum.smoothedAlt,
         decision.distanceMeters
       );
@@ -240,6 +266,8 @@ export const useRideStore = create<RideState>()((set, get) => ({
 
     stats.avgSpeedMps =
       stats.movingSeconds > 0 ? stats.distanceMeters / stats.movingSeconds : 0;
+
+    if (banked || !previous) setAnchor(accum, point);
 
     set({
       points: [...state.points, point],
