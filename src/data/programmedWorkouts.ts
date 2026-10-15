@@ -4650,6 +4650,94 @@ function octoberFridayStrength(date: string, phase: OctoberPhase): ProgrammedWor
   });
 }
 
+function octoberIllnessReturnThursday(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-10-illness-return-thursday-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Monday and Tuesday were missed during an illness, followed by an okay Wednesday climbing session. This is whole-body re-entry, not catch-up volume. Start only if energy is clearly improving, work around RPE 5-6, and stop if the warm-up or first round makes symptoms or unusual fatigue worse.',
+    name: 'Recovery Return: Full-Body Re-entry',
+    description: 'A recovery-aware full-body session that restores the highest-return patterns from the missed strength day: hinge, squat, horizontal press, row, loaded carry, and trunk control.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 27,
+    estimatedCalories: 215,
+    calorieRange: { low: 165, high: 265 },
+    focusAreas: ['strength', 'full body', 'recovery', 'movement quality', 'longevity'],
+    muscleGroupsTargeted: ['glutes', 'hamstrings', 'quads', 'back', 'chest', 'shoulders', 'core'],
+    warmUp: [
+      ex('Easy March or Low-Bounce Rope', 75, 'Build a little temperature at an easy conversational effort. Use marching if bouncing feels wrong today.', ['cardiovascular system', 'calves', 'coordination'], ['Jump Rope']),
+      ex('Cat-Cow to Thoracic Reach', 55, 'Move slowly through the spine and reach only as far as breathing stays easy.', ['back', 'thoracic spine', 'shoulders'], ['Yoga Mat']),
+      ex('Kettlebell Deadlift Groove', 60, 'Use light rehearsal reps with a close bell path and steady breathing.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell']),
+      ex('Supported Squat to Stand', 55, 'Use the rings or a stable support and choose a left-knee-comfortable depth.', ['quads', 'glutes', 'hips'], ['Gymnastic Rings']),
+      ex('Band Pull-Apart to Easy Row', 55, 'Alternate easy pull-aparts and rows without hard squeezing after yesterday\'s climbing.', ['upper back', 'rear delts', 'lats'], ['Resistance Bands']),
+    ],
+    circuits: [{
+      name: 'Full-Body Essentials',
+      rounds: 3,
+      restBetweenRounds: 75,
+      restBetweenExercises: 15,
+      exercises: [
+        ex('Kettlebell Deadlift', 45, 'Use eight smooth reps. Keep two or three reps in reserve and substitute an unloaded hinge if energy drops.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 8 }),
+        ex('Supported Goblet Squat to Box', 50, 'Use a moderate load, ring or chair support, and a pain-free depth for six to eight reps.', ['quads', 'glutes', 'core'], ['Kettlebell', 'Gymnastic Rings'], { targetReps: 8 }),
+        ex('Single-Arm Floor Press - Alternating', 60, 'Press on the left, then switch right halfway. Use the kettlebell only if five crisp reps per side feel controlled; otherwise use the heaviest comfortable dumbbell.', ['chest', 'triceps', 'shoulders', 'core'], ['Kettlebell', 'Dumbbells', 'Yoga Mat'], { switchSides: true, targetReps: 10 }),
+        ex('Heavy-Band Standing Row', 45, 'Pull to the ribs for ten to twelve smooth reps without turning this into more climbing.', ['back', 'lats', 'biceps'], ['Resistance Bands'], { targetReps: 12 }),
+        ex('Kettlebell Suitcase March - Alternating', 60, 'March on the left, then switch right halfway. Stay tall and breathe continuously.', ['obliques', 'grip', 'hips', 'core'], ['Kettlebell'], { switchSides: true }),
+      ],
+    }],
+    coolDown: [
+      ex('Hamstring Floss - Alternating', 60, 'Floss the left hamstring, then the right, without forcing range.', ['hamstrings', 'calves'], ['Yoga Mat'], { switchSides: true }),
+      ex('Supported Child Pose Side Reach - Alternating', 60, 'Reach left, then right, and keep the shoulders relaxed.', ['lats', 'shoulders', 'thoracic spine'], ['Yoga Mat'], { switchSides: true }),
+      ex('Supine Recovery Breathing', 75, 'Use long easy exhales. Finish here rather than adding missed-week volume.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'A successful return should leave you better than you started. Do not chase Monday today.',
+  });
+}
+
+function octoberIllnessReturnFriday(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-10-illness-return-friday-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'This complements Thursday without repeating its exact loading. Work around RPE 6-7 only if Thursday caused no symptom rebound or unusual fatigue; otherwise rest or use easy mobility. Keep at least one clean rep in reserve throughout.',
+    name: 'Recovery Build: Complementary Full-Body Strength',
+    description: 'A compact full-body session using hip power, vertical pulling, overhead pressing, supported single-leg strength, and anti-extension trunk work.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 26,
+    estimatedCalories: 230,
+    calorieRange: { low: 180, high: 285 },
+    focusAreas: ['strength', 'full body', 'power', 'pulling', 'trunk control'],
+    muscleGroupsTargeted: ['glutes', 'hamstrings', 'quads', 'back', 'lats', 'shoulders', 'triceps', 'core'],
+    warmUp: [
+      ex('Easy March or Low-Bounce Rope', 75, 'Build temperature gradually. Use marching if the lower legs or overall energy are not ready for rope.', ['cardiovascular system', 'calves', 'coordination'], ['Jump Rope']),
+      ex('Wrist Tendon Glides', 40, 'Move through easy hand shapes without hard squeezing.', ['wrists', 'forearms']),
+      ex('Scapular Pushup Wave', 45, 'Move smoothly through protraction and retraction with straight arms.', ['serratus', 'upper back', 'shoulders'], ['Yoga Mat']),
+      ex('Kettlebell Hinge and Hike-Pass Rehearsal', 55, 'Rehearse a crisp hinge. Stay with deadlifts today if the bell does not feel snappy.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell']),
+      ex('Supported Reverse Lunge Rehearsal - Alternating', 60, 'Use support, shallow range, and quiet knee tracking on the left, then switch right halfway.', ['quads', 'glutes', 'hamstrings'], ['Gymnastic Rings'], { switchSides: true }),
+    ],
+    circuits: [{
+      name: 'Complementary Whole-Body Build',
+      rounds: 3,
+      restBetweenRounds: 70,
+      restBetweenExercises: 15,
+      exercises: [
+        ex('Two-Hand Kettlebell Swing or Deadlift', 40, 'Use ten crisp swings only if the hinge feels fast and breathing is normal; otherwise perform eight controlled deadlifts.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 10 }),
+        ex('Neutral-Grip Pull-ups', 35, 'Use three to five clean reps after Wednesday climbing, with at least one rep in reserve.', ['lats', 'back', 'biceps', 'core'], ['Pull-up Bar'], { targetReps: 5 }),
+        ex('Half-Kneeling Dumbbell Press - Alternating', 60, 'Press on the left, then switch right halfway. Keep the ribs stacked and use a load that stays smooth.', ['shoulders', 'triceps', 'core', 'hips'], ['Dumbbells', 'Yoga Mat'], { switchSides: true }),
+        ex('Supported Reverse Lunge - Alternating', 60, 'Use six controlled reps on the left, then switch right halfway with support and a left-knee-comfortable range.', ['quads', 'glutes', 'hamstrings', 'core'], ['Gymnastic Rings'], { switchSides: true, targetReps: 12 }),
+        ex('Dead Bug Band Pulldown', 45, 'Anchor the band overhead and alternate the legs while the ribs stay quiet.', ['core', 'lats', 'hip flexors'], ['Resistance Bands', 'Yoga Mat']),
+      ],
+    }],
+    coolDown: [
+      ex('Half-Kneeling Hip Flexor Stretch - Alternating', 70, 'Open the left hip, then switch right halfway without forcing range.', ['hip flexors', 'quads'], ['Yoga Mat'], { switchSides: true }),
+      ex('Forearm and Lat Reset - Alternating', 70, 'Ease the left forearm and lat, then switch right without loading the biceps line.', ['forearms', 'lats', 'shoulders'], undefined, { switchSides: true }),
+      ex('Crocodile Breathing', 70, 'Let the breath settle and use how you feel afterward to decide whether Saturday rope is appropriate.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'Cover the week, do not compensate for it. Clean full-body work is enough.',
+  });
+}
+
 function octoberClimbingWarmup(
   date: string,
   phase: OctoberPhase,
@@ -4974,11 +5062,22 @@ const OCTOBER_TRAINING_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...buildOctoberWeek('2026-10-12', 2, 'tension', 'flow'),
   ...buildOctoberWeek('2026-10-19', 3, 'footwork', 'tension'),
   ...buildOctoberWeek('2026-10-26', 4, 'compression', 'flow'),
-].filter((programmedWorkout) => programmedWorkout.date <= '2026-10-31');
+].filter(
+  (programmedWorkout) =>
+    programmedWorkout.date <= '2026-10-31' &&
+    programmedWorkout.date !== '2026-10-15' &&
+    programmedWorkout.date !== '2026-10-16'
+);
+
+const OCTOBER_MID_CYCLE_RECOVERY_OVERRIDES: ProgrammedWorkout[] = [
+  octoberIllnessReturnThursday('2026-10-15'),
+  octoberIllnessReturnFriday('2026-10-16'),
+];
 
 const OCTOBER_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...OCTOBER_COMPETITION_PROGRAMMED_WORKOUTS,
   ...OCTOBER_TRAINING_PROGRAMMED_WORKOUTS,
+  ...OCTOBER_MID_CYCLE_RECOVERY_OVERRIDES,
 ];
 
 function buildTrainingWeek(startDate: string, phase: Phase, includeWeekend: boolean): ProgrammedWorkout[] {
