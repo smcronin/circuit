@@ -31,7 +31,7 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    if (!isHydrated || profile || isSeeding || hasTriedDevSeed) {
+    if (!__DEV__ || !isHydrated || profile || isSeeding || hasTriedDevSeed) {
       return;
     }
 
