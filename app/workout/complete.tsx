@@ -8,6 +8,8 @@ import { BookmarkButton, Button, Card, Input, RpeSelector } from '@/components/c
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useTimerStore, useHistoryStore } from '@/stores';
 import { formatDuration } from '@/utils';
+import { persistWorkoutHistory } from '@/services/historySync';
+import { HistorySaveStatus } from '@/components/history/HistorySaveStatus';
 
 // Shiny trophy with animated shimmer effect
 function ShimmerTrophy({ size = 64 }: { size?: number }) {
@@ -90,11 +92,12 @@ export default function WorkoutCompleteScreen() {
 
   const [rpe, setRpe] = useState<number | undefined>(undefined);
   const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const session = useTimerStore((state) => state.session);
   const reset = useTimerStore((state) => state.reset);
   const history = useHistoryStore((state) => state.history);
-  const updateSession = useHistoryStore((state) => state.updateSession);
+  const addSession = useHistoryStore((state) => state.addSession);
 
   // Use parting words from workout, fall back to random quote for older workouts
   const motivationalQuote = useMemo(
@@ -105,21 +108,20 @@ export default function WorkoutCompleteScreen() {
   // Random completion message - memoized so it doesn't change on re-renders
   const completionMessage = useMemo(() => getCompletionMessage(), []);
 
-  const handleDone = () => {
-    if (session && (rpe !== undefined || notes.trim())) {
-      updateSession(session.id, {
-        rpe,
-        notes: notes.trim() || undefined,
-      });
-    }
+  const finish = async (destination: '/(tabs)' | '/(tabs)/history') => {
+    if (saving) return;
+    setSaving(true);
+    if (session) addSession({ ...session, ...((rpe !== undefined || notes.trim()) ? {
+      feedback: { ...session.feedback, rpe, notes: notes.trim() || undefined, updatedAt: new Date().toISOString() },
+    } : {}) });
+    const saved = await persistWorkoutHistory();
+    setSaving(false);
+    if (!saved) return;
     reset();
-    router.replace('/(tabs)');
+    router.replace(destination);
   };
-
-  const handleViewHistory = () => {
-    reset();
-    router.replace('/(tabs)/history');
-  };
+  const handleDone = () => { void finish('/(tabs)'); };
+  const handleViewHistory = () => { void finish('/(tabs)/history'); };
 
   if (!session) {
     return (
@@ -254,15 +256,18 @@ export default function WorkoutCompleteScreen() {
 
       {/* Footer Actions */}
       <View style={styles.footer}>
+        <HistorySaveStatus />
         <Button
           title="Done"
           onPress={handleDone}
+          loading={saving}
           size="lg"
           fullWidth
         />
         <Button
           title="View History"
           onPress={handleViewHistory}
+          disabled={saving}
           variant="outline"
           size="lg"
           fullWidth

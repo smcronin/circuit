@@ -22,6 +22,7 @@ import {
 import { DIFFICULTY_COLORS } from '@/utils/constants';
 import { confirmAction } from '@/utils/confirm';
 import { getRpeColor } from '@/utils/rpe';
+import { HistorySaveStatus } from '@/components/history/HistorySaveStatus';
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
@@ -275,6 +276,7 @@ export default function HistoryScreen() {
         </View>
       </View>
 
+      <HistorySaveStatus />
       <Text style={styles.sectionTitle}>Recent Workouts</Text>
     </View>
   );

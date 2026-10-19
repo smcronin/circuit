@@ -21,6 +21,8 @@ import { colors, fonts, spacing, typography, scaleFont, clamp } from '@/theme';
 import { useTimerStore, useHistoryStore, useUserStore } from '@/stores';
 import { formatTime, isRestItem, getItemTypeLabel, fitText, fitTimerDigits } from '@/utils';
 import { soundManager } from '@/services/audio';
+import { persistWorkoutHistory } from '@/services/historySync';
+import { HistorySaveStatus } from '@/components/history/HistorySaveStatus';
 
 // Renders a time string with every digit in a fixed-width slot so the clock
 // never jitters as seconds tick, regardless of the display font's metrics.
@@ -255,6 +257,7 @@ export default function TimerScreen() {
   }, [isAudioMuted]);
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [savingExit, setSavingExit] = useState(false);
 
   // Measured size of the main content area. Everything on the stage is sized
   // from this, so the layout adapts to any device without a breakpoint table.
@@ -524,13 +527,18 @@ export default function TimerScreen() {
   // stopTimer() updates the store's session with stopped_early + stoppedAtItem;
   // we read from the store post-call so we get the complete data instead of the
   // stale closure value that was missing stoppedAtItem.
-  const handleConfirmStop = () => {
-    setShowExitConfirm(false);
+  const handleConfirmStop = async () => {
+    if (savingExit) return;
+    setSavingExit(true);
     stopTimer();
     const updatedSession = useTimerStore.getState().session;
     if (updatedSession) {
       addSession(updatedSession);
     }
+    const saved = await persistWorkoutHistory();
+    setSavingExit(false);
+    if (!saved) return;
+    setShowExitConfirm(false);
     reset();
     router.replace('/(tabs)');
   };
@@ -1101,15 +1109,17 @@ export default function TimerScreen() {
           <View style={styles.exitConfirmCard}>
             <Text style={styles.exitConfirmTitle}>End Workout?</Text>
             <Text style={styles.exitConfirmMessage}>Your progress will be saved to history.</Text>
+            <HistorySaveStatus />
             <View style={styles.exitConfirmButtons}>
               <TouchableOpacity
                 style={styles.exitKeepGoingButton}
-                onPress={() => setShowExitConfirm(false)}
+                onPress={() => { if (status === 'idle') resumeTimer(); setShowExitConfirm(false); }}
+                disabled={savingExit}
               >
                 <Text style={styles.exitKeepGoingText}>Keep Going</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.exitEndButton} onPress={handleConfirmStop}>
-                <Text style={styles.exitEndText}>End Workout</Text>
+              <TouchableOpacity style={styles.exitEndButton} onPress={handleConfirmStop} disabled={savingExit}>
+                <Text style={styles.exitEndText}>{savingExit ? 'Saving…' : 'End Workout'}</Text>
               </TouchableOpacity>
             </View>
           </View>

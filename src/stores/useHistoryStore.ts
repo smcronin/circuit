@@ -1,15 +1,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { WorkoutSession, WorkoutHistory, PostWorkoutFeedback } from '@/types/workout';
-import { SummarizedWorkoutHistory } from '@/types/llm';
+import type { WorkoutSession, PostWorkoutFeedback } from '@/types/workout';
+import type { SummarizedWorkoutHistory } from '@/types/llm';
+import { historyStorage } from '@/services/historyStorage';
+import { historyFromSessions, mergeHistory, stableJson, type HistoryData } from '@/utils/historyMerge';
 
-interface HistoryState {
-  history: WorkoutHistory;
-  workoutSummary?: SummarizedWorkoutHistory;
+interface HistoryState extends HistoryData {
   addSession: (session: WorkoutSession) => void;
   updateSession: (sessionId: string, feedback: PostWorkoutFeedback) => void;
   removeSession: (sessionId: string) => void;
+  mergeRemoteHistory: (data: HistoryData) => void;
   getRecentSessions: (count: number) => WorkoutSession[];
   getSessionById: (sessionId: string) => WorkoutSession | undefined;
   setWorkoutSummary: (summary: SummarizedWorkoutHistory) => void;
@@ -18,182 +18,42 @@ interface HistoryState {
   clearHistory: () => void;
 }
 
-const initialHistory: WorkoutHistory = {
-  sessions: [],
-  totalWorkoutsCompleted: 0,
-  totalMinutesWorked: 0,
-  totalCaloriesBurned: 0,
-  streak: { current: 0, longest: 0 },
-};
-
-const calculateStreak = (sessions: WorkoutSession[]): { current: number; longest: number; lastWorkoutDate?: string } => {
-  const completedSessions = sessions
-    .filter((s) => s.status === 'completed')
-    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
-
-  if (completedSessions.length === 0) {
-    return { current: 0, longest: 0 };
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const lastWorkout = new Date(completedSessions[0].completedAt!);
-  lastWorkout.setHours(0, 0, 0, 0);
-
-  const daysSinceLastWorkout = Math.floor(
-    (today.getTime() - lastWorkout.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  // If more than 1 day since last workout, streak is broken
-  if (daysSinceLastWorkout > 1) {
-    return { current: 0, longest: 0, lastWorkoutDate: completedSessions[0].completedAt };
-  }
-
-  // Calculate current streak
-  let currentStreak = 1;
-  let longestStreak = 1;
-  let tempStreak = 1;
-
-  for (let i = 1; i < completedSessions.length; i++) {
-    const current = new Date(completedSessions[i - 1].completedAt!);
-    const previous = new Date(completedSessions[i].completedAt!);
-    current.setHours(0, 0, 0, 0);
-    previous.setHours(0, 0, 0, 0);
-
-    const dayDiff = Math.floor(
-      (current.getTime() - previous.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (dayDiff === 1) {
-      tempStreak++;
-      if (i < completedSessions.length - 1 || daysSinceLastWorkout <= 1) {
-        currentStreak = tempStreak;
-      }
-    } else if (dayDiff > 1) {
-      longestStreak = Math.max(longestStreak, tempStreak);
-      tempStreak = 1;
-    }
-  }
-
-  longestStreak = Math.max(longestStreak, tempStreak);
-  currentStreak = daysSinceLastWorkout <= 1 ? currentStreak : 0;
-
-  return {
-    current: currentStreak,
-    longest: longestStreak,
-    lastWorkoutDate: completedSessions[0].completedAt,
-  };
-};
-
 export const useHistoryStore = create<HistoryState>()(
   persist(
     (set, get) => ({
-      history: initialHistory,
+      history: historyFromSessions([]),
+      deletedSessions: {},
       workoutSummary: undefined,
-
-      addSession: (session) =>
-        set((state) => {
-          const isCompleted = session.status === 'completed';
-          const minutesWorked = Math.round(session.actualDurationWorked / 60);
-          const newSessions = [session, ...state.history.sessions];
-          const streak = calculateStreak(newSessions);
-
-          return {
-            history: {
-              sessions: newSessions,
-              totalWorkoutsCompleted: isCompleted
-                ? state.history.totalWorkoutsCompleted + 1
-                : state.history.totalWorkoutsCompleted,
-              totalMinutesWorked: state.history.totalMinutesWorked + minutesWorked,
-              totalCaloriesBurned:
-                state.history.totalCaloriesBurned + session.estimatedCaloriesBurned,
-              streak,
-            },
-          };
-        }),
-
-      updateSession: (sessionId, feedback) =>
-        set((state) => {
-          const newSessions = state.history.sessions.map((s) =>
-            s.id === sessionId
-              ? {
-                  ...s,
-                  feedback: {
-                    ...s.feedback,
-                    ...feedback,
-                    updatedAt: new Date().toISOString(),
-                  },
-                }
-              : s
-          );
-          return {
-            history: {
-              ...state.history,
-              sessions: newSessions,
-            },
-          };
-        }),
-
-      removeSession: (sessionId) =>
-        set((state) => {
-          const sessionToRemove = state.history.sessions.find((s) => s.id === sessionId);
-          const newSessions = state.history.sessions.filter((s) => s.id !== sessionId);
-          const streak = calculateStreak(newSessions);
-
-          // Recalculate totals by subtracting the removed session's values
-          const wasCompleted = sessionToRemove?.status === 'completed';
-          const minutesToRemove = sessionToRemove
-            ? Math.round(sessionToRemove.actualDurationWorked / 60)
-            : 0;
-          const caloriesToRemove = sessionToRemove?.estimatedCaloriesBurned || 0;
-
-          return {
-            history: {
-              ...state.history,
-              sessions: newSessions,
-              totalWorkoutsCompleted: wasCompleted
-                ? state.history.totalWorkoutsCompleted - 1
-                : state.history.totalWorkoutsCompleted,
-              totalMinutesWorked: Math.max(0, state.history.totalMinutesWorked - minutesToRemove),
-              totalCaloriesBurned: Math.max(0, state.history.totalCaloriesBurned - caloriesToRemove),
-              streak,
-            },
-          };
-        }),
-
-      getRecentSessions: (count) => {
-        const { history } = get();
-        return history.sessions
-          .filter((s) => s.status === 'completed' || s.status === 'stopped_early')
-          .slice(0, count);
+      addSession: session => set(state => mergeHistory(state, { history: historyFromSessions([session]) })),
+      updateSession: (sessionId, feedback) => set(state => ({
+        history: historyFromSessions(state.history.sessions.map(s => s.id === sessionId
+          ? { ...s, feedback: { ...s.feedback, ...feedback, updatedAt: new Date().toISOString() } } : s)),
+      })),
+      removeSession: sessionId => set(state => mergeHistory(state, {
+        history: historyFromSessions([]), deletedSessions: { [sessionId]: new Date().toISOString() },
+      })),
+      mergeRemoteHistory: data => {
+        const previous = get();
+        const merged = mergeHistory(previous, data);
+        if (stableJson({ history: previous.history, workoutSummary: previous.workoutSummary, deletedSessions: previous.deletedSessions }) !== stableJson(merged)) set(merged);
       },
-
-      getSessionById: (sessionId) => {
-        const { history } = get();
-        return history.sessions.find((s) => s.id === sessionId);
-      },
-
-      setWorkoutSummary: (summary) => set({ workoutSummary: summary }),
-
-      updateWorkoutSummary: (summary) =>
-        set((state) => ({
-          workoutSummary: state.workoutSummary
-            ? {
-                ...state.workoutSummary,
-                summary,
-                generatedAt: new Date().toISOString(),
-              }
-            : undefined,
-        })),
-
+      getRecentSessions: count => get().history.sessions.filter(s => s.status === 'completed' || s.status === 'stopped_early').slice(0, count),
+      getSessionById: sessionId => get().history.sessions.find(s => s.id === sessionId),
+      setWorkoutSummary: workoutSummary => set({ workoutSummary }),
+      updateWorkoutSummary: summary => set(state => ({
+        workoutSummary: state.workoutSummary ? { ...state.workoutSummary, summary, generatedAt: new Date().toISOString() } : undefined,
+      })),
       clearWorkoutSummary: () => set({ workoutSummary: undefined }),
-
-      clearHistory: () => set({ history: initialHistory, workoutSummary: undefined }),
+      clearHistory: () => set(state => ({
+        history: historyFromSessions([]), workoutSummary: undefined,
+        deletedSessions: { ...state.deletedSessions, ...Object.fromEntries(state.history.sessions.map(s => [s.id, new Date().toISOString()])) },
+      })),
     }),
     {
       name: 'history-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => historyStorage),
+      partialize: state => ({ history: state.history, workoutSummary: state.workoutSummary, deletedSessions: state.deletedSessions }),
+      merge: (persisted, current) => ({ ...current, ...mergeHistory((persisted as HistoryData) || current, current) }),
     }
   )
 );

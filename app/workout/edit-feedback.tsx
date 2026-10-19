@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,35 +7,42 @@ import { Button, Card, Input, RpeSelector } from '@/components/common';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore } from '@/stores';
 import { formatDate, formatDuration } from '@/utils';
+import { persistWorkoutHistory } from '@/services/historySync';
+import { HistorySaveStatus } from '@/components/history/HistorySaveStatus';
 
 export default function EditFeedbackScreen() {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const insets = useSafeAreaInsets();
 
-  const getSessionById = useHistoryStore((state) => state.getSessionById);
   const updateSession = useHistoryStore((state) => state.updateSession);
-
-  const session = sessionId ? getSessionById(sessionId) : undefined;
+  const session = useHistoryStore(state => state.history.sessions.find(s => s.id === sessionId));
 
   const [rpe, setRpe] = useState<number | undefined>(session?.feedback?.rpe);
   const [notes, setNotes] = useState(session?.feedback?.notes || '');
+  const [saving, setSaving] = useState(false);
+  const initializedId = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (session) {
+    if (session && initializedId.current !== session.id) {
+      initializedId.current = session.id;
       setRpe(session.feedback?.rpe);
       setNotes(session.feedback?.notes || '');
     }
   }, [session]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
     if (sessionId) {
       updateSession(sessionId, {
         rpe,
         notes: notes.trim() || undefined,
       });
     }
-    router.back();
+    const saved = await persistWorkoutHistory();
+    setSaving(false);
+    if (saved) router.back();
   };
 
   const handleCancel = () => {
@@ -107,7 +114,8 @@ export default function EditFeedbackScreen() {
 
       {/* Footer Actions */}
       <View style={styles.footer}>
-        <Button title="Save Changes" onPress={handleSave} size="lg" fullWidth />
+        <HistorySaveStatus />
+        <Button title="Save Changes" onPress={handleSave} loading={saving} size="lg" fullWidth />
         <Button
           title="Cancel"
           onPress={handleCancel}

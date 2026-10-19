@@ -1,148 +1,128 @@
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { useHistoryStore } from '@/stores/useHistoryStore';
 import { useUserStore } from '@/stores/useUserStore';
+import { useHistorySaveStore } from '@/stores/useHistorySaveStore';
+import { flushHistoryStorage } from './historyStorage';
 import type { WorkoutHistory, WorkoutSession } from '@/types/workout';
+import type { HistoryData } from '@/utils/historyMerge';
 
 const PRODUCTION_SYNC_URL = 'https://circuit-five.vercel.app/api/history-sync';
-const SYNC_DEBOUNCE_MS = 1_500;
-
-interface SyncResponse {
+interface SyncResponse extends Partial<HistoryData> {
   ok: boolean;
+  protocolVersion?: number;
   syncedSessions?: number;
-  syncedAt?: string;
+  revision?: number;
   error?: string;
 }
-
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
-let syncInFlight = false;
-let syncQueued = false;
+let inFlight: Promise<SyncResponse> | null = null;
+let applyingRemote = false;
+let active = false;
 
-function syncUrl(): string {
-  return Platform.OS === 'web' ? '/api/history-sync' : PRODUCTION_SYNC_URL;
-}
-
-/**
- * Exact GPS traces are not needed for coaching or workout analytics. Keep them
- * on-device while preserving ride duration, distance, speed, elevation, and
- * energy data in the cloud snapshot.
- */
 function prepareSessionForCloud(session: WorkoutSession): WorkoutSession {
-  if (!session.ride) return session;
-
-  return {
-    ...session,
-    ride: {
-      ...session.ride,
-      points: [],
-    },
-  };
+  return session.ride ? { ...session, ride: { ...session.ride, points: [] } } : session;
 }
 
 export function prepareHistoryForCloud(history: WorkoutHistory): WorkoutHistory {
-  return {
-    ...history,
-    sessions: history.sessions.map(prepareSessionForCloud),
-  };
+  return { ...history, sessions: history.sessions.map(prepareSessionForCloud) };
+}
+
+async function uploadAndReconcile(): Promise<SyncResponse> {
+  const profile = useUserStore.getState().profile;
+  if (!profile) throw new Error('No Circuit profile is available');
+  const captured = useHistoryStore.getState();
+  useHistorySaveStore.setState({ cloud: 'syncing', message: undefined });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(Platform.OS === 'web' ? '/api/history-sync' : PRODUCTION_SYNC_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+      body: JSON.stringify({
+        profileId: profile.id, protocolVersion: 2,
+        history: prepareHistoryForCloud(captured.history), workoutSummary: captured.workoutSummary,
+        deletedSessions: captured.deletedSessions, sourceUpdatedAt: new Date().toISOString(),
+      }),
+    });
+    const result = await response.json() as SyncResponse;
+    if (!response.ok || !result.ok || result.protocolVersion !== 2 || !result.history) {
+      throw new Error(result.error || 'History sync could not be confirmed');
+    }
+    if (profile.id !== useUserStore.getState().profile?.id) return result;
+    const current = useHistoryStore.getState();
+    const changedWhileSaving = current.history !== captured.history || current.deletedSessions !== captured.deletedSessions || current.workoutSummary !== captured.workoutSummary;
+    applyingRemote = true;
+    try { current.mergeRemoteHistory(result as HistoryData); }
+    finally { applyingRemote = false; }
+    useHistorySaveStore.setState({ cloud: changedWhileSaving ? 'pending' : 'saved', message: undefined });
+    if (changedWhileSaving) scheduleHistorySync();
+    return result;
+  } catch (error) {
+    useHistorySaveStore.setState({ cloud: 'error', message: 'Cloud sync failed. Your workout will be retried.' });
+    scheduleHistorySync(30000);
+    throw error;
+  } finally { clearTimeout(timeout); }
 }
 
 export async function syncHistoryToCloud(): Promise<SyncResponse> {
-  const profile = useUserStore.getState().profile;
-  if (!profile) return { ok: false, error: 'No Circuit profile is available' };
-
-  const { history, workoutSummary } = useHistoryStore.getState();
-  const response = await fetch(syncUrl(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      profileId: profile.id,
-      history: prepareHistoryForCloud(history),
-      workoutSummary,
-      sourceUpdatedAt: new Date().toISOString(),
-    }),
-  });
-
-  const result = (await response.json().catch(() => ({}))) as SyncResponse;
-  if (!response.ok || !result.ok) {
-    throw new Error(result.error || `Workout history sync failed (${response.status})`);
-  }
-
-  return result;
+  // A caller finishing a workout must wait for its own latest state, not an
+  // unrelated upload that started before the workout/feedback was added.
+  while (inFlight) await inFlight.catch(() => undefined);
+  const request = uploadAndReconcile();
+  inFlight = request;
+  try { return await request; }
+  finally { if (inFlight === request) inFlight = null; }
 }
 
-async function flushHistorySync() {
-  if (syncInFlight) {
-    syncQueued = true;
-    return;
-  }
-
-  syncInFlight = true;
-  try {
-    await syncHistoryToCloud();
-  } catch (error) {
-    // Local storage remains authoritative. A later app launch or history change
-    // will retry without interrupting the workout flow.
-    console.warn('Circuit cloud history sync deferred:', error);
-  } finally {
-    syncInFlight = false;
-    if (syncQueued) {
-      syncQueued = false;
-      scheduleHistorySync();
-    }
-  }
+export async function persistWorkoutHistory(): Promise<boolean> {
+  const [local, cloud] = await Promise.allSettled([flushHistoryStorage(), syncHistoryToCloud()]);
+  return local.status === 'fulfilled' || cloud.status === 'fulfilled';
 }
 
-function scheduleHistorySync() {
+function scheduleHistorySync(delay = 1500) {
+  if (!active) return;
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     syncTimer = null;
-    void flushHistorySync();
-  }, SYNC_DEBOUNCE_MS);
+    void syncHistoryToCloud().catch(() => undefined);
+  }, delay);
 }
 
-/**
- * Starts once both persisted stores are hydrated. The first upload performs the
- * local-to-database migration; subsequent history mutations keep the snapshot
- * current. Returns a cleanup function for the root layout lifecycle.
- */
 export function initializeHistorySync(): () => void {
-  let active = true;
+  active = true;
   let started = false;
-  let unsubscribeHistory: (() => void) | undefined;
-
   const startWhenHydrated = () => {
-    if (
-      !active ||
-      started ||
-      !useUserStore.persist.hasHydrated() ||
-      !useHistoryStore.persist.hasHydrated()
-    ) {
-      return;
-    }
-
+    if (!active || started || !useUserStore.persist.hasHydrated() || !useHistoryStore.persist.hasHydrated()) return;
     started = true;
-    void flushHistorySync();
-    unsubscribeHistory = useHistoryStore.subscribe((state, previousState) => {
-      if (
-        state.history !== previousState.history ||
-        state.workoutSummary !== previousState.workoutSummary
-      ) {
-        scheduleHistorySync();
-      }
-    });
+    if (useUserStore.getState().profile) scheduleHistorySync(0);
   };
-
+  const unsubscribeHistory = useHistoryStore.subscribe((state, previous) => {
+    if (!applyingRemote && (state.history !== previous.history || state.workoutSummary !== previous.workoutSummary || state.deletedSessions !== previous.deletedSessions)) {
+      useHistorySaveStore.setState({ cloud: 'pending' });
+      if (started) scheduleHistorySync();
+    }
+  });
+  const unsubscribeProfile = useUserStore.subscribe((state, previous) => {
+    if (started && state.profile?.id !== previous.profile?.id && state.profile) scheduleHistorySync(0);
+  });
   const unsubscribeUserHydration = useUserStore.persist.onFinishHydration(startWhenHydrated);
   const unsubscribeHistoryHydration = useHistoryStore.persist.onFinishHydration(startWhenHydrated);
+  const resume = () => {
+    if (!started) return;
+    // Refresh other tabs' durable writes before sending this tab's state.
+    void useHistoryStore.persist.rehydrate();
+    scheduleHistorySync();
+  };
+  const appState = AppState.addEventListener('change', state => { if (state === 'active') resume(); });
+  if (Platform.OS === 'web') {
+    window.addEventListener('online', resume);
+    window.addEventListener('focus', resume);
+  }
   startWhenHydrated();
-
   return () => {
     active = false;
-    unsubscribeUserHydration();
-    unsubscribeHistoryHydration();
-    unsubscribeHistory?.();
-    if (syncTimer) {
-      clearTimeout(syncTimer);
-      syncTimer = null;
-    }
+    unsubscribeHistory(); unsubscribeProfile(); unsubscribeUserHydration(); unsubscribeHistoryHydration(); appState.remove();
+    if (Platform.OS === 'web') { window.removeEventListener('online', resume); window.removeEventListener('focus', resume); }
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = null;
   };
 }

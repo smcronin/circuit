@@ -29,6 +29,9 @@ import {
   resolveRecordedCalories,
 } from '@/utils/createRideWorkoutSession';
 import { clearRideDraft } from '@/utils/rideDraft';
+import { persistWorkoutHistory } from '@/services/historySync';
+import { flushHistoryStorage } from '@/services/historyStorage';
+import { HistorySaveStatus } from '@/components/history/HistorySaveStatus';
 import { confirmAction } from '@/utils/confirm';
 import { generateManualWorkoutMetadata } from '@/services/openrouter/client';
 import type { ManualWorkoutMetadataResponse } from '@/types/llm';
@@ -139,7 +142,7 @@ export default function RideCompleteScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summary]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!summary || savedRef.current) return;
     savedRef.current = true;
 
@@ -154,7 +157,12 @@ export default function RideCompleteScreen() {
             : undefined,
       });
       addSession(session);
-      void clearRideDraft();
+      if (!await persistWorkoutHistory()) {
+        savedRef.current = false;
+        return;
+      }
+      // GPS points are local-only: keep the recovery draft if device storage failed.
+      await flushHistoryStorage().then(() => clearRideDraft()).catch(() => undefined);
       router.replace('/(tabs)/history');
       // Safe now: this screen renders from the mount-captured summary, so
       // resetting the store can't blank it mid-transition.
@@ -294,6 +302,7 @@ export default function RideCompleteScreen() {
           />
         </View>
 
+        <HistorySaveStatus />
         <TouchableOpacity style={styles.saveButton} onPress={handleSave} activeOpacity={0.85}>
           <LinearGradient
             colors={colors.gradientPrimary}

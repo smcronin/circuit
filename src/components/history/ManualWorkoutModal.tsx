@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,8 @@ import { generateManualWorkoutMetadata } from '@/services/openrouter/client';
 import { ManualWorkoutMetadataResponse } from '@/types/llm';
 import { useHistoryStore, useUserStore } from '@/stores';
 import { formatDate } from '@/utils';
+import { persistWorkoutHistory } from '@/services/historySync';
+import type { WorkoutSession } from '@/types/workout';
 
 type ModalStep = 'form' | 'loading' | 'preview';
 
@@ -53,6 +55,7 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const pendingSession = useRef<WorkoutSession | null>(null);
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [customDurationText, setCustomDurationText] = useState('');
 
@@ -60,6 +63,7 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
   const addSession = useHistoryStore((state) => state.addSession);
 
   const resetModal = useCallback(() => {
+    pendingSession.current = null;
     setStep('form');
     setFormData({
       title: '',
@@ -111,18 +115,20 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
   };
 
   const handleSave = async () => {
-    if (!metadata) return;
+    if (!metadata || saving) return;
 
     setSaving(true);
     try {
-      const session = createManualWorkoutSession({
+      const session = pendingSession.current || createManualWorkoutSession({
         title: formData.title,
         description: formData.description,
         durationMinutes: formData.durationMinutes,
         date: formData.date,
         metadata,
       });
+      pendingSession.current = session;
       addSession(session);
+      if (!await persistWorkoutHistory()) throw new Error('Workout could not be saved. Please retry before closing.');
       handleClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save workout');

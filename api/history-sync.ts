@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
+import { historyFromSessions, mergeHistory, stableJson, type HistoryData } from '../src/utils/historyMerge';
+import type { WorkoutHistory, WorkoutSession } from '../src/types/workout';
+import type { SummarizedWorkoutHistory } from '../src/types/llm';
 
 interface VercelRequest {
   method?: string;
@@ -24,6 +27,8 @@ interface HistorySyncBody {
   history?: unknown;
   workoutSummary?: unknown;
   sourceUpdatedAt?: unknown;
+  protocolVersion?: unknown;
+  deletedSessions?: unknown;
 }
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
@@ -63,6 +68,32 @@ function ensureSchema(sql: NeonQueryFunction<false, false>): Promise<void> {
         )
       `;
 
+      await sql`
+        ALTER TABLE circuit_history_snapshots
+          ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 0,
+          ADD COLUMN IF NOT EXISTS deleted_sessions JSONB NOT NULL DEFAULT '{}'::JSONB
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS circuit_workout_versions (
+          owner_hash TEXT NOT NULL,
+          session_id TEXT NOT NULL,
+          content_hash TEXT NOT NULL,
+          session JSONB NOT NULL,
+          first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (owner_hash, session_id, content_hash)
+        )
+      `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS circuit_history_sync_events (
+          owner_hash TEXT NOT NULL,
+          revision INTEGER NOT NULL,
+          received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          incoming_count INTEGER NOT NULL,
+          session_versions JSONB NOT NULL,
+          history_metadata JSONB NOT NULL,
+          PRIMARY KEY (owner_hash, revision)
+        )
+      `;
       await sql`
         CREATE OR REPLACE VIEW circuit_workout_sessions AS
         SELECT
@@ -191,12 +222,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(413).json({ ok: false, error: 'Workout history is too large' });
     }
 
+    if (body.history.sessions.some(session => !isJsonObject(session) || typeof session.id !== 'string' || !session.id || session.id.length > 200 || !isJsonObject(session.workout))) {
+      return res.status(400).json({ ok: false, error: 'Invalid workout session' });
+    }
+    const deletedSessions = body.protocolVersion === 2 && isJsonObject(body.deletedSessions) ? body.deletedSessions : {};
+    if (Object.entries(deletedSessions).some(([id, at]) => !id || id.length > 200 || typeof at !== 'string' || !Number.isFinite(Date.parse(at)))) {
+      return res.status(400).json({ ok: false, error: 'Invalid workout deletion' });
+    }
+
     const sourceUpdatedAt =
       typeof body.sourceUpdatedAt === 'string' && !Number.isNaN(Date.parse(body.sourceUpdatedAt))
         ? body.sourceUpdatedAt
         : new Date().toISOString();
     const historyJson = JSON.stringify(body.history);
-    const summaryJson = body.workoutSummary == null ? null : JSON.stringify(body.workoutSummary);
 
     if (Buffer.byteLength(historyJson, 'utf8') > MAX_PAYLOAD_BYTES) {
       return res.status(413).json({ ok: false, error: 'Workout history is too large to sync' });
@@ -206,35 +244,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const sql = getSql();
     await ensureSchema(sql);
 
-    await sql`
-      INSERT INTO circuit_history_snapshots (
-        owner_hash,
-        session_count,
-        history,
-        workout_summary,
-        source_updated_at,
-        server_updated_at
-      ) VALUES (
-        ${ownerHash},
-        ${body.history.sessions.length},
-        ${historyJson}::JSONB,
-        ${summaryJson}::JSONB,
-        ${sourceUpdatedAt}::TIMESTAMPTZ,
-        NOW()
-      )
-      ON CONFLICT (owner_hash) DO UPDATE SET
-        session_count = EXCLUDED.session_count,
-        history = EXCLUDED.history,
-        workout_summary = EXCLUDED.workout_summary,
-        source_updated_at = EXCLUDED.source_updated_at,
-        server_updated_at = NOW()
-    `;
-
-    return res.status(200).json({
-      ok: true,
-      syncedSessions: body.history.sessions.length,
-      syncedAt: new Date().toISOString(),
-    });
+    const incoming: HistoryData = {
+      history: body.history as unknown as WorkoutHistory,
+      workoutSummary: body.workoutSummary as SummarizedWorkoutHistory | undefined,
+      deletedSessions: deletedSessions as Record<string, string>,
+    };
+    // Missing IDs are never deletions, including uploads from older app builds.
+    await sql`INSERT INTO circuit_history_snapshots (owner_hash, session_count, history, source_updated_at)
+      VALUES (${ownerHash}, 0, ${JSON.stringify(historyFromSessions([]))}::JSONB, ${sourceUpdatedAt}::TIMESTAMPTZ)
+      ON CONFLICT (owner_hash) DO NOTHING`;
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const [row] = await sql`SELECT history, workout_summary, deleted_sessions, revision, source_updated_at, server_updated_at FROM circuit_history_snapshots WHERE owner_hash = ${ownerHash}`;
+      const previous: HistoryData = { history: row.history, workoutSummary: row.workout_summary || undefined, deletedSessions: row.deleted_sessions };
+      const merged = mergeHistory(previous, incoming);
+      const changed = stableJson(previous) !== stableJson(merged);
+      const nextRevision = row.revision + 1;
+      const reply = (revision: number) => res.status(200).json({
+        ok: true, syncedSessions: merged.history.sessions.length, syncedAt: new Date().toISOString(), revision,
+        ...(body.protocolVersion === 2 ? { ...merged, protocolVersion: 2 } : {}),
+      });
+      if (!changed && row.revision > 0) return reply(row.revision);
+      const fingerprint = (session: WorkoutSession) => createHash('sha256').update(stableJson(session)).digest('hex');
+      const previousHashes = new Set(previous.history.sessions.map(fingerprint));
+      const versions = [...(row.revision === 0 ? previous.history.sessions : []), ...incoming.history.sessions, ...merged.history.sessions]
+        .filter(session => row.revision === 0 || !previousHashes.has(fingerprint(session)))
+        .map(session => ({ session_id: session.id, content_hash: fingerprint(session), session }));
+      const manifest = merged.history.sessions.map(session => ({ id: session.id, hash: fingerprint(session) }));
+      const { sessions: _sessions, ...totals } = merged.history;
+      const metadata = { ...totals, workoutSummary: merged.workoutSummary, deletedSessions: merged.deletedSessions };
+      const { sessions: _previousSessions, ...previousTotals } = previous.history;
+      // Compare-and-swap prevents concurrent phones/tabs from dropping each other's
+      // changes. Versions and the reconstructable manifest commit with the snapshot.
+      const [updated] = await sql.transaction([
+        sql`UPDATE circuit_history_snapshots SET history = ${JSON.stringify(merged.history)}::JSONB,
+          session_count = ${merged.history.sessions.length}, workout_summary = ${JSON.stringify(merged.workoutSummary || null)}::JSONB,
+          deleted_sessions = ${JSON.stringify(merged.deletedSessions)}::JSONB, revision = ${nextRevision},
+          source_updated_at = ${sourceUpdatedAt}::TIMESTAMPTZ, server_updated_at = NOW()
+          WHERE owner_hash = ${ownerHash} AND revision = ${row.revision} RETURNING revision`,
+        sql`INSERT INTO circuit_workout_versions (owner_hash, session_id, content_hash, session)
+          SELECT ${ownerHash}, v.session_id, v.content_hash, v.session
+          FROM jsonb_to_recordset(${JSON.stringify(versions)}::JSONB) AS v(session_id TEXT, content_hash TEXT, session JSONB)
+          WHERE EXISTS (SELECT 1 FROM circuit_history_snapshots WHERE owner_hash = ${ownerHash} AND revision = ${nextRevision})
+          ON CONFLICT DO NOTHING`,
+        sql`INSERT INTO circuit_history_sync_events (owner_hash, revision, incoming_count, session_versions, history_metadata)
+          SELECT ${ownerHash}, ${nextRevision}, ${incoming.history.sessions.length}, ${JSON.stringify(manifest)}::JSONB, ${JSON.stringify(metadata)}::JSONB
+          WHERE EXISTS (SELECT 1 FROM circuit_history_snapshots WHERE owner_hash = ${ownerHash} AND revision = ${nextRevision})
+          ON CONFLICT DO NOTHING`,
+        ...(row.revision === 0 ? [sql`INSERT INTO circuit_history_sync_events (owner_hash, revision, incoming_count, session_versions, history_metadata)
+          VALUES (${ownerHash}, 0, ${previous.history.sessions.length}, ${JSON.stringify(previous.history.sessions.map(session => ({ id: session.id, hash: fingerprint(session) })))}::JSONB,
+          ${JSON.stringify({ ...previousTotals, workoutSummary: previous.workoutSummary, deletedSessions: previous.deletedSessions, sourceUpdatedAt: row.source_updated_at, serverUpdatedAt: row.server_updated_at })}::JSONB)
+          ON CONFLICT DO NOTHING`] : []),
+      ]);
+      if (updated.length) {
+        console.info('Circuit history saved', { owner: ownerHash.slice(0, 12), revision: nextRevision, incoming: incoming.history.sessions.length, stored: merged.history.sessions.length, deleted: Object.keys(merged.deletedSessions || {}).length });
+        return reply(nextRevision);
+      }
+    }
+    return res.status(409).json({ ok: false, error: 'History changed during sync. Please retry.' });
   } catch (error) {
     console.error('Circuit history sync failed', error);
     return res.status(503).json({ ok: false, error: 'Workout history sync failed' });
