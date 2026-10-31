@@ -5080,6 +5080,579 @@ const OCTOBER_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...OCTOBER_MID_CYCLE_RECOVERY_OVERRIDES,
 ];
 
+type NovemberPhase = 1 | 2 | 3 | 4;
+type NovemberClimbingStyle = 'flow' | 'compression' | 'tension' | 'footwork';
+
+const NOVEMBER_PHASE_LABELS: Record<NovemberPhase, string> = {
+  1: 'Base',
+  2: 'Build',
+  3: 'Density',
+  4: 'Consolidate',
+};
+
+function novemberStrengthWarmUp(day: OctoberStrengthDay, phase: NovemberPhase): ExerciseSeed[] {
+  return octoberStrengthWarmUp(day, phase);
+}
+
+function novemberStrengthCoolDown(day: OctoberStrengthDay): ExerciseSeed[] {
+  return octoberStrengthCoolDown(day);
+}
+
+function novemberMondayStrength(date: string, phase: NovemberPhase): ProgrammedWorkout {
+  const variations: Record<NovemberPhase, { name: string; coachNotes: string; description: string; circuits: CircuitSeed[]; partingWords: string }> = {
+    1: {
+      name: 'Kettlebell Floor Press and Pull',
+      coachNotes: 'Base Monday at RPE 7. Use the kettlebell for unilateral floor pressing because the adjustable dumbbells no longer provide enough load. Keep every press and pull clear of head, neck, shoulder, or right-biceps warning.',
+      description: 'A compact whole-body base session for kettlebell power, vertical pulling, unilateral floor pressing, ground flow, hamstrings, and anti-rotation.',
+      circuits: [
+        { name: 'Power, Pull, and Floor Press', rounds: 3, restBetweenRounds: 65, restBetweenExercises: 12, exercises: [
+          ex('Two-Hand Kettlebell Swing', 40, 'Use ten to twelve crisp reps and park the bell before speed or brace changes.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 12 }),
+          ex('Neutral-Grip Pull-ups', 35, 'Use four to six clean reps with one or two still available.', ['lats', 'back', 'biceps'], ['Pull-up Bar'], { targetReps: 6 }),
+          ex('Single-Arm Kettlebell Floor Press - Alternating', 60, 'Press on the left, then switch right halfway. Keep the wrist neutral and stop for overhead-pressure or neck warning.', ['chest', 'triceps', 'shoulders', 'core'], ['Kettlebell', 'Yoga Mat'], { switchSides: true }),
+          ex('Frogger Step-Through', 45, 'Step through smoothly at a left-knee-friendly depth.', ['hips', 'adductors', 'shoulders', 'core'], ['Yoga Mat']),
+        ] },
+        { name: 'Hamstrings and Trunk', rounds: 2, restBetweenRounds: 40, restBetweenExercises: 10, exercises: [
+          ex('Fitness Ball Hamstring Curl', 45, 'Keep the hips lifted and use a controlled curl.', ['hamstrings', 'glutes', 'core'], ['Fitness Ball', 'Yoga Mat']),
+          ex('Heavy-Band Pallof Press - Alternating', 60, 'Press from the left anchor, then switch to the right anchor halfway without rotating.', ['core', 'obliques', 'shoulders'], ['Resistance Bands'], { switchSides: true }),
+          ex('Ring Tuck Support Hold', 35, 'Use one stable support height and stop before the shoulders sag.', ['core', 'hip flexors', 'shoulders', 'triceps'], ['Gymnastic Rings']),
+        ] },
+      ],
+      partingWords: 'Build from the recovered baseline; no catch-up work is needed.',
+    },
+    2: {
+      name: 'Offset Hinge and Rack Strength',
+      coachNotes: 'Build Monday at RPE 7-8. Progress pulling and unilateral pressing without grinding overhead work. Clean only to a quiet rack unless the head, neck, and shoulders feel completely normal.',
+      description: 'Offset hinge strength, controlled pulling, kettlebell floor pressing, crawling, rack practice, and compression.',
+      circuits: [
+        { name: 'Offset Strength', rounds: 3, restBetweenRounds: 65, restBetweenExercises: 12, exercises: [
+          ex('Kickstand Kettlebell Romanian Deadlift - Alternating', 60, 'Load the left side, then switch right halfway with a square pelvis.', ['hamstrings', 'glutes', 'core'], ['Kettlebell'], { switchSides: true }),
+          ex('Chest-to-Bar Pull-up Cluster', 40, 'Use four to six clean reps and stop before the right-biceps line changes.', ['lats', 'back', 'biceps'], ['Pull-up Bar'], { targetReps: 6 }),
+          ex('Single-Arm Kettlebell Floor Press - Alternating', 60, 'Press on the left, then switch right halfway with a quiet wrist and ribs.', ['chest', 'triceps', 'shoulders', 'core'], ['Kettlebell', 'Yoga Mat'], { switchSides: true }),
+          ex('Bear Crawl Compass', 45, 'Crawl in four directions with quiet hips and a comfortable knee angle.', ['core', 'shoulders', 'quads'], ['Yoga Mat']),
+        ] },
+        { name: 'Rack and Compression', rounds: 2, restBetweenRounds: 50, restBetweenExercises: 12, exercises: [
+          ex('50 lb Kettlebell Clean to Rack - Right', 45, 'Use three quiet catches without turning this into a press test.', ['glutes', 'back', 'shoulders', 'core'], ['Kettlebell'], { targetReps: 3 }),
+          ex('50 lb Kettlebell Clean to Rack - Left', 45, 'Match the right only while the catch and wrist remain quiet.', ['glutes', 'back', 'shoulders', 'core'], ['Kettlebell'], { targetReps: 3 }),
+          ex('Hollow-to-Tuck Rock', 40, 'Rock only while the low back stays heavy.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ] },
+      ],
+      partingWords: 'Add strength through cleaner positions, not through a forced overhead rep.',
+    },
+    3: {
+      name: 'Power and Trunk Density',
+      coachNotes: 'Dense Monday at RPE 8. Keep swings crisp, pull-ups submaximal, and pressing horizontal. Finish the second circuit with enough trunk quality left to move cleanly.',
+      description: 'A dense whole-body power circuit with pulling, weighted horizontal pressing, compression, locomotion, and loaded anti-lateral-flexion work.',
+      circuits: [
+        { name: 'Power and Compression', rounds: 3, restBetweenRounds: 55, restBetweenExercises: 10, exercises: [
+          ex('Dead-Stop Kettlebell Swing', 40, 'Reset every rep and use ten powerful repetitions.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 10 }),
+          ex('Mixed-Grip Pull-up Set', 40, 'Choose a strong grip and stop one clean rep before failure.', ['lats', 'back', 'biceps'], ['Pull-up Bar'], { targetReps: 5 }),
+          ex('Weighted Vest Pushup', 40, 'Use the vest only while the plank and shoulder position stay crisp.', ['chest', 'triceps', 'core'], ['Weight Vest', 'Yoga Mat'], { targetReps: 10 }),
+          ex('Hollow Body March', 40, 'Alternate legs without letting the ribs lift.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ] },
+        { name: 'Travel and Carry', rounds: 2, restBetweenRounds: 40, restBetweenExercises: 10, exercises: [
+          ex('Lateral Ape Travel', 45, 'Travel side to side with soft hands and a knee-comfortable squat depth.', ['hips', 'adductors', 'shoulders', 'core'], ['Yoga Mat']),
+          ex('Kettlebell Front-Rack March - Alternating', 60, 'March with the bell on the left, then switch right halfway without leaning.', ['core', 'shoulders', 'hips'], ['Kettlebell'], { switchSides: true }),
+          ex('Heavy-Band Pallof Press - Alternating', 60, 'Press from the left anchor, then switch to the right anchor halfway.', ['core', 'obliques', 'shoulders'], ['Resistance Bands'], { switchSides: true }),
+        ] },
+      ],
+      partingWords: 'Density is useful only while the positions remain yours.',
+    },
+    4: {
+      name: 'Hinge, Scapula, and Core Deload',
+      coachNotes: 'Thanksgiving-week deload at RPE 5-6. Reduce rounds and tension while keeping hinge, scapular, pressing, flow, and direct trunk work.',
+      description: 'A reduced-volume whole-body session for hinge mechanics, scapular control, easy pressing, ground flow, and trunk support.',
+      circuits: [
+        { name: 'Deload Strength Flow', rounds: 2, restBetweenRounds: 70, restBetweenExercises: 15, exercises: [
+          ex('Kettlebell Deadlift', 45, 'Use eight smooth reps and keep the bell close.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 8 }),
+          ex('Scapular Pull-ups', 35, 'Move only through the shoulder blades with a relaxed neck.', ['lats', 'lower traps', 'shoulders'], ['Pull-up Bar']),
+          ex('Floor Pushup Easy Tempo', 40, 'Use controlled reps with two or three still available.', ['chest', 'triceps', 'core'], ['Yoga Mat'], { targetReps: 8 }),
+          ex('Loaded Beast Rock', 45, 'Rock back smoothly with quiet shoulders and a comfortable left-knee angle.', ['shoulders', 'core', 'hips', 'quads'], ['Yoga Mat']),
+        ] },
+        { name: 'Core Rehearsal', rounds: 2, restBetweenRounds: 35, restBetweenExercises: 10, exercises: [
+          ex('Ring Tuck Support Hold', 35, 'Use one stable support height and stop before shoulder position changes.', ['core', 'hip flexors', 'shoulders', 'triceps'], ['Gymnastic Rings']),
+          ex('Cross-Body Dead Bug', 40, 'Reach opposite arm and leg while the ribs and pelvis stay quiet.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ] },
+      ],
+      partingWords: 'Leave the holiday week fresher than you entered it.',
+    },
+  };
+  const variation = variations[phase];
+  return programmedWorkout({
+    id: `program-2026-11-${phase}-monday-strength-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: variation.coachNotes,
+    name: `${NOVEMBER_PHASE_LABELS[phase]}: ${variation.name}`,
+    description: variation.description,
+    difficulty: phase === 3 ? 'advanced' : 'intermediate',
+    targetDurationMinutes: phase === 4 ? 20 : 30,
+    estimatedCalories: phase === 4 ? 205 : 250,
+    calorieRange: phase === 4 ? { low: 165, high: 250 } : { low: 205, high: 305 },
+    focusAreas: ['strength', 'conjugate training', 'posterior chain', 'pulling', 'trunk strength'],
+    muscleGroupsTargeted: ['glutes', 'hamstrings', 'back', 'lats', 'chest', 'shoulders', 'core'],
+    warmUp: novemberStrengthWarmUp('monday', phase),
+    circuits: variation.circuits,
+    coolDown: novemberStrengthCoolDown('monday'),
+    partingWords: variation.partingWords,
+  });
+}
+
+function novemberThursdayStrength(date: string, phase: NovemberPhase): ProgrammedWorkout {
+  const variations: Record<NovemberPhase, { name: string; coachNotes: string; circuits: CircuitSeed[]; partingWords: string }> = {
+    1: {
+      name: 'Loaded Lunge and Handstand Line',
+      coachNotes: 'Compact Thursday at RPE 6-7. Add modest load to the reverse lunge, but keep handstand work isometric unless there is no head, neck, shoulder, or wrist warning.',
+      circuits: [
+        { name: 'Loaded Control', rounds: 3, restBetweenRounds: 55, restBetweenExercises: 12, exercises: [
+          ex('Goblet Reverse Lunge - Alternating', 60, 'Use a light dumbbell or vest while lunging on the left, then switch right halfway. Shorten range for knee warning.', ['quads', 'glutes', 'hamstrings', 'core'], ['Dumbbells', 'Weight Vest'], { switchSides: true }),
+          ex('Wall Handstand Isometric', 35, 'Hold a stacked line without pressing. Exit for pressure, headache, neck, shoulder, or wrist warning.', ['shoulders', 'triceps', 'core'], ['Yoga Mat']),
+          ex('Band Reverse Fly', 40, 'Open the band with a relaxed neck and quiet ribs.', ['rear delts', 'upper back'], ['Resistance Bands'], { targetReps: 12 }),
+          ex('Dead Bug Cross-Press', 40, 'Press hand to opposite knee while the pelvis stays quiet.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ] },
+        { name: 'Knee and Lateral Core', rounds: 2, restBetweenRounds: 30, restBetweenExercises: 10, exercises: [
+          ex('Wall Tibialis Raise', 40, 'Use controlled toe raises and stop for knee warning.', ['tibialis anterior', 'ankles'], undefined, { targetReps: 15 }),
+          ex('Supported Cossack Rock - Alternating', 70, 'Explore the improving left side, then switch right halfway without forcing either knee or the right hamstring.', ['adductors', 'quads', 'hips', 'hamstrings'], ['Gymnastic Rings'], { switchSides: true }),
+          ex('Side Plank Reach - Alternating', 60, 'Reach from the left side, then switch right halfway with a long trunk line.', ['obliques', 'shoulders', 'glutes'], ['Yoga Mat'], { switchSides: true }),
+        ] },
+      ],
+      partingWords: 'A little more leg load, a little less overhead uncertainty.',
+    },
+    2: {
+      name: 'Pistol Sets and Pike Press',
+      coachNotes: 'Build Thursday at RPE 7. Treat two to three clean pistol reps per side as the working dose. Use pike pressing by default and full-range handstand-pushup reps only when every warning signal is absent.',
+      circuits: [
+        { name: 'Low-Rep Control', rounds: 3, restBetweenRounds: 60, restBetweenExercises: 12, exercises: [
+          ex('Supported Pistol to Box - Alternating', 60, 'Use two or three clean reps on the left, then switch right halfway. Adjust box height and support for the knee.', ['quads', 'glutes', 'hamstrings', 'core'], ['Gymnastic Rings'], { switchSides: true, targetReps: 3 }),
+          ex('Elevated Pike Handstand Pushup', 40, 'Use controlled pike reps. Substitute up to three full-range wall reps only when there is no pressure, headache, neck, shoulder, or wrist warning.', ['shoulders', 'triceps', 'upper chest', 'core'], ['Yoga Mat'], { targetReps: 6 }),
+          ex('Heavy-Band Half-Kneeling Chop - Alternating', 60, 'Chop from the left anchor, then switch right halfway with the pelvis square.', ['obliques', 'core', 'shoulders'], ['Resistance Bands', 'Yoga Mat'], { switchSides: true }),
+          ex('Band Wall Slide', 40, 'Slide overhead only through a symptom-free range with quiet ribs.', ['shoulders', 'serratus', 'upper back'], ['Resistance Bands']),
+        ] },
+        { name: 'Posterior Balance', rounds: 2, restBetweenRounds: 30, restBetweenExercises: 10, exercises: [
+          ex('Supported Hip Airplane - Alternating', 70, 'Open from the left hip, then switch right halfway without forcing the hamstring.', ['glutes', 'hamstrings', 'hips', 'core'], ['Gymnastic Rings'], { switchSides: true }),
+          ex('Dead Bug Band Pulldown', 45, 'Anchor a heavy-enough band and keep the ribs down.', ['core', 'lats'], ['Resistance Bands', 'Yoga Mat']),
+        ] },
+      ],
+      partingWords: 'Two excellent pistol reps beat five compromised ones.',
+    },
+    3: {
+      name: 'Loaded Split Stance and Shoulder Balance',
+      coachNotes: 'Density Thursday at RPE 7. Keep the leg work loaded but supported, and use shoulder balance rather than high-tension pressing after Monday.',
+      circuits: [
+        { name: 'Split-Stance Density', rounds: 3, restBetweenRounds: 50, restBetweenExercises: 10, exercises: [
+          ex('Front-Rack Reverse Lunge - Alternating', 60, 'Hold a manageable load while lunging on the left, then switch right halfway.', ['quads', 'glutes', 'hamstrings', 'core'], ['Kettlebell'], { switchSides: true }),
+          ex('Wall Handstand Heel Pull-Away', 40, 'Float the heels only while the line and head pressure remain quiet.', ['shoulders', 'triceps', 'core'], ['Yoga Mat']),
+          ex('Band External Rotation - Alternating', 60, 'Rotate on the left, then switch right halfway with the elbow near the ribs.', ['rotator cuff', 'rear delts'], ['Resistance Bands'], { switchSides: true }),
+          ex('Short-Lever Copenhagen Plank - Alternating', 60, 'Use the knee-supported hold on the left, then switch right halfway.', ['adductors', 'obliques', 'shoulders'], ['Yoga Mat'], { switchSides: true }),
+        ] },
+        { name: 'Lower-Leg and Trunk Finish', rounds: 2, restBetweenRounds: 25, restBetweenExercises: 10, exercises: [
+          ex('Wall Tibialis Raise', 40, 'Use smooth toe raises and stop for knee or shin warning.', ['tibialis anterior', 'ankles'], undefined, { targetReps: 15 }),
+          ex('Glute Bridge March', 45, 'Keep the pelvis level while alternating legs.', ['glutes', 'hamstrings', 'core'], ['Yoga Mat']),
+          ex('Cross-Body Dead Bug', 40, 'Reach opposite arm and leg without lifting the ribs.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ] },
+      ],
+      partingWords: 'Build density without stacking another high-tension press day.',
+    },
+    4: {
+      name: 'Holiday Cossack and Core Reset',
+      coachNotes: 'Optional compact Thanksgiving session at RPE 5-6. Keep it restorative, include direct trunk work, and stop well before fatigue changes the head, neck, shoulders, back, or knee.',
+      circuits: [
+        { name: 'Holiday Movement Reset', rounds: 2, restBetweenRounds: 55, restBetweenExercises: 12, exercises: [
+          ex('Counterbalanced Cossack Shift - Alternating', 70, 'Shift into the left side, then switch right halfway with a light counterbalance and no forced depth.', ['adductors', 'quads', 'hips', 'hamstrings'], ['Dumbbells'], { switchSides: true }),
+          ex('Wall Handstand Line Drill', 35, 'Use an easy line hold or substitute a pike hold; no pressing is required.', ['shoulders', 'triceps', 'core'], ['Yoga Mat']),
+          ex('Band Reverse Fly Easy Tempo', 40, 'Open the band slowly with a relaxed neck.', ['rear delts', 'upper back'], ['Resistance Bands']),
+          ex('Dead Bug with Reach', 40, 'Reach long while the low back stays heavy.', ['core', 'hip flexors'], ['Yoga Mat']),
+          ex('Glute Bridge March', 45, 'Alternate legs while the pelvis stays level.', ['glutes', 'hamstrings', 'core'], ['Yoga Mat']),
+        ] },
+      ],
+      partingWords: 'A short reset counts. The holiday does not need a training debt.',
+    },
+  };
+  const variation = variations[phase];
+  return programmedWorkout({
+    id: `program-2026-11-${phase}-thursday-strength-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: variation.coachNotes,
+    name: `${NOVEMBER_PHASE_LABELS[phase]}: ${variation.name}`,
+    description: 'A compact Thursday strength-and-control session designed to complement Monday and leave different tissue stress for Friday.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: phase === 4 ? 18 : 28,
+    estimatedCalories: phase === 4 ? 150 : 215,
+    calorieRange: phase === 4 ? { low: 115, high: 190 } : { low: 170, high: 265 },
+    focusAreas: ['strength', 'single-leg control', 'shoulder balance', 'core', 'joint health'],
+    muscleGroupsTargeted: ['quads', 'glutes', 'shoulders', 'upper back', 'core', 'tibialis anterior'],
+    warmUp: novemberStrengthWarmUp('thursday', phase),
+    circuits: variation.circuits,
+    coolDown: novemberStrengthCoolDown('thursday'),
+    partingWords: variation.partingWords,
+  });
+}
+
+function novemberFridayStrength(date: string, phase: NovemberPhase): ProgrammedWorkout {
+  const variations: Record<NovemberPhase, { name: string; coachNotes: string; circuits: CircuitSeed[]; partingWords: string }> = {
+    1: {
+      name: 'Fixed Rings and Archer Press',
+      coachNotes: 'Friday at RPE 7. Set the rings once at chest height, keep pressing on the floor, and preserve the upper-body stimulus that worked on October 9.',
+      circuits: [
+        { name: 'Fixed Rings and Floor Press', rounds: 3, restBetweenRounds: 60, restBetweenExercises: 12, exercises: [
+          ex('Chest-Height Ring Row', 45, 'Keep one chest-height strap setting and drive the elbows back.', ['lats', 'back', 'biceps'], ['Gymnastic Rings']),
+          ex('Floor Archer Pushup - Alternating', 60, 'Press toward the left, then switch right halfway. Use a wider two-arm version before form changes.', ['chest', 'triceps', 'shoulders', 'core'], ['Yoga Mat'], { switchSides: true }),
+          ex('Kettlebell Romanian Deadlift', 45, 'Use a smooth hinge and stop before the back or hamstrings change position.', ['hamstrings', 'glutes', 'back', 'core'], ['Kettlebell']),
+          ex('Fitness Ball Body Saw', 40, 'Use a short range with stacked ribs.', ['core', 'shoulders', 'lats'], ['Fitness Ball', 'Yoga Mat']),
+        ] },
+        { name: 'Rotation and Hamstrings', rounds: 2, restBetweenRounds: 35, restBetweenExercises: 10, exercises: [
+          ex('Half-Kneeling 5 lb Windmill - Alternating', 60, 'Rotate on the left, then switch right halfway through the upper back.', ['shoulders', 'obliques', 'hips', 'thoracic spine'], ['Dumbbells', 'Yoga Mat'], { switchSides: true }),
+          ex('Fitness Ball Hamstring Curl', 45, 'Keep the hips lifted and curl through a controlled range.', ['hamstrings', 'glutes', 'core'], ['Fitness Ball', 'Yoga Mat']),
+        ] },
+      ],
+      partingWords: 'One ring height, strong lats, and a press that earns its place.',
+    },
+    2: {
+      name: 'Transition, Pull, and Separated Dips',
+      coachNotes: 'Friday at RPE 7-8. Keep the successful transition and chest-to-bar pairing, then take a full circuit break before submaximal dip clusters.',
+      circuits: [
+        { name: 'Transition, Pull, and Carry', rounds: 3, restBetweenRounds: 65, restBetweenExercises: 12, exercises: [
+          ex('Foot-Assisted Ring Transition', 45, 'Use the feet enough to keep the transition smooth and the shoulders comfortable.', ['lats', 'chest', 'triceps', 'shoulders', 'core'], ['Gymnastic Rings']),
+          ex('Chest-to-Bar Pull-ups', 40, 'Use five or six clean reps only while the right-biceps line stays quiet.', ['lats', 'back', 'biceps'], ['Pull-up Bar'], { targetReps: 6 }),
+          ex('Kettlebell Suitcase March - Alternating', 60, 'March with the bell on the left, then switch right halfway without leaning.', ['obliques', 'grip', 'hips'], ['Kettlebell'], { switchSides: true }),
+          ex('Hollow Body March', 40, 'Alternate legs while keeping the ribs down.', ['core', 'hip flexors'], ['Yoga Mat']),
+        ] },
+        { name: 'Separated Dip and Posterior Finish', rounds: 2, restBetweenRounds: 60, restBetweenExercises: 15, exercises: [
+          ex('High-Ring Dip Cluster', 40, 'After the full circuit break, use two or three clean reps with foot assistance available.', ['chest', 'triceps', 'shoulders'], ['Gymnastic Rings'], { targetReps: 3 }),
+          ex('Heavy-Band Face Pull', 45, 'Pull toward the eyebrows with external rotation and no shrugging.', ['rear delts', 'upper back', 'rotator cuff'], ['Resistance Bands']),
+          ex('Fitness Ball Hamstring Curl', 45, 'Keep the hips lifted and use a controlled curl.', ['hamstrings', 'glutes', 'core'], ['Fitness Ball', 'Yoga Mat']),
+        ] },
+      ],
+      partingWords: 'Keep the transition skill and chest stimulus without repeating September fatigue.',
+    },
+    3: {
+      name: 'Archer Pull and Ground Press Density',
+      coachNotes: 'Friday density at RPE 7-8 with different angles from Thursday. Use one chest-height ring setting, horizontal pressing, posterior-chain work, and a separate support finish.',
+      circuits: [
+        { name: 'Pull, Press, and Hinge', rounds: 3, restBetweenRounds: 55, restBetweenExercises: 10, exercises: [
+          ex('Chest-Height Ring Archer Row - Alternating', 60, 'Row toward the left hand, then switch right halfway at one fixed strap height.', ['lats', 'back', 'biceps', 'core'], ['Gymnastic Rings'], { switchSides: true }),
+          ex('Tempo Floor Pushup', 40, 'Lower for three seconds and press smoothly.', ['chest', 'triceps', 'core'], ['Yoga Mat'], { targetReps: 8 }),
+          ex('Kettlebell High Pull Technique', 40, 'Use crisp hip drive and stop below any shoulder or neck warning.', ['glutes', 'hamstrings', 'upper back', 'shoulders'], ['Kettlebell']),
+          ex('Fitness Ball Stir-the-Pot', 40, 'Make small circles without letting the low back sag.', ['core', 'shoulders'], ['Fitness Ball', 'Yoga Mat']),
+        ] },
+        { name: 'Support and Posture', rounds: 2, restBetweenRounds: 40, restBetweenExercises: 10, exercises: [
+          ex('Ring Tuck Support Hold', 35, 'At support height, accumulate clean time before the shoulders sag.', ['core', 'hip flexors', 'shoulders', 'triceps'], ['Gymnastic Rings']),
+          ex('Prone Swimmer', 45, 'Sweep the arms with a long neck and no pinch.', ['upper back', 'rear delts', 'shoulders'], ['Yoga Mat']),
+          ex('Kettlebell Suitcase March - Alternating', 60, 'March with the bell on the left, then switch right halfway.', ['obliques', 'grip', 'hips'], ['Kettlebell'], { switchSides: true }),
+        ] },
+      ],
+      partingWords: 'Different angles, clean density, and no overhead grind.',
+    },
+    4: {
+      name: 'Fixed-Ring Pull and Core Deload',
+      coachNotes: 'Friday deload at RPE 5-6. Keep one chest-height ring setup, easy floor pressing, a light hinge, and direct trunk work.',
+      circuits: [
+        { name: 'Fixed-Height Deload', rounds: 2, restBetweenRounds: 65, restBetweenExercises: 15, exercises: [
+          ex('Chest-Height Ring Row Easy Tempo', 45, 'Use one fixed ring height and leave several reps in reserve.', ['lats', 'back', 'biceps'], ['Gymnastic Rings']),
+          ex('Floor Archer Pushup Easy Range - Alternating', 60, 'Press toward the left, then switch right halfway in an easy range.', ['chest', 'triceps', 'shoulders', 'core'], ['Yoga Mat'], { switchSides: true }),
+          ex('Kettlebell Deadlift', 45, 'Use eight smooth reps with a quiet back.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 8 }),
+          ex('Bird Dog with Reach', 45, 'Reach long without rotating the pelvis.', ['core', 'glutes', 'shoulders'], ['Yoga Mat']),
+          ex('Prone Swimmer', 45, 'Sweep the arms gently with a relaxed neck.', ['upper back', 'rear delts', 'shoulders'], ['Yoga Mat']),
+        ] },
+      ],
+      partingWords: 'Close the week mobile, organized, and ready to recover.',
+    },
+  };
+  const variation = variations[phase];
+  return programmedWorkout({
+    id: `program-2026-11-${phase}-friday-strength-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: variation.coachNotes,
+    name: `${NOVEMBER_PHASE_LABELS[phase]}: ${variation.name}`,
+    description: 'A complementary Friday strength session using different pressing, pulling, hinge, and trunk angles from Thursday.',
+    difficulty: phase === 3 ? 'advanced' : 'intermediate',
+    targetDurationMinutes: phase === 4 ? 20 : 30,
+    estimatedCalories: phase === 4 ? 185 : 240,
+    calorieRange: phase === 4 ? { low: 145, high: 225 } : { low: 190, high: 295 },
+    focusAreas: ['strength', 'rings', 'horizontal pull', 'horizontal press', 'posterior chain', 'core'],
+    muscleGroupsTargeted: ['back', 'lats', 'chest', 'triceps', 'hamstrings', 'glutes', 'core'],
+    warmUp: novemberStrengthWarmUp('friday', phase),
+    circuits: variation.circuits,
+    coolDown: novemberStrengthCoolDown('friday'),
+    partingWords: variation.partingWords,
+  });
+}
+
+function novemberClimbingWarmup(
+  date: string,
+  phase: NovemberPhase,
+  style: NovemberClimbingStyle,
+  sunday = false
+): ProgrammedWorkout {
+  const styleExercises: Record<NovemberClimbingStyle, ExerciseSeed[]> = {
+    flow: [
+      ex('Scapular Pushup Wave', 45, 'Flow through easy scapular motion without fatigue.', ['shoulders', 'serratus', 'upper back'], ['Yoga Mat']),
+      ex('Slow Beast to Down Dog', 55, 'Move smoothly through a comfortable shoulder and knee range.', ['shoulders', 'core', 'hips', 'calves'], ['Yoga Mat']),
+      ex('Shinbox to High-Step Stand', 60, 'Stand from each side with control and a symptom-free left-knee range.', ['hips', 'glutes', 'quads', 'core'], ['Yoga Mat']),
+    ],
+    compression: [
+      ex('Large-Edge Active Hang', 35, 'Use a comfortable edge and stop at finger, elbow, or right-biceps warning.', ['forearms', 'lats', 'shoulders'], ['Hangboard']),
+      ex('Counterbalanced High-Step Reach - Alternating', 60, 'Reach from the left side, then switch right halfway without forcing depth.', ['hips', 'glutes', 'quads', 'core'], ['Dumbbells'], { switchSides: true }),
+      ex('Hollow Tuck Compression', 40, 'Compress without turning the primer into a core workout.', ['core', 'hip flexors'], ['Yoga Mat']),
+    ],
+    tension: [
+      ex('Scapular Pull-up to Hollow', 40, 'Use easy shoulder-blade motion and a brief hollow position.', ['lats', 'lower traps', 'core'], ['Pull-up Bar']),
+      ex('Side Plank Flag Line - Alternating', 60, 'Build the flag line on the left, then switch right halfway.', ['obliques', 'shoulders', 'glutes'], ['Yoga Mat'], { switchSides: true }),
+      ex('Wall Hip-Turn Rehearsal - Alternating', 60, 'Turn the left hip toward the wall, then switch right halfway with quiet feet.', ['hips', 'glutes', 'core'], undefined, { switchSides: true }),
+    ],
+    footwork: [
+      ex('Band Wall Slide', 40, 'Keep the ribs quiet and use a symptom-free overhead range.', ['shoulders', 'serratus', 'upper back'], ['Resistance Bands']),
+      ex('Quiet Step-Through Rehearsal - Alternating', 60, 'Step through on the left, then switch right halfway with no impact.', ['hips', 'quads', 'glutes', 'core'], ['Yoga Mat'], { switchSides: true }),
+      ex('Standing Calf Balance - Alternating', 50, 'Balance on the left, then switch right halfway with a soft knee.', ['calves', 'ankles', 'feet'], undefined, { switchSides: true }),
+    ],
+  };
+  return programmedWorkout({
+    id: `program-2026-11-${phase}-${sunday ? 'sunday' : 'wednesday'}-climbing-${style}-${date}`,
+    date,
+    slot: 'Warm-up',
+    priority: 1,
+    coachNotes: 'Low-fatigue climbing preparation only. Finish before grip, pulling, or trunk fatigue. Keep fingers, right biceps, head, neck, shoulders, and left knee symptom-led.',
+    name: `${NOVEMBER_PHASE_LABELS[phase]}: ${style === 'flow' ? 'Ground-Flow and Quiet-Feet' : style === 'compression' ? 'Compression and High-Step' : style === 'tension' ? 'Body-Tension and Flagging' : 'Quiet-Feet and Lateral-Hip'} Climbing Primer`,
+    description: 'A short climbing primer for temperature, wrists and fingers, scapular control, hips, and trunk position without stealing from the climbing session.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 7,
+    estimatedCalories: 55,
+    calorieRange: { low: 35, high: 75 },
+    focusAreas: ['climbing', 'warm-up', 'movement quality', 'mobility', 'joint preparation'],
+    muscleGroupsTargeted: ['forearms', 'shoulders', 'back', 'hips', 'core'],
+    warmUp: [
+      ex('Jump Rope Easy Bounce or Fast March', 60, 'Build temperature gently and stop before breathing becomes hard.', ['cardiovascular system', 'calves', 'coordination'], ['Jump Rope']),
+      ex('Wrist Rocks and Finger Waves', 50, 'Move gently without hard squeezing.', ['wrists', 'forearms', 'fingers']),
+      ...styleExercises[style],
+    ],
+    circuits: [],
+    coolDown: [],
+    partingWords: sunday ? 'Warm, organized, and ready for the longer climbing session.' : 'Finish fresh enough that the wall still gets every hard effort.',
+  });
+}
+
+function novemberAntagonistSnack(date: string, phase: NovemberPhase): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-11-${phase}-wednesday-antagonist-${date}`,
+    date,
+    slot: 'Snack',
+    priority: 2,
+    coachNotes: 'Optional after climbing or later in the day. Skip for shoulder, elbow, finger, head, neck, or unusual fatigue warning.',
+    name: `${NOVEMBER_PHASE_LABELS[phase]}: Band and Floor Posture Snack`,
+    description: 'A short optional antagonist and posture session using the floor and bands only.',
+    difficulty: 'beginner',
+    targetDurationMinutes: 10,
+    estimatedCalories: 50,
+    calorieRange: { low: 30, high: 70 },
+    focusAreas: ['posture', 'antagonist strength', 'shoulder balance', 'recovery'],
+    muscleGroupsTargeted: ['chest', 'triceps', 'rear delts', 'rotator cuff', 'core'],
+    circuits: [{ name: 'Band and Floor Balance', rounds: 2, restBetweenRounds: 25, restBetweenExercises: 8, exercises: [
+      ex('Floor Pushup Easy Tempo', 35, 'Use smooth reps with no shoulder strain.', ['chest', 'triceps', 'core'], ['Yoga Mat'], { targetReps: 8 }),
+      ex('Band Reverse Fly', 40, 'Open the band at chest height with soft elbows.', ['rear delts', 'upper back'], ['Resistance Bands'], { targetReps: 12 }),
+      ex('Band External Rotation - Alternating', 60, 'Rotate on the left, then switch right halfway with the elbow near the ribs.', ['rotator cuff', 'rear delts'], ['Resistance Bands'], { switchSides: true }),
+      ex('Reverse Plank', 40, 'Lift the chest and hips while keeping the neck relaxed.', ['posterior chain', 'shoulders', 'triceps'], ['Yoga Mat']),
+    ] }],
+    partingWords: 'Small, useful, and always subordinate to climbing recovery.',
+  });
+}
+
+function novemberZone2(date: string, phase: NovemberPhase): ProgrammedWorkout {
+  const workSeconds: Record<NovemberPhase, number> = { 1: 1800, 2: 2100, 3: 2400, 4: 1500 };
+  const targetMinutes: Record<NovemberPhase, number> = { 1: 35, 2: 40, 3: 45, 4: 30 };
+  const cooldowns: Record<NovemberPhase, ExerciseSeed[]> = {
+    1: [
+      ex('Calf Stretch - Alternating', 60, 'Stretch the left calf, then switch right halfway.', ['calves', 'ankles'], undefined, { switchSides: true }),
+      ex('Thoracic Open Book - Alternating', 60, 'Rotate on the left, then switch right halfway.', ['thoracic spine', 'chest'], ['Yoga Mat'], { switchSides: true }),
+    ],
+    2: [
+      ex('Half-Kneeling Hip Flexor Stretch - Alternating', 80, 'Open the left hip, then switch right halfway.', ['hip flexors', 'quads'], ['Yoga Mat'], { switchSides: true }),
+      ex('Supported Child Pose Side Reach - Alternating', 60, 'Reach left, then switch right halfway without forcing the shoulders.', ['lats', 'shoulders', 'thoracic spine'], ['Yoga Mat'], { switchSides: true }),
+    ],
+    3: [
+      ex('Hamstring Floss - Alternating', 70, 'Floss the left leg, then switch right halfway without forcing range.', ['hamstrings', 'calves'], ['Yoga Mat'], { switchSides: true }),
+      ex('Crocodile Breathing', 60, 'Let the trunk and breathing settle.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    4: [
+      ex('90/90 Hip Breathing', 60, 'Switch hip positions halfway and breathe easily.', ['hips', 'glutes'], ['Yoga Mat']),
+      ex('Standing Recovery Breathing', 60, 'Lengthen the exhale and relax the shoulders.', ['diaphragm', 'cardiovascular system']),
+    ],
+  };
+  return programmedWorkout({
+    id: `program-2026-11-${phase}-cold-weather-zone-2-${date}`,
+    date,
+    slot: 'Cardio',
+    priority: 1,
+    coachNotes: 'Cold-weather aerobic anchor: use a brisk outdoor walk with adequate layers or steady indoor marching. A comfortable-weather road ride of the same duration is equivalent. Keep full-sentence conversation possible.',
+    name: `${NOVEMBER_PHASE_LABELS[phase]}: Cold-Weather Zone 2`,
+    description: 'A boring, repeatable Zone 2 session that removes the need for an uncomfortably cold road ride. Choose brisk walking, indoor marching, or a comfortable-weather ride and keep the effort conversational.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: targetMinutes[phase],
+    estimatedCalories: phase === 3 ? 330 : 280,
+    calorieRange: phase === 3 ? { low: 255, high: 415 } : { low: 210, high: 360 },
+    focusAreas: ['cardio', 'Zone 2', 'aerobic base', 'recovery', 'longevity'],
+    muscleGroupsTargeted: ['cardiovascular system', 'quads', 'glutes', 'calves'],
+    warmUp: [
+      ex('Easy Walking or Marching Ramp', 180, 'Start easy and gradually find a smooth conversational pace.', ['cardiovascular system', 'quads', 'glutes', 'calves']),
+    ],
+    circuits: [{ name: 'Conversational Cold-Weather Zone 2', rounds: 1, restBetweenRounds: 0, restBetweenExercises: 0, exercises: [
+      ex('Brisk Zone 2 Walk or Indoor March', workSeconds[phase], 'Stay conversational. Use a road ride only when clothing and conditions make it comfortable and safe.', ['cardiovascular system', 'quads', 'glutes', 'calves']),
+    ] }],
+    coolDown: [
+      ex('Easy Walking Downshift', 180, 'Back off gradually and let breathing settle.', ['cardiovascular system', 'calves', 'hips']),
+      ...cooldowns[phase],
+    ],
+    partingWords: 'The aerobic habit matters more than the machine or the weather.',
+  });
+}
+
+function novemberMobilitySnack(date: string, phase: NovemberPhase, sunday = false): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-11-${phase}-${sunday ? 'sunday' : 'tuesday'}-mobility-${date}`,
+    date,
+    slot: 'Mobility',
+    priority: 2,
+    coachNotes: sunday
+      ? 'Optional after climbing or before bed. Keep forearm, shoulder, head, neck, back, and knee ranges easy.'
+      : 'Optional after Zone 2. Give the right hamstring unhurried range and keep the left knee symptom-led.',
+    name: `${NOVEMBER_PHASE_LABELS[phase]}: ${sunday ? 'Post-Climb Downshift' : 'Aerobic-Day Mobility Reset'}`,
+    description: 'A brief optional recovery flow for hips, thoracic spine, calves, forearms, shoulders, and breathing.',
+    difficulty: 'beginner',
+    targetDurationMinutes: 10,
+    estimatedCalories: 40,
+    calorieRange: { low: 25, high: 60 },
+    focusAreas: ['mobility', 'recovery', 'breathing', 'joint health'],
+    muscleGroupsTargeted: ['hips', 'calves', 'thoracic spine', 'shoulders'],
+    circuits: [{ name: sunday ? 'Post-Climb Reset' : 'Aerobic-Day Reset', rounds: 2, restBetweenRounds: 15, restBetweenExercises: 5, exercises: sunday
+      ? [
+          ex('Forearm Flexor Reset - Alternating', 50, 'Reset the left forearm, then switch right halfway.', ['forearms', 'wrists'], undefined, { switchSides: true }),
+          ex('Supported Child Pose Side Reach - Alternating', 60, 'Reach left, then switch right halfway without forcing the shoulders.', ['lats', 'shoulders', 'thoracic spine'], ['Yoga Mat'], { switchSides: true }),
+          ex('90/90 Hip Breathing', 60, 'Switch hip positions between rounds and breathe slowly.', ['hips', 'glutes'], ['Yoga Mat']),
+          ex('Supine Twist - Alternating', 60, 'Rotate left, then switch right halfway with a long exhale.', ['back', 'obliques'], ['Yoga Mat'], { switchSides: true }),
+        ]
+      : [
+          ex('Calf Stretch - Alternating', 60, 'Stretch the left calf, then switch right halfway.', ['calves', 'ankles'], undefined, { switchSides: true }),
+          ex('Supported Cossack Rock - Alternating', 70, 'Explore the left side, then switch right halfway without forcing the knee or hamstring.', ['adductors', 'quads', 'hips', 'hamstrings'], ['Gymnastic Rings'], { switchSides: true }),
+          ex('Thoracic Open Book - Alternating', 60, 'Rotate left, then switch right halfway and breathe easily.', ['thoracic spine', 'chest'], ['Yoga Mat'], { switchSides: true }),
+          ex('Crocodile Breathing', 55, 'Breathe into the floor and let the trunk settle.', ['diaphragm', 'low back'], ['Yoga Mat']),
+        ]
+    }],
+    partingWords: 'Ten easy minutes is enough when the purpose is recovery.',
+  });
+}
+
+function novemberJumpRopeVo2(date: string, phase: NovemberPhase): ProgrammedWorkout {
+  const recoverySeconds: Record<NovemberPhase, number> = { 1: 180, 2: 165, 3: 150, 4: 150 };
+  const workSeconds = phase === 4 ? 180 : 240;
+  const recovery = recoverySeconds[phase];
+  return programmedWorkout({
+    id: `program-2026-11-${phase}-jump-rope-${phase === 4 ? '4x3' : '4x4'}-${date}`,
+    date,
+    slot: 'Cardio',
+    priority: 1,
+    coachNotes: phase === 4
+      ? 'Deload to four controlled 3-minute intervals around RPE 7.'
+      : `High-aerobic anchor: four 4-minute intervals around RPE 8 with ${recovery} seconds of upright walking or marching recovery.`,
+    name: phase === 4 ? 'November Rope Consolidation: 4 × 3 Minutes' : `${NOVEMBER_PHASE_LABELS[phase]} Jump-Rope VO₂: 4 × 4 Minutes`,
+    description: 'Keep the fastest low-bounce or alternating-foot cadence that remains coordinated and repeatable. Recover upright. Use fast marching or low-impact step-ups for any foot, calf, Achilles, knee, or coordination warning.',
+    difficulty: phase === 4 ? 'intermediate' : 'advanced',
+    targetDurationMinutes: phase === 4 ? 33 : 37,
+    estimatedCalories: phase === 4 ? 290 : 335,
+    calorieRange: phase === 4 ? { low: 230, high: 360 } : { low: 270, high: 410 },
+    focusAreas: ['cardio', 'VO2 max', 'high-aerobic conditioning', 'coordination'],
+    muscleGroupsTargeted: ['cardiovascular system', 'calves', 'quads', 'glutes', 'core'],
+    warmUp: [
+      ex('Brisk Marching Ramp', 120, 'Start easy and build to a brisk march with relaxed arm swing.', ['cardiovascular system', 'hips', 'calves']),
+      ex('Ankle Rockers and Calf Raises', 120, 'Alternate ankle rocks with easy calf raises.', ['ankles', 'calves', 'feet']),
+      ex('Easy Low-Bounce Rope', 120, 'Use basic low-bounce or alternating-foot skipping.', ['cardiovascular system', 'calves', 'coordination'], ['Jump Rope']),
+      ex('Progressive Rope Primer', 120, 'Approach workout cadence gradually and finish coordinated.', ['cardiovascular system', 'calves', 'coordination'], ['Jump Rope']),
+    ],
+    circuits: [{ name: `Controlled 4 × ${workSeconds / 60}-Minute High-Aerobic Intervals`, rounds: 4, restBetweenRounds: recovery, restBetweenExercises: 0, exercises: [
+      ex(`Jump Rope VO₂ Interval - ${workSeconds / 60} Minutes`, workSeconds, `Work around RPE ${phase === 4 ? 7 : 8}. During each ${recovery}-second recovery, stay upright and walk or march easily.`, ['cardiovascular system', 'calves', 'quads', 'glutes', 'core'], ['Jump Rope']),
+    ] }],
+    coolDown: [
+      ex('Easy Walking Downshift', 150, 'Walk easily and let breathing settle.', ['cardiovascular system', 'calves', 'hips']),
+      ex('Calf Mobility - Alternating', 90, 'Stretch the left calf, then switch right halfway.', ['calves', 'ankles'], undefined, { switchSides: true }),
+      ex('Standing Recovery Breathing', 60, 'Lengthen the exhale while the shoulders relax.', ['diaphragm', 'cardiovascular system']),
+    ],
+    partingWords: phase === 4 ? 'Shorter intervals complete the deload.' : 'Record RPE, coordination, and every lower-leg signal.',
+  });
+}
+
+function novemberQualityCheck(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-11-quality-check-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Submaximal month-end quality check around RPE 7. Compare clean positions, not failure capacity. Stop with one or two reps available and avoid overhead grinding.',
+    name: 'November Quality Check: Power, Pull, Press, and Control',
+    description: 'A repeatable whole-body quality check for kettlebell power, pull-ups, loaded floor pressing, supported pistols, and trunk compression.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 30,
+    estimatedCalories: 245,
+    calorieRange: { low: 195, high: 300 },
+    focusAreas: ['strength', 'movement quality', 'benchmark', 'posterior chain', 'core'],
+    muscleGroupsTargeted: ['glutes', 'hamstrings', 'back', 'lats', 'chest', 'quads', 'core'],
+    warmUp: novemberStrengthWarmUp('monday', 1),
+    circuits: [
+      { name: 'Submaximal Quality Check', rounds: 3, restBetweenRounds: 70, restBetweenExercises: 15, exercises: [
+        ex('Two-Hand Kettlebell Swing', 40, 'Use twelve crisp reps and stop if power or brace changes.', ['glutes', 'hamstrings', 'back', 'core'], ['Kettlebell'], { targetReps: 12 }),
+        ex('Neutral-Grip Pull-ups', 35, 'Use up to five clean reps with one or two still available.', ['lats', 'back', 'biceps'], ['Pull-up Bar'], { targetReps: 5 }),
+        ex('Single-Arm Kettlebell Floor Press - Alternating', 60, 'Use five controlled reps on the left, then switch right halfway.', ['chest', 'triceps', 'shoulders', 'core'], ['Kettlebell', 'Yoga Mat'], { switchSides: true, targetReps: 5 }),
+        ex('Supported Pistol to Box - Alternating', 60, 'Use two or three clean reps on the left, then switch right halfway with support and a symptom-free depth.', ['quads', 'glutes', 'hamstrings', 'core'], ['Gymnastic Rings'], { switchSides: true, targetReps: 3 }),
+      ] },
+      { name: 'Compression Finish', rounds: 2, restBetweenRounds: 40, restBetweenExercises: 10, exercises: [
+        ex('Ring L-Sit or Tuck Support', 40, 'Choose the version that preserves a tall shoulder position.', ['core', 'hip flexors', 'shoulders', 'triceps'], ['Gymnastic Rings']),
+        ex('Cross-Body Dead Bug', 40, 'Reach opposite arm and leg while the ribs stay quiet.', ['core', 'hip flexors'], ['Yoga Mat']),
+      ] },
+    ],
+    coolDown: novemberStrengthCoolDown('monday'),
+    partingWords: 'Leave with useful markers and no recovery debt for December.',
+  });
+}
+
+function buildNovemberWeek(
+  startDate: string,
+  phase: NovemberPhase,
+  wednesdayStyle: NovemberClimbingStyle,
+  sundayStyle: NovemberClimbingStyle
+): ProgrammedWorkout[] {
+  return [
+    novemberMondayStrength(startDate, phase),
+    novemberZone2(addDays(startDate, 1), phase),
+    novemberMobilitySnack(addDays(startDate, 1), phase),
+    novemberClimbingWarmup(addDays(startDate, 2), phase, wednesdayStyle),
+    novemberAntagonistSnack(addDays(startDate, 2), phase),
+    novemberThursdayStrength(addDays(startDate, 3), phase),
+    novemberFridayStrength(addDays(startDate, 4), phase),
+    novemberJumpRopeVo2(addDays(startDate, 5), phase),
+    novemberClimbingWarmup(addDays(startDate, 6), phase, sundayStyle, true),
+    novemberMobilitySnack(addDays(startDate, 6), phase, true),
+  ];
+}
+
+const NOVEMBER_OPENING_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+  novemberClimbingWarmup('2026-11-01', 1, 'flow', true),
+  novemberMobilitySnack('2026-11-01', 1, true),
+];
+
+const NOVEMBER_TRAINING_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+  ...buildNovemberWeek('2026-11-02', 1, 'footwork', 'compression'),
+  ...buildNovemberWeek('2026-11-09', 2, 'tension', 'flow'),
+  ...buildNovemberWeek('2026-11-16', 3, 'compression', 'footwork'),
+  ...buildNovemberWeek('2026-11-23', 4, 'flow', 'tension'),
+];
+
+const NOVEMBER_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+  ...NOVEMBER_OPENING_PROGRAMMED_WORKOUTS,
+  ...NOVEMBER_TRAINING_PROGRAMMED_WORKOUTS,
+  novemberQualityCheck('2026-11-30'),
+];
+
 function buildTrainingWeek(startDate: string, phase: Phase, includeWeekend: boolean): ProgrammedWorkout[] {
   const monday = startDate;
   const tuesday = addDays(startDate, 1);
@@ -5111,7 +5684,7 @@ function buildTrainingWeek(startDate: string, phase: Phase, includeWeekend: bool
 }
 
 export const PROGRAM_START_DATE = '2026-06-29';
-export const PROGRAM_END_DATE = '2026-10-31';
+export const PROGRAM_END_DATE = '2026-11-30';
 
 const BASE_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...buildTrainingWeek('2026-06-29', 1, true),
@@ -5130,6 +5703,7 @@ export const PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...AUGUST_PROGRAMMED_WORKOUTS,
   ...SEPTEMBER_PROGRAMMED_WORKOUTS,
   ...OCTOBER_PROGRAMMED_WORKOUTS,
+  ...NOVEMBER_PROGRAMMED_WORKOUTS,
 ].sort((a, b) => a.date.localeCompare(b.date) || a.priority - b.priority);
 
 export function getProgrammedWorkoutsForDate(date: Date | string = new Date()): ProgrammedWorkout[] {
