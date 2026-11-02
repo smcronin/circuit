@@ -2,6 +2,29 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WeightEntry } from '@/types/workout';
+import { useUserStore } from './useUserStore';
+import { uuid } from '@/utils/uuid';
+import type { WeightChange } from '@/utils/weightSync';
+
+// Serialize the queue and entries together. A failed local write is observable
+// to sync callers; it must not silently discard an offline queue.
+let pendingWrite: Promise<void> = Promise.resolve();
+let writeError: unknown;
+export async function flushWeightStorage(): Promise<void> {
+  await pendingWrite;
+  if (writeError) throw writeError;
+}
+const weightStorage = {
+  getItem: (key: string) => AsyncStorage.getItem(key),
+  setItem: (key: string, value: string) => {
+    pendingWrite = pendingWrite.then(async () => {
+      try { await AsyncStorage.setItem(key, value); writeError = undefined; }
+      catch (error) { writeError = error; }
+    });
+    return pendingWrite;
+  },
+  removeItem: (key: string) => AsyncStorage.removeItem(key),
+};
 
 // Helper to get date string in local timezone (YYYY-MM-DD)
 const getLocalDateString = (date: Date): string => {
@@ -13,6 +36,10 @@ const getLocalDateString = (date: Date): string => {
 
 interface WeightState {
   entries: WeightEntry[];
+  pendingByOwner: Record<string, Record<string, WeightChange>>;
+  entryOwners: Record<string, string>;
+  lastMutationTime: number;
+  acknowledgeChanges: (owner: string, mutationIds: string[]) => void;
   addEntry: (entry: WeightEntry) => void;
   updateEntry: (id: string, updates: Partial<WeightEntry>) => void;
   removeEntry: (id: string) => void;
@@ -22,10 +49,42 @@ interface WeightState {
   clearEntries: () => void;
 }
 
+function queueChanges(state: WeightState, entries: WeightEntry[], removed: string[]): Partial<WeightState> {
+  const owner = useUserStore.getState().profile?.id;
+  if (!owner || owner.length < 10 || ['__proto__', 'constructor', 'prototype'].includes(owner)) return {};
+  const pending = { ...state.pendingByOwner[owner] };
+  const entryOwners = { ...state.entryOwners };
+  let lastMutationTime = state.lastMutationTime;
+  const change = (id: string, entry: WeightEntry | null) => {
+    lastMutationTime = Math.max(Date.now(), lastMutationTime + 1);
+    let timeZone: string | null = null;
+    try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { /* native may lack IANA zones */ }
+    pending[id] = { mutationId: uuid(), id, changedAt: new Date(lastMutationTime).toISOString(), entry,
+      localDate: entry ? getLocalDateString(new Date(entry.date)) : null, timeZone };
+    entryOwners[id] = owner;
+  };
+  // Only records explicitly saved by this version are eligible. Old data and
+  // imports never acquire ownership merely by loading into the device store.
+  for (const id of removed) if (entryOwners[id] === owner) change(id, null);
+  for (const entry of entries) {
+    if (!entryOwners[entry.id] || entryOwners[entry.id] === owner) change(entry.id, { ...entry });
+  }
+  return { pendingByOwner: { ...state.pendingByOwner, [owner]: pending }, entryOwners, lastMutationTime };
+}
+
 export const useWeightStore = create<WeightState>()(
   persist(
     (set, get) => ({
       entries: [],
+      pendingByOwner: {},
+      entryOwners: {},
+      lastMutationTime: 0,
+      acknowledgeChanges: (owner, mutationIds) => set((state) => {
+        const acknowledged = new Set(mutationIds);
+        const pending = Object.fromEntries(Object.entries(state.pendingByOwner[owner] || {})
+          .filter(([, change]) => !acknowledged.has(change.mutationId)));
+        return { pendingByOwner: { ...state.pendingByOwner, [owner]: pending } };
+      }),
 
       addEntry: (entry) =>
         set((state) => {
@@ -37,6 +96,7 @@ export const useWeightStore = create<WeightState>()(
           });
           // Add the new entry and sort by date descending
           return {
+            ...queueChanges(state, [entry], state.entries.filter(e => !filteredEntries.includes(e) && e.id !== entry.id).map(e => e.id)),
             entries: [entry, ...filteredEntries].sort(
               (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
             ),
@@ -44,14 +104,16 @@ export const useWeightStore = create<WeightState>()(
         }),
 
       updateEntry: (id, updates) =>
-        set((state) => ({
-          entries: state.entries.map((e) =>
-            e.id === id ? { ...e, ...updates } : e
-          ),
-        })),
+        set((state) => {
+          const entries = state.entries.map(e => e.id === id ? { ...e, ...updates, id } : e);
+          const owner = useUserStore.getState().profile?.id;
+          return { entries, ...(owner && state.entryOwners[id] === owner
+            ? queueChanges(state, entries.filter(e => e.id === id), []) : {}) };
+        }),
 
       removeEntry: (id) =>
         set((state) => ({
+          ...queueChanges(state, [], [id]),
           entries: state.entries.filter((e) => e.id !== id),
         })),
 
@@ -79,11 +141,11 @@ export const useWeightStore = create<WeightState>()(
         });
       },
 
-      clearEntries: () => set({ entries: [] }),
+      clearEntries: () => set((state) => ({ entries: [], ...queueChanges(state, [], state.entries.map(e => e.id)) })),
     }),
     {
       name: 'weight-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => weightStorage),
     }
   )
 );

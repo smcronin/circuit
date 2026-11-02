@@ -1,4 +1,5 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
+import { weightContext, type WeightTracking } from '../src/utils/weightSync';
 
 interface VercelRequest {
   method?: string;
@@ -18,6 +19,8 @@ interface SnapshotRow {
   workout_summary: unknown;
   source_updated_at: string;
   server_updated_at: string;
+  weight_tracking: WeightTracking | null;
+  weight_synced_at: string | null;
 }
 
 const DEFAULT_SESSION_LIMIT = 50;
@@ -76,21 +79,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const sql = getSql();
     const limit = parseLimit(req);
+    const requestUrl = new URL(req.url || '/', 'https://circuit.invalid');
+    // Optional non-secret selector, never caller supplied. Without a verified
+    // pin, weights fail closed if more than one owner exists. Workouts retain
+    // their legacy latest-snapshot behavior for backward compatibility.
+    const configuredOwner = process.env.CIRCUIT_CONTEXT_OWNER_HASH;
+    const ownerPin = configuredOwner && /^[a-f0-9]{64}$/.test(configuredOwner) ? configuredOwner : null;
     const snapshots = (await sql`
       SELECT
         owner_hash,
         session_count,
         workout_summary,
         source_updated_at,
-        server_updated_at
-      FROM circuit_history_snapshots
+        server_updated_at,
+        to_jsonb(snapshot) -> 'weight_tracking' AS weight_tracking,
+        to_jsonb(snapshot) ->> 'weight_synced_at' AS weight_synced_at
+      FROM circuit_history_snapshots AS snapshot
+      WHERE (${ownerPin}::TEXT IS NULL OR owner_hash = ${ownerPin})
       ORDER BY server_updated_at DESC
-      LIMIT 1
+      LIMIT 2
     `) as SnapshotRow[];
     const snapshot = snapshots[0];
 
     if (!snapshot) {
-      return res.status(200).json({ ok: true, sessionCount: 0, sessions: [] });
+      return res.status(200).json({ ok: true, sessionCount: 0, sessions: [],
+        weightTracking: weightContext(null, requestUrl, configuredOwner ? 'owner_mismatch' : 'not_synced', null) });
     }
 
     const sessions = await sql`
@@ -116,9 +129,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       serverUpdatedAt: snapshot.server_updated_at,
       returnedSessions: sessions.length,
       sessions,
+      weightTracking: weightContext(snapshot.weight_tracking, requestUrl,
+        configuredOwner && !ownerPin ? 'owner_mismatch' : !ownerPin && snapshots.length > 1 ? 'owner_ambiguous'
+          : snapshot.weight_tracking ? 'available' : 'not_synced', snapshot.weight_synced_at),
     });
   } catch (error) {
-    console.error('Circuit workout context read failed', error);
+    console.error('Circuit workout context read failed');
     return res.status(503).json({ ok: false, error: 'Workout context is unavailable' });
   }
 }

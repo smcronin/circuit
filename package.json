@@ -10,6 +10,7 @@
     "reset": "expo start --clear",
     "security:check": "node scripts/check-secrets.cjs",
     "security:test": "node scripts/test-security.cjs",
+    "weight:test": "node scripts/test-weight-sync.cjs",
     "build:web": "node scripts/check-secrets.cjs && expo export --platform web && node scripts/check-secrets.cjs --bundle dist"
   },
   "dependencies": {

@@ -2,6 +2,8 @@ import { AppState, Platform } from 'react-native';
 import { useHistoryStore } from '@/stores/useHistoryStore';
 import { useUserStore } from '@/stores/useUserStore';
 import { useHistorySaveStore } from '@/stores/useHistorySaveStore';
+import { useWeightStore, flushWeightStorage } from '@/stores/useWeightStore';
+import { MAX_WEIGHT_CHANGES } from '@/utils/weightSync';
 import { flushHistoryStorage } from './historyStorage';
 import type { WorkoutHistory, WorkoutSession } from '@/types/workout';
 import type { HistoryData } from '@/utils/historyMerge';
@@ -13,6 +15,7 @@ interface SyncResponse extends Partial<HistoryData> {
   syncedSessions?: number;
   revision?: number;
   error?: string;
+  acknowledgedWeightChanges?: string[];
 }
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 let inFlight: Promise<SyncResponse> | null = null;
@@ -31,6 +34,8 @@ async function uploadAndReconcile(): Promise<SyncResponse> {
   const profile = useUserStore.getState().profile;
   if (!profile) throw new Error('No Circuit profile is available');
   const captured = useHistoryStore.getState();
+  const weightChanges = useWeightStore.persist.hasHydrated()
+    ? Object.values(useWeightStore.getState().pendingByOwner[profile.id] || {}).slice(0, MAX_WEIGHT_CHANGES) : [];
   useHistorySaveStore.setState({ cloud: 'syncing', message: undefined });
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
@@ -41,6 +46,7 @@ async function uploadAndReconcile(): Promise<SyncResponse> {
         profileId: profile.id, protocolVersion: 2,
         history: prepareHistoryForCloud(captured.history), workoutSummary: captured.workoutSummary,
         deletedSessions: captured.deletedSessions, sourceUpdatedAt: new Date().toISOString(),
+        ...(weightChanges.length ? { weightChanges } : {}),
       }),
     });
     const result = await response.json() as SyncResponse;
@@ -48,13 +54,20 @@ async function uploadAndReconcile(): Promise<SyncResponse> {
       throw new Error(result.error || 'History sync could not be confirmed');
     }
     if (profile.id !== useUserStore.getState().profile?.id) return result;
+    if (weightChanges.length && Array.isArray(result.acknowledgedWeightChanges)) {
+      const submitted = new Set(weightChanges.map(change => change.mutationId));
+      useWeightStore.getState().acknowledgeChanges(profile.id,
+        result.acknowledgedWeightChanges.filter(id => submitted.has(id)));
+      await flushWeightStorage();
+    }
     const current = useHistoryStore.getState();
     const changedWhileSaving = current.history !== captured.history || current.deletedSessions !== captured.deletedSessions || current.workoutSummary !== captured.workoutSummary;
     applyingRemote = true;
     try { current.mergeRemoteHistory(result as HistoryData); }
     finally { applyingRemote = false; }
     useHistorySaveStore.setState({ cloud: changedWhileSaving ? 'pending' : 'saved', message: undefined });
-    if (changedWhileSaving) scheduleHistorySync();
+    const weightsPending = Object.keys(useWeightStore.getState().pendingByOwner[profile.id] || {}).length > 0;
+    if (changedWhileSaving || weightsPending) scheduleHistorySync(weightsPending && !result.acknowledgedWeightChanges ? 30000 : 1500);
     return result;
   } catch (error) {
     useHistorySaveStore.setState({ cloud: 'error', message: 'Cloud sync failed. Your workout will be retried.' });
@@ -91,7 +104,7 @@ export function initializeHistorySync(): () => void {
   active = true;
   let started = false;
   const startWhenHydrated = () => {
-    if (!active || started || !useUserStore.persist.hasHydrated() || !useHistoryStore.persist.hasHydrated()) return;
+    if (!active || started || !useUserStore.persist.hasHydrated() || !useHistoryStore.persist.hasHydrated() || !useWeightStore.persist.hasHydrated()) return;
     started = true;
     if (useUserStore.getState().profile) scheduleHistorySync(0);
   };
@@ -106,6 +119,10 @@ export function initializeHistorySync(): () => void {
   });
   const unsubscribeUserHydration = useUserStore.persist.onFinishHydration(startWhenHydrated);
   const unsubscribeHistoryHydration = useHistoryStore.persist.onFinishHydration(startWhenHydrated);
+  const unsubscribeWeightHydration = useWeightStore.persist.onFinishHydration(startWhenHydrated);
+  const unsubscribeWeight = useWeightStore.subscribe((state, previous) => {
+    if (started && state.pendingByOwner !== previous.pendingByOwner) scheduleHistorySync();
+  });
   const resume = () => {
     if (!started) return;
     // Refresh other tabs' durable writes before sending this tab's state.
@@ -120,7 +137,8 @@ export function initializeHistorySync(): () => void {
   startWhenHydrated();
   return () => {
     active = false;
-    unsubscribeHistory(); unsubscribeProfile(); unsubscribeUserHydration(); unsubscribeHistoryHydration(); appState.remove();
+    unsubscribeHistory(); unsubscribeProfile(); unsubscribeUserHydration(); unsubscribeHistoryHydration();
+    unsubscribeWeight(); unsubscribeWeightHydration(); appState.remove();
     if (Platform.OS === 'web') { window.removeEventListener('online', resume); window.removeEventListener('focus', resume); }
     if (syncTimer) clearTimeout(syncTimer);
     syncTimer = null;

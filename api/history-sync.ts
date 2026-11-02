@@ -3,6 +3,7 @@ import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import { historyFromSessions, mergeHistory, stableJson, type HistoryData } from '../src/utils/historyMerge';
 import type { WorkoutHistory, WorkoutSession } from '../src/types/workout';
 import type { SummarizedWorkoutHistory } from '../src/types/llm';
+import { parseWeightChanges, mergeWeightChanges, type WeightChange, type WeightTracking } from '../src/utils/weightSync';
 
 interface VercelRequest {
   method?: string;
@@ -29,6 +30,7 @@ interface HistorySyncBody {
   sourceUpdatedAt?: unknown;
   protocolVersion?: unknown;
   deletedSessions?: unknown;
+  weightChanges?: unknown;
 }
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
@@ -71,7 +73,9 @@ function ensureSchema(sql: NeonQueryFunction<false, false>): Promise<void> {
       await sql`
         ALTER TABLE circuit_history_snapshots
           ADD COLUMN IF NOT EXISTS revision INTEGER NOT NULL DEFAULT 0,
-          ADD COLUMN IF NOT EXISTS deleted_sessions JSONB NOT NULL DEFAULT '{}'::JSONB
+          ADD COLUMN IF NOT EXISTS deleted_sessions JSONB NOT NULL DEFAULT '{}'::JSONB,
+          ADD COLUMN IF NOT EXISTS weight_tracking JSONB,
+          ADD COLUMN IF NOT EXISTS weight_synced_at TIMESTAMPTZ
       `;
       await sql`
         CREATE TABLE IF NOT EXISTS circuit_workout_versions (
@@ -209,6 +213,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = parseBody(req);
+    let weightChanges: WeightChange[] = [];
+    if (body.weightChanges !== undefined) {
+      try { weightChanges = parseWeightChanges(body.weightChanges); }
+      catch { return res.status(400).json({ ok: false, error: 'Invalid weight changes' }); }
+      if (Buffer.byteLength(JSON.stringify(weightChanges), 'utf8') > 128_000) {
+        return res.status(413).json({ ok: false, error: 'Weight changes are too large' });
+      }
+    }
     const profileId = typeof body.profileId === 'string' ? body.profileId.trim() : '';
     if (profileId.length < 10 || profileId.length > 200) {
       return res.status(400).json({ ok: false, error: 'Invalid profile identifier' });
@@ -254,14 +266,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       VALUES (${ownerHash}, 0, ${JSON.stringify(historyFromSessions([]))}::JSONB, ${sourceUpdatedAt}::TIMESTAMPTZ)
       ON CONFLICT (owner_hash) DO NOTHING`;
     for (let attempt = 0; attempt < 6; attempt++) {
-      const [row] = await sql`SELECT history, workout_summary, deleted_sessions, revision, source_updated_at, server_updated_at FROM circuit_history_snapshots WHERE owner_hash = ${ownerHash}`;
+      const [row] = await sql`SELECT history, workout_summary, deleted_sessions, revision, source_updated_at, server_updated_at, weight_tracking FROM circuit_history_snapshots WHERE owner_hash = ${ownerHash}`;
       const previous: HistoryData = { history: row.history, workoutSummary: row.workout_summary || undefined, deletedSessions: row.deleted_sessions };
       const merged = mergeHistory(previous, incoming);
-      const changed = stableJson(previous) !== stableJson(merged);
+      let weights: WeightTracking | null;
+      try { weights = mergeWeightChanges(row.weight_tracking || null, weightChanges); }
+      catch { return res.status(413).json({ ok: false, error: 'Weight tracking capacity reached' }); }
+      const weightsChanged = stableJson(weights) !== stableJson(row.weight_tracking || null);
+      const changed = stableJson(previous) !== stableJson(merged) || weightsChanged;
       const nextRevision = row.revision + 1;
       const reply = (revision: number) => res.status(200).json({
         ok: true, syncedSessions: merged.history.sessions.length, syncedAt: new Date().toISOString(), revision,
         ...(body.protocolVersion === 2 ? { ...merged, protocolVersion: 2 } : {}),
+        // Acknowledgements only: this public endpoint never returns stored weights.
+        ...(body.weightChanges === undefined ? {} : { acknowledgedWeightChanges: weightChanges.map(change => change.mutationId) }),
       });
       if (!changed && row.revision > 0) return reply(row.revision);
       const fingerprint = (session: WorkoutSession) => createHash('sha256').update(stableJson(session)).digest('hex');
@@ -279,6 +297,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sql`UPDATE circuit_history_snapshots SET history = ${JSON.stringify(merged.history)}::JSONB,
           session_count = ${merged.history.sessions.length}, workout_summary = ${JSON.stringify(merged.workoutSummary || null)}::JSONB,
           deleted_sessions = ${JSON.stringify(merged.deletedSessions)}::JSONB, revision = ${nextRevision},
+          weight_tracking = ${JSON.stringify(weights)}::JSONB,
+          weight_synced_at = CASE WHEN ${weightsChanged} THEN NOW() ELSE weight_synced_at END,
           source_updated_at = ${sourceUpdatedAt}::TIMESTAMPTZ, server_updated_at = NOW()
           WHERE owner_hash = ${ownerHash} AND revision = ${row.revision} RETURNING revision`,
         sql`INSERT INTO circuit_workout_versions (owner_hash, session_id, content_hash, session)
@@ -302,7 +322,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     return res.status(409).json({ ok: false, error: 'History changed during sync. Please retry.' });
   } catch (error) {
-    console.error('Circuit history sync failed', error);
+    // Database errors may contain bound payloads. Never log health records.
+    console.error('Circuit history sync failed');
     return res.status(503).json({ ok: false, error: 'Workout history sync failed' });
   }
 }
