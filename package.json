@@ -7,7 +7,10 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "reset": "expo start --clear"
+    "reset": "expo start --clear",
+    "security:check": "node scripts/check-secrets.cjs",
+    "security:test": "node scripts/test-security.cjs",
+    "build:web": "node scripts/check-secrets.cjs && expo export --platform web && node scripts/check-secrets.cjs --bundle dist"
   },
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",

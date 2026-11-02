@@ -1,11 +1,10 @@
-const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
 import { LLMWorkoutResponse, ManualWorkoutMetadataResponse } from '@/types/llm';
 import { GeneratedWorkout, Exercise, Circuit, WarmUpSection, CoolDownSection, EquipmentItem } from '@/types/workout';
 import { buildPrompt, getSystemPrompt, GenerationContext, getManualWorkoutSystemPrompt, buildManualWorkoutPrompt, ManualWorkoutPromptInput } from './prompts';
 import { uuid } from '@/utils/uuid';
 import { OPENROUTER_MODELS } from './models';
+import { requestAICompletion } from './request';
 
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const JSON_PARSE_ATTEMPTS = 2;
 
 class LLMResponseParseError extends Error {
@@ -30,33 +29,15 @@ async function requestJsonCompletion(
     ? '\n\nRETRY REQUIREMENT: Return one complete, valid JSON object only. Do not use markdown fences, commentary, or trailing text.'
     : '';
 
-  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://circuit.app',
-      'X-Title': options.title,
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODELS.workoutGeneration,
-      messages: [
-        { role: 'system', content: options.systemPrompt },
-        { role: 'user', content: options.userPrompt + retryInstruction },
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: options.maxTokens,
-    }),
+  const data = await requestAICompletion({
+    model: OPENROUTER_MODELS.workoutGeneration,
+    messages: [
+      { role: 'system', content: options.systemPrompt },
+      { role: 'user', content: options.userPrompt + retryInstruction },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: options.maxTokens,
   });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}));
-    const errorMessage =
-      errorBody?.error?.message || errorBody?.message || response.statusText;
-    throw new Error(`OpenRouter API error: ${errorMessage}`);
-  }
-
-  const data = await response.json();
   const content = data.choices[0]?.message?.content;
 
   if (typeof content !== 'string' || !content.trim()) {

@@ -1,5 +1,2 @@
-declare namespace NodeJS {
-  interface ProcessEnv {
-    EXPO_PUBLIC_OPENROUTER_API_KEY: string;
-  }
-}
+// Provider credentials belong exclusively in authenticated server functions.
+// Public environment variables are included in downloadable application code.

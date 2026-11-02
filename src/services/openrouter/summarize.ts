@@ -1,9 +1,7 @@
 import { WorkoutSession } from '@/types/workout';
 import { SummarizedWorkoutHistory } from '@/types/llm';
 import { OPENROUTER_MODELS } from './models';
-
-const OPENROUTER_API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY;
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+import { requestAICompletion } from './request';
 
 export async function summarizeWorkoutHistory(
   sessions: WorkoutSession[]
@@ -86,27 +84,11 @@ ${notesList.length > 0 ? `- User notes excerpts: "${notesList.slice(0, 5).join('
 
 Write a concise, actionable summary that captures the user's training tendencies and any feedback they've provided.`;
 
-  const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://circuit.app',
-      'X-Title': 'Circuit Workout Summarizer',
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODELS.workoutSummary,
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 300,
-    }),
+  const data = await requestAICompletion({
+    model: OPENROUTER_MODELS.workoutSummary,
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 300,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(`Failed to generate workout summary: ${error.message || response.statusText}`);
-  }
-
-  const data = await response.json();
   const summary = data.choices[0]?.message?.content?.trim() || '';
 
   if (!summary) {

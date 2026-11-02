@@ -14,6 +14,9 @@ Circuit is a personal workout app. Shipping useful features quickly is more impo
 
 ## Validation
 
+- Never embed provider credentials in browser/native code or public-prefixed environment variables. AI is paused pending authenticated server access, persistent abuse limits, and verified provider spending caps; see `docs/SECURITY.md`.
+- All releases must run `npm run security:test` and `npm run build:web`. The latter performs the required Expo web export with source, environment, and built-artifact security gates. Never bypass these gates or restore a client-side provider key.
+
 - Match validation effort to the change. For normal web-facing feature work, run `npx tsc --noEmit`, `npx expo export --platform web`, and a focused browser test of the changed workflow.
 - Preserve unrelated user changes and stage only the files that belong to the requested feature.
 - Confirm the pushed commit matches `origin/master` and that the production deployment is Ready.

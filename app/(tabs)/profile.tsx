@@ -19,6 +19,7 @@ import { useUserStore, useHistoryStore } from '@/stores';
 import { ALL_EQUIPMENT, DURATION_OPTIONS } from '@/utils/constants';
 import { uuid } from '@/utils/uuid';
 import { summarizeWorkoutHistory } from '@/services/openrouter';
+import { AI_FEATURES_AVAILABLE, AI_PAUSED_MESSAGE } from '@/services/openrouter/request';
 import { exportAllData, importAllData, getDataStats } from '@/utils/dataTransfer';
 
 export default function ProfileScreen() {
@@ -370,20 +371,22 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   style={styles.regenerateButton}
                   onPress={handleGenerateMemory}
+                  disabled={!AI_FEATURES_AVAILABLE}
                   activeOpacity={0.7}
                 >
                   <Ionicons name="refresh" size={14} color={colors.primary} />
-                  <Text style={styles.regenerateText}>Regenerate</Text>
+                  <Text style={styles.regenerateText}>{AI_FEATURES_AVAILABLE ? 'Regenerate' : 'AI summary paused'}</Text>
                 </TouchableOpacity>
               </View>
             )
           ) : canGenerateMemory ? (
             <View>
               <Text style={styles.memoryEmptyText}>
-                Generate a summary of your workout history to personalize future workouts.
+                {AI_FEATURES_AVAILABLE ? 'Generate a summary of your workout history to personalize future workouts.' : AI_PAUSED_MESSAGE}
               </Text>
               <Button
                 title="Generate Workout Memory"
+                disabled={!AI_FEATURES_AVAILABLE}
                 onPress={handleGenerateMemory}
                 size="sm"
                 variant="outline"

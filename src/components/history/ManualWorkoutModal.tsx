@@ -23,6 +23,7 @@ import {
 } from '@/utils/constants';
 import { createManualWorkoutSession } from '@/utils/createManualWorkoutSession';
 import { generateManualWorkoutMetadata } from '@/services/openrouter/client';
+import { AI_FEATURES_AVAILABLE } from '@/services/openrouter/request';
 import { ManualWorkoutMetadataResponse } from '@/types/llm';
 import { useHistoryStore, useUserStore } from '@/stores';
 import { formatDate } from '@/utils';
@@ -96,6 +97,18 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
     }
 
     setError(null);
+    if (!AI_FEATURES_AVAILABLE) {
+      // Keep manual logging available without inventing an AI calorie estimate.
+      setMetadata({
+        difficulty: 'intermediate',
+        estimatedCalories: 0,
+        calorieRange: { low: 0, high: 0 },
+        focusAreas: [],
+        muscleGroupsTargeted: [],
+      });
+      setStep('preview');
+      return;
+    }
     setStep('loading');
 
     try {
@@ -326,7 +339,7 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
 
       <View style={styles.buttonContainer}>
         <Button
-          title="Generate Metadata"
+          title={AI_FEATURES_AVAILABLE ? 'Generate Metadata' : 'Enter workout details'}
           onPress={handleGenerateMetadata}
           fullWidth
           disabled={
@@ -356,6 +369,7 @@ export function ManualWorkoutModal({ visible, onClose }: Props) {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.previewHeader}>
           <Text style={styles.previewTitle}>{formData.title}</Text>
+          {!AI_FEATURES_AVAILABLE && <Text style={styles.errorText}>AI estimates are paused. Enter your own details below; calories start at zero because no estimate was made.</Text>}
           <Text style={styles.previewSubtitle}>
             {formData.durationMinutes} min • {formatDate(formData.date.toISOString())}
           </Text>

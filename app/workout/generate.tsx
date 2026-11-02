@@ -23,6 +23,7 @@ import { DURATION_OPTIONS, WARMUP_COOLDOWN_THRESHOLD } from '@/utils/constants';
 import { useUserStore, useWorkoutStore, useHistoryStore } from '@/stores';
 import { generateWorkout, WorkoutSummary } from '@/services/openrouter';
 import { flattenWorkout } from '@/utils';
+import { AI_FEATURES_AVAILABLE, AI_PAUSED_MESSAGE } from '@/services/openrouter/request';
 
 /**
  * The workout generator, moved off the home screen so home can stay a launcher.
@@ -329,13 +330,14 @@ export default function GenerateWorkoutScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+        {!AI_FEATURES_AVAILABLE && <Text style={styles.errorText}>{AI_PAUSED_MESSAGE}</Text>}
         <Button
-          title={isGenerating ? 'Generating...' : 'Generate Workout'}
+          title={!AI_FEATURES_AVAILABLE ? 'AI generation paused' : isGenerating ? 'Generating...' : 'Generate Workout'}
           onPress={handleGenerateWorkout}
           size="lg"
           fullWidth
           loading={isGenerating}
-          disabled={isGenerating}
+          disabled={!AI_FEATURES_AVAILABLE || isGenerating}
           icon={!isGenerating && <Ionicons name="flash" size={20} color={colors.text} />}
         />
       </View>

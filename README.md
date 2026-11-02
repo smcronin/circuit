@@ -109,7 +109,7 @@ Deploy the web version to [Vercel](https://vercel.com/):
 
 ```bash
 # Build the static web export
-npx expo export --platform web
+npm run build:web
 
 # Install Vercel CLI
 npm install -g vercel
@@ -125,7 +125,7 @@ Or connect your GitHub repo to Vercel for automatic deployments:
 
 1. Push your code to GitHub
 2. Import the project at [vercel.com/new](https://vercel.com/new)
-3. Set the build command to: `npx expo export --platform web`
+3. Set the build command to: `npm run build:web`
 4. Set the output directory to: `dist`
 5. Deploy!
 
@@ -133,7 +133,7 @@ Or connect your GitHub repo to Vercel for automatic deployments:
 
 ```bash
 # Build the static web export
-npx expo export --platform web
+npm run build:web
 
 # Deploy dist folder to Netlify
 # Either drag & drop the dist folder at netlify.com
@@ -144,12 +144,20 @@ netlify deploy --dir=dist --prod
 
 ## Environment Setup
 
-For AI features, you may need to configure API keys. Create a `.env` file in the project root:
+AI features are paused following a confirmed client-bundle credential exposure.
+Do not add provider credentials to this Expo app. All public-prefixed environment
+variables are downloadable by users; storing their values in Vercel does not
+make them private after bundling.
 
-```env
-# Add your API keys here
-OPENAI_API_KEY=your_key_here
-```
+Programs, saved workouts, timers, history, and manual workout entry remain available.
+Re-enabling AI requires an authenticated server endpoint, persistent rate limits,
+model/token restrictions, and a dedicated server-only key with a provider spending cap.
+See [security controls](docs/SECURITY.md).
+
+Use `npm run build:web` for release builds. It scans source/public environment
+variables before export and scans all built artifacts afterward. Any finding or
+incomplete scan blocks the Vercel build. `npm run security:test` exercises failures
+and verifies that paused AI cannot make a network call.
 
 ## Tech Stack
 
