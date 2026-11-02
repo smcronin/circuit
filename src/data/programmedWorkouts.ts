@@ -5582,6 +5582,159 @@ function novemberJumpRopeVo2(date: string, phase: NovemberPhase): ProgrammedWork
   });
 }
 
+function killingtonTravelRope(date: string): ProgrammedWorkout {
+  const ropeWorkout = novemberJumpRopeVo2(date, 1);
+  const id = `program-2026-11-killington-travel-rope-${date}`;
+  return {
+    ...ropeWorkout,
+    id,
+    coachNotes: 'Killington travel protocol. Keep the Saturday high-aerobic anchor: four 4-minute rope intervals around RPE 8 with 3 minutes of upright walking or marching between rounds. Use fast marching if the floor, weather, coordination, or lower legs make rope a poor choice.',
+    workout: {
+      ...ropeWorkout.workout,
+      id,
+      name: 'Killington Travel: Jump-Rope VO₂ 4 × 4',
+      description: 'A travel-ready high-aerobic session using only a jump rope and enough clear floor space. Low-bounce rhythm beats maximal speed.',
+      equipmentSetUsed: 'Killington Travel Kit',
+      partingWords: 'Finish coordinated, not cooked; Monday is the primary travel strength day.',
+    },
+  };
+}
+
+function killingtonTravelRecovery(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-11-killington-travel-recovery-${date}`,
+    date,
+    slot: 'Mobility',
+    priority: 1,
+    coachNotes: 'Killington travel recovery at RPE 3-4. This replaces the climbing primer with easy mobility, trunk control, and posture. A mat is optional; carpet or a folded towel works.',
+    name: 'Killington Travel: Mobility and Core Reset',
+    description: 'A low-fatigue bodyweight reset for hips, trunk, shoulders, and posture between Friday strength and Monday travel strength.',
+    difficulty: 'beginner',
+    targetDurationMinutes: 18,
+    estimatedCalories: 70,
+    calorieRange: { low: 45, high: 95 },
+    equipmentSetUsed: 'Killington Travel Kit',
+    focusAreas: ['mobility', 'core', 'recovery', 'posture'],
+    muscleGroupsTargeted: ['core', 'glutes', 'hips', 'upper back', 'shoulders'],
+    warmUp: [
+      ex('Easy Marching and Arm Swing', 120, 'Move easily and let the travel stiffness come down before floor work.', ['cardiovascular system', 'hips', 'shoulders']),
+      ex('Cat-Cow Spine Wave', 60, 'Move through a comfortable range without forcing the neck or low back.', ['spine', 'core', 'shoulders'], ['Yoga Mat']),
+    ],
+    circuits: [{ name: 'Travel Recovery Circuit', rounds: 2, restBetweenRounds: 25, restBetweenExercises: 8, exercises: [
+      ex('90/90 Hip Switches', 50, 'Switch sides smoothly and keep the range comfortable for both knees.', ['hips', 'glutes', 'adductors'], ['Yoga Mat']),
+      ex('Bird Dog - Alternating', 60, 'Reach long on the left, then switch right halfway without rotating the trunk.', ['core', 'glutes', 'shoulders'], ['Yoga Mat'], { switchSides: true }),
+      ex('Glute Bridge March', 45, 'Keep the pelvis level and use a small, controlled march.', ['glutes', 'hamstrings', 'core'], ['Yoga Mat']),
+      ex('Knee Side Plank - Alternating', 60, 'Hold on the left, then switch right halfway with a long line from knee to shoulder.', ['obliques', 'glutes', 'shoulders'], ['Yoga Mat'], { switchSides: true }),
+      ex('Prone W Lift', 40, 'Lift the hands and elbows lightly while keeping the neck relaxed.', ['upper back', 'rear delts', 'lower traps'], ['Yoga Mat']),
+    ] }],
+    coolDown: [
+      ex('Supported Child Pose Breathing', 75, 'Use the floor, bed, or sofa for support and lengthen the exhale.', ['lats', 'hips', 'shoulders', 'diaphragm'], ['Yoga Mat']),
+      ex('Supine Rest Breathing', 75, 'Let the ribs, back, and shoulders settle.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'This is recovery work, not a test. Finish looser than you started.',
+  });
+}
+
+function killingtonTravelStrength(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-11-killington-travel-strength-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Primary Killington strength session at RPE 7. Make bodyweight effective with unilateral legs, slow tempo, full range, and short rests. Use a band around the feet for rows; stop every set with one or two clean reps available.',
+    name: 'Killington Travel: Full-Body Bodyweight Strength',
+    description: 'The main vacation strength dose: push, pull, unilateral legs, hamstrings, shoulders, and direct trunk work using bodyweight, one elastic band, and an optional mat.',
+    difficulty: 'intermediate',
+    targetDurationMinutes: 32,
+    estimatedCalories: 240,
+    calorieRange: { low: 185, high: 300 },
+    equipmentSetUsed: 'Killington Travel Kit',
+    focusAreas: ['strength', 'calisthenics', 'unilateral legs', 'pulling', 'core'],
+    muscleGroupsTargeted: ['chest', 'back', 'shoulders', 'quads', 'glutes', 'hamstrings', 'core'],
+    warmUp: [
+      ex('Easy Rope or Marching Warm-Up', 120, 'Skip easily if the space works; otherwise march briskly.', ['cardiovascular system', 'calves', 'hips'], ['Jump Rope']),
+      ex('Bodyweight Squat to Reach', 60, 'Sit to a comfortable depth and reach without forcing overhead range.', ['quads', 'glutes', 'hips', 'shoulders']),
+      ex('Scapular Pushup', 40, 'Keep the elbows straight and glide through the shoulder blades with a relaxed neck.', ['serratus', 'shoulders', 'core'], ['Yoga Mat']),
+      ex('Reverse Lunge Reach - Alternating', 60, 'Step back on the left, then switch right halfway at a knee-friendly depth.', ['quads', 'glutes', 'hip flexors'], undefined, { switchSides: true }),
+    ],
+    circuits: [
+      { name: 'Full-Body Strength Density', rounds: 3, restBetweenRounds: 60, restBetweenExercises: 12, exercises: [
+        ex('Three-Second Tempo Pushup', 50, 'Lower for three seconds and use eight to twelve clean reps. Elevate the hands on a sofa or counter if needed.', ['chest', 'triceps', 'shoulders', 'core'], ['Yoga Mat'], { targetReps: 10 }),
+        ex('Bodyweight Split Squat - Alternating', 70, 'Work the left leg, then switch right halfway. Shorten range for any knee warning.', ['quads', 'glutes', 'hamstrings', 'core'], undefined, { switchSides: true }),
+        ex('Seated Band Row', 50, 'Loop the band around the feet, sit tall, and pull twelve to twenty reps without leaning back.', ['lats', 'upper back', 'biceps'], ['Resistance Bands'], { targetReps: 15 }),
+        ex('Hamstring Walkout', 45, 'Walk the heels away from a bridge only as far as the hamstrings and back stay quiet.', ['hamstrings', 'glutes', 'core'], ['Yoga Mat']),
+      ] },
+      { name: 'Shoulders and Trunk', rounds: 2, restBetweenRounds: 40, restBetweenExercises: 10, exercises: [
+        ex('Pike Pushup', 40, 'Use six to ten controlled reps. Substitute an incline pushup for pressure, headache, neck, shoulder, or wrist warning.', ['shoulders', 'triceps', 'upper chest', 'core'], ['Yoga Mat'], { targetReps: 8 }),
+        ex('Band Pull-Apart', 40, 'Open the band at chest height for twelve to twenty smooth reps with a relaxed neck.', ['rear delts', 'upper back'], ['Resistance Bands'], { targetReps: 15 }),
+        ex('Side Plank Knee Drive - Alternating', 60, 'Work the left side, then switch right halfway without losing the trunk line.', ['obliques', 'glutes', 'hip flexors', 'shoulders'], ['Yoga Mat'], { switchSides: true }),
+        ex('Hollow Body March', 40, 'Alternate feet while the low back stays heavy; use a dead-bug position if needed.', ['core', 'hip flexors'], ['Yoga Mat']),
+      ] },
+    ],
+    coolDown: [
+      ex('Half-Kneeling Hip Flexor Stretch - Alternating', 80, 'Open the left hip, then switch right halfway.', ['hip flexors', 'quads'], ['Yoga Mat'], { switchSides: true }),
+      ex('Doorway-Free Chest Opener', 60, 'Clasp the hands behind the back only as far as the shoulders and neck stay easy.', ['chest', 'shoulders']),
+      ex('Crocodile Breathing', 60, 'Breathe into the floor and let the trunk settle.', ['diaphragm', 'low back'], ['Yoga Mat']),
+    ],
+    partingWords: 'One honest full-body strength dose is enough to maintain the signal while you travel.',
+  });
+}
+
+function killingtonTravelZone2(date: string): ProgrammedWorkout {
+  const zone2Workout = novemberZone2(date, 2);
+  const id = `program-2026-11-killington-travel-zone-2-${date}`;
+  return {
+    ...zone2Workout,
+    id,
+    coachNotes: 'Killington travel aerobic anchor: take a 40-minute brisk walk when conditions are comfortable, or march indoors. Keep full-sentence conversation possible and treat hills as optional rather than a pace test.',
+    workout: {
+      ...zone2Workout.workout,
+      id,
+      name: 'Killington Travel: Zone 2 Walk or Indoor March',
+      description: 'A simple vacation aerobic session with no equipment requirement. Choose a steady walk or indoor march and keep the effort conversational.',
+      equipmentSetUsed: 'Killington Travel Kit',
+      partingWords: 'Boring and repeatable is exactly right today.',
+    },
+  };
+}
+
+function killingtonTravelDepartureStrength(date: string): ProgrammedWorkout {
+  return programmedWorkout({
+    id: `program-2026-11-killington-travel-departure-strength-${date}`,
+    date,
+    slot: 'Main',
+    priority: 1,
+    coachNotes: 'Compact departure-day strength at RPE 5-6. Keep two or three reps in reserve and avoid leg or shoulder fatigue that would collide with Thursday pistol and pike work.',
+    name: 'Killington Travel: Band, Push, and Core Reset',
+    description: 'A short second strength touch for pulling, easy pressing, upper-back posture, calves, and trunk control before normal programming resumes.',
+    difficulty: 'beginner',
+    targetDurationMinutes: 20,
+    estimatedCalories: 135,
+    calorieRange: { low: 95, high: 180 },
+    equipmentSetUsed: 'Killington Travel Kit',
+    focusAreas: ['strength maintenance', 'posture', 'pulling', 'core', 'recovery'],
+    muscleGroupsTargeted: ['back', 'chest', 'rear delts', 'calves', 'core'],
+    warmUp: [
+      ex('Easy Marching Reset', 120, 'Move easily and let breathing settle before the circuit.', ['cardiovascular system', 'hips', 'calves']),
+      ex('Shoulder Circle and Reach', 60, 'Circle and reach only through a comfortable range.', ['shoulders', 'upper back', 'chest']),
+      ex('Bodyweight Good Morning', 60, 'Hinge with soft knees and a long spine.', ['hamstrings', 'glutes', 'back']),
+    ],
+    circuits: [{ name: 'Departure-Day Strength Touch', rounds: 2, restBetweenRounds: 40, restBetweenExercises: 10, exercises: [
+      ex('Seated Band Row Easy Tempo', 50, 'Loop the band around the feet and use twelve to fifteen smooth reps.', ['lats', 'upper back', 'biceps'], ['Resistance Bands'], { targetReps: 15 }),
+      ex('Floor Pushup Easy Tempo', 40, 'Use six to ten comfortable reps with two or three still available.', ['chest', 'triceps', 'core'], ['Yoga Mat'], { targetReps: 8 }),
+      ex('Prone Y-T-W Sequence', 60, 'Move slowly through Y, T, and W shapes with a relaxed neck.', ['upper back', 'rear delts', 'lower traps'], ['Yoga Mat']),
+      ex('Single-Leg Calf Raise - Alternating', 60, 'Use a wall lightly for balance, work the left, then switch right halfway.', ['calves', 'ankles', 'feet'], undefined, { switchSides: true }),
+      ex('Hollow Body Hold', 35, 'Choose a tuck or long-lever hold that keeps the low back heavy.', ['core', 'hip flexors'], ['Yoga Mat']),
+    ] }],
+    coolDown: [
+      ex('Standing Lat and Side Reach - Alternating', 60, 'Reach left, then switch right halfway without forcing the shoulders.', ['lats', 'obliques', 'shoulders'], undefined, { switchSides: true }),
+      ex('90/90 Hip Breathing', 60, 'Switch hip positions halfway and breathe easily.', ['hips', 'glutes'], ['Yoga Mat']),
+      ex('Standing Recovery Breathing', 60, 'Lengthen the exhale and leave the session fresh.', ['diaphragm', 'cardiovascular system']),
+    ],
+    partingWords: 'Finish fresher than you began; normal training resumes tomorrow.',
+  });
+}
+
 function novemberQualityCheck(date: string): ProgrammedWorkout {
   return programmedWorkout({
     id: `program-2026-11-quality-check-${date}`,
@@ -5647,9 +5800,23 @@ const NOVEMBER_TRAINING_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...buildNovemberWeek('2026-11-23', 4, 'flow', 'tension'),
 ];
 
+const KILLINGTON_TRAVEL_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
+  killingtonTravelRope('2026-11-07'),
+  killingtonTravelRecovery('2026-11-08'),
+  killingtonTravelStrength('2026-11-09'),
+  killingtonTravelZone2('2026-11-10'),
+  killingtonTravelDepartureStrength('2026-11-11'),
+];
+
+const NOVEMBER_TRAINING_WITH_KILLINGTON_TRAVEL: ProgrammedWorkout[] = [
+  ...NOVEMBER_TRAINING_PROGRAMMED_WORKOUTS.filter((workout) => workout.date < '2026-11-07'),
+  ...KILLINGTON_TRAVEL_PROGRAMMED_WORKOUTS,
+  ...NOVEMBER_TRAINING_PROGRAMMED_WORKOUTS.filter((workout) => workout.date > '2026-11-11'),
+];
+
 const NOVEMBER_PROGRAMMED_WORKOUTS: ProgrammedWorkout[] = [
   ...NOVEMBER_OPENING_PROGRAMMED_WORKOUTS,
-  ...NOVEMBER_TRAINING_PROGRAMMED_WORKOUTS,
+  ...NOVEMBER_TRAINING_WITH_KILLINGTON_TRAVEL,
   novemberQualityCheck('2026-11-30'),
 ];
 
