@@ -13,6 +13,14 @@ function getSavedWorkoutVisual(workoutId: string): {
   color: string;
   backgroundColor: string;
 } {
+  if (workoutId === 'saved-climbing-warmup-5') {
+    return {
+      icon: 'trail-sign-outline',
+      color: colors.successLight,
+      backgroundColor: colors.success + '18',
+    };
+  }
+
   if (workoutId === 'saved-morning-mobility-5') {
     return {
       icon: 'sunny-outline',

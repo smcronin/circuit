@@ -25,6 +25,7 @@ const starterSavedWorkouts: SavedWorkout[] = STARTER_SAVED_WORKOUTS.map((workout
 const MORNING_MOBILITY_WORKOUT_ID = 'saved-morning-mobility-5';
 const NIGHT_MOBILITY_WORKOUT_ID = 'saved-night-mobility-10';
 const JUMP_ROPE_VO2_WORKOUT_ID = 'saved-jump-rope-vo2-4x4';
+const CLIMBING_WARMUP_WORKOUT_ID = 'saved-climbing-warmup-5';
 const morningMobilityWorkout = starterSavedWorkouts.find(
   (savedWorkout) => savedWorkout.workout.id === MORNING_MOBILITY_WORKOUT_ID
 );
@@ -33,6 +34,9 @@ const nighttimeMobilityWorkout = starterSavedWorkouts.find(
 );
 const jumpRopeVo2Workout = starterSavedWorkouts.find(
   (savedWorkout) => savedWorkout.workout.id === JUMP_ROPE_VO2_WORKOUT_ID
+);
+const climbingWarmupWorkout = starterSavedWorkouts.find(
+  (savedWorkout) => savedWorkout.workout.id === CLIMBING_WARMUP_WORKOUT_ID
 );
 
 export const useSavedWorkoutsStore = create<SavedWorkoutsState>()(
@@ -75,7 +79,7 @@ export const useSavedWorkoutsStore = create<SavedWorkoutsState>()(
     {
       name: 'saved-workouts-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         const state = persistedState as Pick<SavedWorkoutsState, 'savedWorkouts'>;
 
@@ -110,6 +114,16 @@ export const useSavedWorkoutsStore = create<SavedWorkoutsState>()(
 
           if (!hasJumpRopeVo2) {
             savedWorkouts = [...savedWorkouts, jumpRopeVo2Workout];
+          }
+        }
+
+        if (version < 4 && climbingWarmupWorkout) {
+          const hasClimbingWarmup = savedWorkouts.some(
+            (savedWorkout) => savedWorkout.workout.id === CLIMBING_WARMUP_WORKOUT_ID
+          );
+
+          if (!hasClimbingWarmup) {
+            savedWorkouts = [climbingWarmupWorkout, ...savedWorkouts];
           }
         }
 

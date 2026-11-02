@@ -1,6 +1,96 @@
 import type { GeneratedWorkout } from '@/types/workout';
 
 export const STARTER_SAVED_WORKOUTS: GeneratedWorkout[] = [
+  // General-to-specific preparation, followed by progressively easier-to-harder climbing:
+  // https://entralpi.com/help/train/plan-your-training/warm-up-routine
+  // https://www.mendcolorado.com/physical-therapy-blog/2026/2/23/the-most-effective-warm-up-for-rock-climbing/
+  {
+    id: 'saved-climbing-warmup-5',
+    createdAt: '2026-11-02T21:30:00.000Z',
+    name: '5-Minute Climbing Warm-Up',
+    description:
+      'Five easy minutes: rope, lower-body mobility, shoulder and hand prep, a pulling primer, and light finger recruitment. Set up your equipment first; transitions fit inside each minute. Finish fresh, then build through easy climbs before hard moves. Take longer if you still feel cold or stiff.',
+    difficulty: 'beginner',
+    targetDuration: 300,
+    actualDuration: 300,
+    equipmentSetUsed: 'Climbing Gym / Home Setup',
+    equipmentRequired: ['Rings or Resistance Band', 'Large Climbing Hold or Hangboard Jug'],
+    equipment: [
+      { name: 'Jump Rope (Optional)', notes: 'Basic low bounces or alternating feet; brisk marching works without a rope.' },
+      { name: 'Rings or Resistance Band', notes: 'Set rings at chest height for easy upright rows, or securely anchor a light band at chest height.' },
+      { name: 'Large Climbing Hold or Hangboard Jug', notes: 'Use a secure, comfortable hold you can reach with both feet supported. Keep most of your weight on your feet.' },
+    ],
+    warmUp: { type: 'warmup', exercises: [], totalDuration: 0 },
+    circuits: [
+      {
+        id: 'saved-climbing-warmup-5-flow',
+        name: 'Climbing Readiness Flow',
+        rounds: 1,
+        restBetweenRounds: 0,
+        restBetweenExercises: 0,
+        totalDuration: 300,
+        exercises: [
+          {
+            id: 'saved-climbing-warmup-5-rope',
+            name: 'Easy Jump Rope or March',
+            duration: 60,
+            description:
+              'Start with relaxed low bounces or alternating-foot skipping, gradually raising your pulse. Stay conversational at RPE 2-3; no sprinting or boxer step. Set the rope aside before the minute ends.',
+            muscleGroups: ['calves', 'ankles', 'cardiovascular system'],
+            modifications: { easier: 'March briskly with arm swings if space or lower-leg comfort makes jumping unsuitable.' },
+          },
+          {
+            id: 'saved-climbing-warmup-5-hips',
+            name: 'Squat-to-Stand and Lateral Lunges',
+            duration: 60,
+            description:
+              'First 30 seconds: use a comfortable squat, gently shift the knees forward over the toes with heels down, then stand tall. Last 30 seconds: alternate shallow lateral lunges to open the hips and inner thighs. Keep moving without forcing depth or holding a stretch.',
+            muscleGroups: ['hips', 'ankles', 'adductors', 'glutes'],
+            modifications: { easier: 'Hold a stable support, shorten the range, or use standing hip circles and ankle rocks.' },
+          },
+          {
+            id: 'saved-climbing-warmup-5-joints',
+            name: 'Shoulders, Wrists and Finger Glides',
+            duration: 60,
+            description:
+              'Use 20 seconds of small-to-larger arm circles and gentle shoulder-blade squeezes, 20 seconds of relaxed wrist circles and palm turns, then 20 seconds opening the hands, making a hook fist, and closing a loose fist. Use smooth, pain-free motion; keep the neck relaxed and breathe normally.',
+            muscleGroups: ['shoulders', 'upper back', 'wrists', 'fingers'],
+            modifications: { easier: 'Keep arm circles below shoulder height and make every motion smaller.' },
+          },
+          {
+            id: 'saved-climbing-warmup-5-pull',
+            name: 'Easy Ring or Band Row Primer',
+            duration: 60,
+            targetReps: 6,
+            repRange: '4-6 easy reps, then reset',
+            description:
+              'Take the first 10 seconds to get set. Do just 4-6 smooth rows with upright rings or a light band: gently draw the shoulder blades back, pull the elbows toward the ribs, and return slowly. Keep at least 5 reps in reserve at RPE 3-4. Spend the remaining time shaking out and moving to the finger hold; do not row for the whole minute.',
+            muscleGroups: ['lats', 'upper back', 'biceps'],
+            equipment: ['Rings or Resistance Band'],
+            modifications: { easier: 'Stand more upright or use a lighter band. Without equipment, gently squeeze the shoulder blades with elbows bent by your sides.' },
+          },
+          {
+            id: 'saved-climbing-warmup-5-fingers',
+            name: 'Feet-Supported Finger Recruitment',
+            duration: 60,
+            description:
+              'On a large comfortable hold, keep both feet planted and most weight on the legs. Repeat four cycles of 5 seconds gently taking up tension, then 10 seconds fully released. Use an open, relaxed grip at RPE 2-3, about 20-30% effort, and ease into each pull. No full crimp, small edges, added weight, or hard hangs. Stop loading if fingers, elbows, or shoulders hurt.',
+            muscleGroups: ['fingers', 'forearms'],
+            equipment: ['Large Climbing Hold or Hangboard Jug'],
+            modifications: { easier: 'Keep more weight on the feet. Without a suitable hold, use unloaded finger glides and do the gradual loading on easy large-hold climbs afterward.' },
+          },
+        ],
+      },
+    ],
+    coolDown: { type: 'cooldown', exercises: [], totalDuration: 0 },
+    restBetweenCircuits: 0,
+    estimatedCalories: 20,
+    calorieRange: { low: 10, high: 30 },
+    focusAreas: ['climbing', 'mobility', 'activation'],
+    muscleGroupsTargeted: ['hips', 'ankles', 'shoulders', 'upper back', 'lats', 'forearms', 'fingers'],
+    partingWords:
+      'Primer complete. Start with very easy climbing on large holds, then increase difficulty gradually while staying pain-free. Five minutes is a starting point: keep warming up until you feel ready for harder moves.',
+  },
   {
     id: 'saved-morning-mobility-5',
     createdAt: '2026-07-22T12:00:00.000Z',
