@@ -14,6 +14,7 @@ const getLocalDateString = (date: Date): string => {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+export const weightDay = (entry: WeightEntry) => entry.localDate || getLocalDateString(new Date(entry.date));
 
 interface WeightState {
   entries: WeightEntry[];
@@ -38,14 +39,15 @@ function queueChanges(state: WeightState, entries: WeightEntry[], removed: strin
   let lastMutationTime = state.lastMutationTime;
   const change = (id: string, entry: WeightEntry | null) => {
     lastMutationTime = Math.max(Date.now(), lastMutationTime + 1);
+    const datedEntry = entry ?? state.entries.find(e => e.id === id);
     let timeZone: string | null = null;
     try { timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { /* native may lack IANA zones */ }
     pending[id] = { mutationId: uuid(), id, changedAt: new Date(lastMutationTime).toISOString(), entry,
-      localDate: entry ? getLocalDateString(new Date(entry.date)) : null, timeZone };
+      localDate: datedEntry ? weightDay(datedEntry) : null, timeZone };
     entryOwners[id] = owner;
   };
-  // Only records explicitly saved by this version are eligible. Old data and
-  // imports never acquire ownership merely by loading into the device store.
+  // Queue deletions only for entries belonging to this profile. The approved
+  // original device can separately contribute missing historical dates.
   for (const id of removed) if (entryOwners[id] === owner) change(id, null);
   for (const entry of entries) {
     if (!entryOwners[entry.id] || entryOwners[entry.id] === owner) change(entry.id, { ...entry });
@@ -69,10 +71,10 @@ export const useWeightStore = create<WeightState>()(
 
       addEntry: (entry) =>
         set((state) => {
-          const entryDateStr = getLocalDateString(new Date(entry.date));
+          const entryDateStr = weightDay(entry);
           // Remove any existing entry for the same date
           const filteredEntries = state.entries.filter((e) => {
-            const existingDateStr = getLocalDateString(new Date(e.date));
+            const existingDateStr = weightDay(e);
             return existingDateStr !== entryDateStr;
           });
           // Add the new entry and sort by date descending
@@ -117,7 +119,7 @@ export const useWeightStore = create<WeightState>()(
         const { entries } = get();
         const targetDateStr = getLocalDateString(date);
         return entries.find((e) => {
-          const entryDateStr = getLocalDateString(new Date(e.date));
+          const entryDateStr = weightDay(e);
           return entryDateStr === targetDateStr;
         });
       },

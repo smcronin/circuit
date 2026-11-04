@@ -184,6 +184,7 @@ export interface UserProfile {
 export interface WeightEntry {
   id: string;
   date: string;
+  localDate?: string;
   weight: number;
   unit: 'lbs' | 'kg';
   notes?: string;

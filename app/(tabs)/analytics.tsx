@@ -15,11 +15,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/common';
 import { MuscleHeatMap } from '@/components/analytics/MuscleHeatMap';
-import { RestoreWeighIns } from '@/components/analytics/RestoreWeighIns';
+import { useWeightConnection } from '@/services/weightDatabase';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore, useWeightStore, useUserStore } from '@/stores';
 import { WeightEntry } from '@/types/workout';
-import { ensureWeightHistoryLoaded, flushWeightStorage } from '@/stores/useWeightStore';
+import { ensureWeightHistoryLoaded, flushWeightStorage, weightDay } from '@/stores/useWeightStore';
 import { mirrorWeightToProfile } from '@/stores/useUserStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -138,7 +138,7 @@ const WeightGraph = ({
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     sorted.forEach((entry) => {
-      const dateStr = getLocalDateString(new Date(entry.date));
+      const dateStr = weightDay(entry);
       byDate[dateStr] = entry;
     });
     return byDate;
@@ -457,6 +457,7 @@ export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const history = useHistoryStore((state) => state.history);
   const weightEntries = useWeightStore((state) => state.entries);
+  const weightConnection = useWeightConnection();
   const addWeightEntry = useWeightStore((state) => state.addEntry);
   const getEntryForDate = useWeightStore((state) => state.getEntryForDate);
   const profile = useUserStore((state) => state.profile);
@@ -713,8 +714,8 @@ export default function AnalyticsScreen() {
   const handleAddWeight = async () => {
     if (writingWeight.current) return;
     const weight = Number(newWeight.trim());
-    if (!Number.isFinite(weight) || weight <= 0) {
-      setWeightError('Enter a weight greater than zero.');
+    if (!Number.isFinite(weight) || weight <= 0 || weight >= 100000) {
+      setWeightError('Enter a weight greater than zero and below 100,000.');
       return;
     }
 
@@ -731,7 +732,7 @@ export default function AnalyticsScreen() {
       }
       addWeightEntry({
         id: existing?.id ?? Date.now().toString(),
-        date: selectedDate.toISOString(), weight, unit: weightUnit,
+        date: selectedDate.toISOString(), localDate: getLocalDateString(selectedDate), weight, unit: weightUnit,
       });
       await flushWeightStorage();
       let notice = 'Weight saved on this device.';
@@ -992,7 +993,13 @@ export default function AnalyticsScreen() {
             sevenDayAvg={sevenDayAvgStats?.currentAvg}
             previousSevenDayAvg={sevenDayAvgStats?.previousAvg}
           />
-          <RestoreWeighIns />
+          <Text accessibilityLiveRegion="polite" style={styles.goalWeightHint}>
+            {weightConnection.status === 'saved' ? 'Synced with database' :
+              weightConnection.status === 'unpaired' ? 'Link this device once to sync your weight history. Share this device code with your Circuit administrator.' :
+              weightConnection.status === 'offline' ? 'Database unavailable. Circuit will retry automatically.' :
+              weightConnection.status === 'saving' ? 'Syncing weigh-ins…' : 'Checking weight history…'}
+          </Text>
+          {weightConnection.status === 'unpaired' && <Text selectable style={styles.historyToggleText}>{weightConnection.code}</Text>}
         </Card>
 
         {/* Muscle Heat Map */}

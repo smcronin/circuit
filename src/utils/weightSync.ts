@@ -12,7 +12,7 @@ export interface WeightChange {
   timeZone: string | null;
 }
 
-export interface SyncedWeight extends WeightEntry {
+export interface SyncedWeight extends Omit<WeightEntry, 'localDate'> {
   localDate: string | null;
   timeZone: string | null;
   updatedAt: string;
@@ -67,31 +67,6 @@ export function parseWeightChanges(value: unknown): WeightChange[] {
     return { id: change.id, mutationId: change.mutationId, changedAt: change.changedAt,
       localDate: change.localDate as string | null, timeZone: change.timeZone as string | null, entry };
   });
-}
-
-/** Timestamp + mutation ID makes retries and out-of-order delivery deterministic. */
-export function mergeWeightChanges(previous: WeightTracking | null, changes: WeightChange[]): WeightTracking | null {
-  if (!changes.length) return previous;
-  const records = { ...previous?.records };
-  const deleted = { ...previous?.deleted };
-  for (const change of changes) {
-    const current = records[change.id];
-    const tombstone = deleted[change.id];
-    const lastAt = current?.updatedAt || tombstone?.changedAt;
-    const lastId = current?.mutationId || tombstone?.mutationId || '';
-    if (lastAt && (Date.parse(change.changedAt) < Date.parse(lastAt) ||
-      (Date.parse(change.changedAt) === Date.parse(lastAt) && change.mutationId <= lastId))) continue;
-    if (change.entry) {
-      records[change.id] = { ...change.entry, localDate: change.localDate, timeZone: change.timeZone,
-        updatedAt: change.changedAt, mutationId: change.mutationId };
-      delete deleted[change.id];
-    } else {
-      delete records[change.id];
-      deleted[change.id] = { changedAt: change.changedAt, mutationId: change.mutationId };
-    }
-  }
-  if (new Set([...Object.keys(records), ...Object.keys(deleted)]).size > MAX_WEIGHT_RECORDS) throw new Error('Weight tracking capacity reached');
-  return { records, deleted };
 }
 
 export function weightContext(tracking: WeightTracking | null, requestUrl: URL,

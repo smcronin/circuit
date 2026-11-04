@@ -14,6 +14,7 @@ import {
 } from '@expo-google-fonts/barlow-condensed';
 import { colors } from '@/theme';
 import { initializeHistorySync } from '@/services/historySync';
+import { initializeWeightDatabase } from '@/services/weightDatabase';
 
 export default function RootLayout() {
   // Load Ionicons (needed on web) plus the Circuit display typeface
@@ -30,8 +31,9 @@ export default function RootLayout() {
   useEffect(() => {
     soundManager.initialize();
     const stopHistorySync = initializeHistorySync();
+    const stopWeights = initializeWeightDatabase();
 
-    return stopHistorySync;
+    return () => { stopHistorySync(); stopWeights(); };
   }, []);
 
   if (!fontsLoaded) {

@@ -19,8 +19,6 @@ interface SnapshotRow {
   workout_summary: unknown;
   source_updated_at: string;
   server_updated_at: string;
-  weight_tracking: WeightTracking | null;
-  weight_synced_at: string | null;
 }
 
 const DEFAULT_SESSION_LIMIT = 50;
@@ -80,20 +78,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const sql = getSql();
     const limit = parseLimit(req);
     const requestUrl = new URL(req.url || '/', 'https://circuit.invalid');
-    // Optional non-secret selector, never caller supplied. Without a verified
-    // pin, weights fail closed if more than one owner exists. Workouts retain
-    // their legacy latest-snapshot behavior for backward compatibility.
+    // The imported account establishes the owner independently of recent writes.
     const configuredOwner = process.env.CIRCUIT_CONTEXT_OWNER_HASH;
-    const ownerPin = configuredOwner && /^[a-f0-9]{64}$/.test(configuredOwner) ? configuredOwner : null;
+    const [account] = await sql`SELECT encode(sha256(convert_to(profile->>'id','UTF8')),'hex') AS owner
+      FROM circuit_app_state WHERE singleton`;
+    const ownerPin = configuredOwner
+      ? (/^[a-f0-9]{64}$/.test(configuredOwner) ? configuredOwner : null)
+      : account?.owner || null;
     const snapshots = (await sql`
       SELECT
         owner_hash,
         session_count,
         workout_summary,
         source_updated_at,
-        server_updated_at,
-        to_jsonb(snapshot) -> 'weight_tracking' AS weight_tracking,
-        to_jsonb(snapshot) ->> 'weight_synced_at' AS weight_synced_at
+        server_updated_at
       FROM circuit_history_snapshots AS snapshot
       WHERE (${ownerPin}::TEXT IS NULL OR owner_hash = ${ownerPin})
       ORDER BY server_updated_at DESC
@@ -121,6 +119,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       LIMIT ${limit}
     `;
 
+    const sameOwner = Boolean(ownerPin && account?.owner === snapshot.owner_hash && ownerPin === snapshot.owner_hash);
+    const tracking: WeightTracking = { records: {}, deleted: {} };
+    let syncedAt: string | null = null;
+    if (sameOwner) {
+      const rows = await sql`SELECT entry_snapshot, local_day::text AS day, measurement_zone,
+        client_updated_at, updated_at, deleted_at FROM circuit_weight_entries WHERE local_day IS NOT NULL`;
+      for (const row of rows) {
+        const updated = new Date(row.updated_at).toISOString();
+        if (!syncedAt || updated > syncedAt) syncedAt = updated;
+        if (!row.deleted_at) tracking.records[row.entry_snapshot.id] = {
+          ...row.entry_snapshot, localDate: row.day, timeZone: row.measurement_zone,
+          updatedAt: new Date(row.client_updated_at).toISOString(), mutationId: '',
+        };
+      }
+    }
     return res.status(200).json({
       ok: true,
       sessionCount: snapshot.session_count,
@@ -129,9 +142,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       serverUpdatedAt: snapshot.server_updated_at,
       returnedSessions: sessions.length,
       sessions,
-      weightTracking: weightContext(snapshot.weight_tracking, requestUrl,
-        configuredOwner && !ownerPin ? 'owner_mismatch' : !ownerPin && snapshots.length > 1 ? 'owner_ambiguous'
-          : snapshot.weight_tracking ? 'available' : 'not_synced', snapshot.weight_synced_at),
+      weightTracking: weightContext(sameOwner ? tracking : null, requestUrl,
+        sameOwner ? 'available' : configuredOwner ? 'owner_mismatch' : 'owner_ambiguous', syncedAt),
     });
   } catch (error) {
     console.error('Circuit workout context read failed');
