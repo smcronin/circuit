@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/common';
 import { MuscleHeatMap } from '@/components/analytics/MuscleHeatMap';
+import { RestoreWeighIns } from '@/components/analytics/RestoreWeighIns';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore, useWeightStore, useUserStore } from '@/stores';
 import { WeightEntry } from '@/types/workout';
@@ -825,6 +826,7 @@ export default function AnalyticsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
+        keyboardShouldPersistTaps="handled"
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -990,6 +992,7 @@ export default function AnalyticsScreen() {
             sevenDayAvg={sevenDayAvgStats?.currentAvg}
             previousSevenDayAvg={sevenDayAvgStats?.previousAvg}
           />
+          <RestoreWeighIns />
         </Card>
 
         {/* Muscle Heat Map */}

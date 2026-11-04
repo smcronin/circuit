@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import { useUserStore } from '@/stores/useUserStore';
 import { useHistoryStore } from '@/stores/useHistoryStore';
 import { useWeightStore, ensureWeightHistoryLoaded, flushWeightStorage } from '@/stores/useWeightStore';
-import { restoreMissingWeights } from './weightRecovery';
+import { restoreMissingWeights, WEIGHT_RECOVERY_FORMAT } from './weightRecovery';
 import { confirmAction } from './confirm';
 
 const APP_DATA_VERSION = 1;
@@ -108,7 +108,7 @@ export const importAllData = async (): Promise<{ success: boolean; error?: strin
     }
 
     const parsed = JSON.parse(jsonString);
-    if (parsed?.format === 'circuit-missing-weights-v1') {
+    if (parsed?.format === WEIGHT_RECOVERY_FORMAT) {
       if (!await confirmAction({ title: 'Restore missing weigh-ins?', message: 'Only missing dates will be added. Existing weights and workouts stay as they are.', confirmLabel: 'Restore' })) {
         return { success: false, cancelled: true };
       }

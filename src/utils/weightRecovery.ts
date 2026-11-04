@@ -2,6 +2,8 @@ import { useWeightStore, ensureWeightHistoryLoaded, flushWeightStorage } from '@
 import { parseWeightChanges } from './weightSync';
 import type { WeightEntry } from '../types/workout';
 
+export const WEIGHT_RECOVERY_FORMAT = 'circuit-missing-weights-v1';
+
 // A recovery file contains only known measurements. It never replaces a
 // profile, workout, existing day or pending upload, even if imported twice.
 export async function restoreMissingWeights(rows: unknown) {
