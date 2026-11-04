@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import { MuscleHeatMap } from '@/components/analytics/MuscleHeatMap';
 import { colors, fonts, spacing, typography, borderRadius } from '@/theme';
 import { useHistoryStore, useWeightStore, useUserStore } from '@/stores';
 import { WeightEntry } from '@/types/workout';
+import { ensureWeightHistoryLoaded, flushWeightStorage } from '@/stores/useWeightStore';
+import { mirrorWeightToProfile } from '@/stores/useUserStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -465,6 +467,10 @@ export default function AnalyticsScreen() {
   const [showFullWeightHistory, setShowFullWeightHistory] = useState(false);
   const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
   const [existingWeight, setExistingWeight] = useState<number | null>(null);
+  const writingWeight = useRef(false);
+  const [weightBusy, setWeightBusy] = useState(false);
+  const [weightError, setWeightError] = useState('');
+  const [weightNotice, setWeightNotice] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showGoalWeightModal, setShowGoalWeightModal] = useState(false);
@@ -703,43 +709,52 @@ export default function AnalyticsScreen() {
       .sort((a, b) => b[1] - a[1]);
   }, [history.sessions]);
 
-  const handleAddWeight = () => {
-    const weight = parseFloat(newWeight);
-    if (isNaN(weight) || weight <= 0) return;
-
-    // Check if there's already an entry for the selected date
-    const existingEntry = getEntryForDate(selectedDate);
-
-    if (existingEntry && !showOverwriteConfirm) {
-      // Show confirmation modal
-      setExistingWeight(existingEntry.weight);
-      setShowOverwriteConfirm(true);
+  const handleAddWeight = async () => {
+    if (writingWeight.current) return;
+    const weight = Number(newWeight.trim());
+    if (!Number.isFinite(weight) || weight <= 0) {
+      setWeightError('Enter a weight greater than zero.');
       return;
     }
 
-    const entry: WeightEntry = {
-      id: Date.now().toString(),
-      date: selectedDate.toISOString(),
-      weight,
-      unit: weightUnit,
-    };
-
-    addWeightEntry(entry);
-    // Also update the user profile weight if logging for today
-    const today = new Date();
-    const isToday = getLocalDateString(selectedDate) === getLocalDateString(today);
-    if (isToday) {
-      updateProfile({ weight });
+    writingWeight.current = true;
+    setWeightBusy(true);
+    setWeightError('');
+    try {
+      await ensureWeightHistoryLoaded();
+      const existing = getEntryForDate(selectedDate);
+      if (existing && (!showOverwriteConfirm || existingWeight !== existing.weight)) {
+        setExistingWeight(existing.weight);
+        setShowOverwriteConfirm(true);
+        return;
+      }
+      addWeightEntry({
+        id: existing?.id ?? Date.now().toString(),
+        date: selectedDate.toISOString(), weight, unit: weightUnit,
+      });
+      await flushWeightStorage();
+      let notice = 'Weight saved on this device.';
+      if (getLocalDateString(selectedDate) === getLocalDateString(new Date())) {
+        try { await mirrorWeightToProfile(weight); }
+        catch { notice = 'Weigh-in saved. Your profile weight could not be updated.'; }
+      }
+      setWeightNotice(notice);
+      setNewWeight('');
+      setShowWeightModal(false);
+    } catch {
+      setWeightNotice('Weight save could not be confirmed.');
+      setWeightError('Could not save on this device. Keep this form open and try again.');
+      setExistingWeight(weight);
+      setShowOverwriteConfirm(true);
+    } finally {
+      writingWeight.current = false;
+      setWeightBusy(false);
     }
-    setNewWeight('');
-    setShowWeightModal(false);
-    setShowOverwriteConfirm(false);
-    setExistingWeight(null);
-    setSelectedDate(new Date());
-    setShowDatePicker(false);
   };
 
   const handleOpenWeightModal = () => {
+    setWeightError('');
+    setWeightNotice('');
     setSelectedDate(new Date());
     setNewWeight('');
     setShowOverwriteConfirm(false);
@@ -749,6 +764,7 @@ export default function AnalyticsScreen() {
   };
 
   const handleCloseWeightModal = () => {
+    if (writingWeight.current) return;
     setNewWeight('');
     setShowWeightModal(false);
     setShowOverwriteConfirm(false);
@@ -907,11 +923,14 @@ export default function AnalyticsScreen() {
             <TouchableOpacity
               style={styles.addButton}
               onPress={handleOpenWeightModal}
+              accessibilityRole="button"
+              accessibilityLabel="Log weight"
             >
               <Ionicons name="add" size={20} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
+          {!!weightNotice && <Text accessibilityLiveRegion="polite" style={styles.goalWeightHint}>{weightNotice}</Text>}
           {(currentWeight || profile?.goalWeight || sevenDayAvgStats?.currentAvg) && (
             <View style={styles.weightSummary}>
               {currentWeight && (
@@ -1119,6 +1138,7 @@ export default function AnalyticsScreen() {
               {/* Date Selector */}
               <TouchableOpacity
                 style={styles.dateSelector}
+                disabled={weightBusy}
                 onPress={() => setShowDatePicker(!showDatePicker)}
               >
                 <Ionicons name="calendar-outline" size={18} color={colors.primary} />
@@ -1166,7 +1186,9 @@ export default function AnalyticsScreen() {
                 <TextInput
                   style={styles.weightInput}
                   value={newWeight}
+                  editable={!weightBusy}
                   onChangeText={(text) => {
+                    setWeightError('');
                     setNewWeight(text);
                     setShowOverwriteConfirm(false);
                     setExistingWeight(null);
@@ -1179,7 +1201,8 @@ export default function AnalyticsScreen() {
                 <Text style={styles.weightInputUnit}>{weightUnit}</Text>
               </View>
 
-              {showOverwriteConfirm && existingWeight !== null && (
+              {!!weightError && <Text accessibilityRole="alert" style={styles.overwriteWarningText}>{weightError}</Text>}
+              {!weightError && showOverwriteConfirm && existingWeight !== null && (
                 <View style={styles.overwriteWarning}>
                   <Ionicons name="warning" size={18} color={colors.warning} />
                   <Text style={styles.overwriteWarningText}>
@@ -1198,9 +1221,10 @@ export default function AnalyticsScreen() {
                 <TouchableOpacity
                   style={styles.modalButtonSave}
                   onPress={handleAddWeight}
+                  disabled={weightBusy}
                 >
                   <Text style={styles.modalButtonSaveText}>
-                    {showOverwriteConfirm ? 'Replace' : 'Save'}
+                    {weightBusy ? 'Saving…' : weightError ? 'Try again' : showOverwriteConfirm ? 'Replace' : 'Save'}
                   </Text>
                 </TouchableOpacity>
               </View>

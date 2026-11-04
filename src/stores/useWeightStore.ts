@@ -1,30 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WeightEntry } from '@/types/workout';
 import { useUserStore } from './useUserStore';
 import { uuid } from '@/utils/uuid';
 import type { WeightChange } from '@/utils/weightSync';
-
-// Serialize the queue and entries together. A failed local write is observable
-// to sync callers; it must not silently discard an offline queue.
-let pendingWrite: Promise<void> = Promise.resolve();
-let writeError: unknown;
-export async function flushWeightStorage(): Promise<void> {
-  await pendingWrite;
-  if (writeError) throw writeError;
-}
-const weightStorage = {
-  getItem: (key: string) => AsyncStorage.getItem(key),
-  setItem: (key: string, value: string) => {
-    pendingWrite = pendingWrite.then(async () => {
-      try { await AsyncStorage.setItem(key, value); writeError = undefined; }
-      catch (error) { writeError = error; }
-    });
-    return pendingWrite;
-  },
-  removeItem: (key: string) => AsyncStorage.removeItem(key),
-};
+import { weightStorage } from '@/services/weightStorage';
+export { flushWeightStorage } from '@/services/weightStorage';
 
 // Helper to get date string in local timezone (YYYY-MM-DD)
 const getLocalDateString = (date: Date): string => {
@@ -149,3 +130,8 @@ export const useWeightStore = create<WeightState>()(
     }
   )
 );
+
+export async function ensureWeightHistoryLoaded() {
+  if (!useWeightStore.persist.hasHydrated()) await useWeightStore.persist.rehydrate();
+  if (!useWeightStore.persist.hasHydrated()) throw new Error('Could not load weight history');
+}

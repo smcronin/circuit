@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
+const { IDBFactory } = require('fake-indexeddb');
 const { createHash, createHmac } = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const owner = id => createHash('sha256').update(id).digest('hex');
@@ -9,7 +10,7 @@ const profileA = 'synthetic-owner-alpha';
 const profileB = 'synthetic-owner-bravo';
 const host = 'circuit-synthetic-smcronins-projects.vercel.app';
 
-function runtime({ disk = new Map(), sql, fetcher, env = {}, profileId = profileA, failDisk = false } = {}) {
+function runtime({ disk = new Map(), sql, fetcher, env = {}, profileId = profileA, failDisk = false, indexedDB } = {}) {
   const cache = new Map();
   const user = require('zustand').create(() => ({ profile: { id: profileId } }));
   user.persist = { hasHydrated: () => true, onFinishHydration: () => () => {} };
@@ -22,7 +23,7 @@ function runtime({ disk = new Map(), sql, fetcher, env = {}, profileId = profile
     if (cache.has(file)) return cache.get(file).exports;
     const mod = { exports: {} }; cache.set(file, mod);
     const localRequire = name => {
-      if (name === 'react-native') return { Platform: { OS: 'ios' }, AppState: { addEventListener: () => ({ remove() {} }) } };
+      if (name === 'react-native') return { Platform: { OS: indexedDB ? 'web' : 'ios' }, AppState: { addEventListener: () => ({ remove() {} }) } };
       if (name === '@react-native-async-storage/async-storage') return {
         getItem: async key => disk.get(key) ?? null,
         setItem: async (key, value) => { if (failDisk) throw new Error('Synthetic full disk'); disk.set(key, value); },
@@ -37,12 +38,12 @@ function runtime({ disk = new Map(), sql, fetcher, env = {}, profileId = profile
     const source = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: {
       module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true,
     } }).outputText;
-    new Function('module', 'exports', 'require', 'fetch', 'process', 'console', 'setTimeout', 'clearTimeout', source)(
+    new Function('module', 'exports', 'require', 'fetch', 'process', 'console', 'setTimeout', 'clearTimeout', 'indexedDB', source)(
       mod, mod.exports, localRequire,
       fetcher || (async () => { throw new Error('No live network allowed'); }),
       { env: { DATABASE_URL: 'synthetic-only', VERCEL_URL: host, ...env } },
       { info: (...args) => logs.push(args), error: (...args) => logs.push(args) },
-      (callback, ms) => { timers.set(++timerId, { callback, ms }); return timerId; }, id => timers.delete(id));
+      (callback, ms) => { timers.set(++timerId, { callback, ms }); return timerId; }, id => timers.delete(id), indexedDB);
     return mod.exports;
   }
   return { load, disk, user, logs, timers };
@@ -297,6 +298,45 @@ async function main() {
   await failedWeights.useWeightStore.persist.rehydrate();
   failedWeights.useWeightStore.getState().addEntry(entry('disk-error'));
   await assert.rejects(failedWeights.flushWeightStorage(), /full disk/);
+
+  // Reproduce the restart report with a full legacy store, then let a stale
+  // tab acknowledge an older mutation after a newer write from another tab.
+  const legacy = entry('pre-update', 'lbs', '2026-11-02T14:00:00Z');
+  const third = entry('nov-3', 'lbs', '2026-11-03T14:00:00Z');
+  const fourth = entry('nov-4', 'lbs', '2026-11-04T14:00:00Z');
+  const oldSnapshot = JSON.stringify({ version: 0, state: { entries: [legacy] } });
+  const web = { indexedDB: new IDBFactory(), failDisk: true, disk: new Map([['weight-storage', oldSnapshot]]) };
+  const openTab = async () => {
+    const app = runtime(web);
+    const { useWeightStore: store, flushWeightStorage: flush, ensureWeightHistoryLoaded } = app.load('src/stores/useWeightStore.ts');
+    await ensureWeightHistoryLoaded();
+    return { app, store, flush };
+  };
+  const tabA = await openTab();
+  tabA.store.getState().addEntry(third);
+  await tabA.flush();
+  const ack = tabA.store.getState().pendingByOwner[profileA][third.id].mutationId;
+  const tabB = await openTab();
+  tabB.store.getState().updateEntry(third.id, { weight: 168.1 });
+  tabB.store.getState().addEntry(fourth);
+  await tabB.flush();
+  tabA.store.getState().acknowledgeChanges(profileA, [ack]);
+  await tabA.flush();
+  const reopened = await openTab();
+  let state = reopened.store.getState();
+  assert.deepEqual(state.entries.map(e => e.id), [fourth.id, third.id, legacy.id]);
+  assert.equal(state.pendingByOwner[profileA][third.id].entry.weight, 168.1);
+  assert(state.pendingByOwner[profileA][fourth.id]);
+  assert.equal(web.disk.get('weight-storage'), oldSnapshot, 'legacy recovery copy is unchanged');
+  const restore = reopened.app.load('src/utils/weightRecovery.ts').restoreMissingWeights;
+  const missing = entry('missing', 'lbs', '2026-11-01T14:00:00Z');
+  assert.equal(await restore([missing, { ...third, id: 'same-day', weight: 155 }]), 1);
+  assert.equal(await restore([missing]), 0);
+  await assert.rejects(restore([{ ...missing, weight: 0 }]));
+  state = (await openTab()).store.getState();
+  assert.equal(state.entries.length, 4);
+  assert.equal(state.entries.find(e => e.id === third.id).weight, 168.1);
+  assert(!state.pendingByOwner[profileA][missing.id], 'local restore does not re-upload data');
 
   // The scheduler starts only after hydration, sends no historical weights,
   // and notices a new weigh-in even with no workout changes.

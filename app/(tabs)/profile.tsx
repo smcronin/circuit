@@ -218,32 +218,16 @@ export default function ProfileScreen() {
   };
 
   const handleImportData = async () => {
-    const message = 'This will replace all your current data with the imported data. This action cannot be undone.';
-
-    // Use window.confirm on web, Alert.alert on native
-    const confirmed = Platform.OS === 'web'
-      ? window.confirm(message)
-      : await new Promise<boolean>((resolve) => {
-          Alert.alert(
-            'Import Data',
-            message,
-            [
-              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-              { text: 'Continue', onPress: () => resolve(true) },
-            ]
-          );
-        });
-
-    if (!confirmed) return;
-
     setIsImporting(true);
     try {
       const result = await importAllData();
+      if (result.cancelled) return;
       if (result.success) {
+        const message = result.message || 'Your data has been imported successfully.';
         if (Platform.OS === 'web') {
-          window.alert('Your data has been imported successfully.');
+          window.alert(message);
         } else {
-          Alert.alert('Import Complete', 'Your data has been imported successfully.');
+          Alert.alert('Import Complete', message);
         }
       } else {
         const errorMsg = result.error || 'An error occurred during import.';

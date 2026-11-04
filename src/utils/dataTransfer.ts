@@ -4,7 +4,9 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 import { useUserStore } from '@/stores/useUserStore';
 import { useHistoryStore } from '@/stores/useHistoryStore';
-import { useWeightStore } from '@/stores/useWeightStore';
+import { useWeightStore, ensureWeightHistoryLoaded, flushWeightStorage } from '@/stores/useWeightStore';
+import { restoreMissingWeights } from './weightRecovery';
+import { confirmAction } from './confirm';
 
 const APP_DATA_VERSION = 1;
 
@@ -67,7 +69,7 @@ export const exportAllData = async (): Promise<{ success: boolean; error?: strin
   }
 };
 
-export const importAllData = async (): Promise<{ success: boolean; error?: string }> => {
+export const importAllData = async (): Promise<{ success: boolean; error?: string; message?: string; cancelled?: boolean }> => {
   try {
     let jsonString: string;
 
@@ -105,12 +107,25 @@ export const importAllData = async (): Promise<{ success: boolean; error?: strin
       jsonString = await response.text();
     }
 
-    const importedData: ExportedData = JSON.parse(jsonString);
+    const parsed = JSON.parse(jsonString);
+    if (parsed?.format === 'circuit-missing-weights-v1') {
+      if (!await confirmAction({ title: 'Restore missing weigh-ins?', message: 'Only missing dates will be added. Existing weights and workouts stay as they are.', confirmLabel: 'Restore' })) {
+        return { success: false, cancelled: true };
+      }
+      const count = await restoreMissingWeights(parsed.entries);
+      return { success: true, message: count ? `Restored ${count} missing weigh-in(s).` : 'These weigh-ins are already on this device.' };
+    }
+    const importedData: ExportedData = parsed;
 
     // Validate the data structure
     if (!importedData.version || !importedData.exportedAt) {
       return { success: false, error: 'Invalid backup file format' };
     }
+
+    if (!await confirmAction({ title: 'Import full backup?', message: 'This will replace your current data with the imported data. This action cannot be undone.', confirmLabel: 'Import Data', destructive: true })) {
+      return { success: false, cancelled: true };
+    }
+    if (importedData.weightEntries) await ensureWeightHistoryLoaded();
 
     // Restore user profile
     if (importedData.userProfile) {
@@ -140,6 +155,7 @@ export const importAllData = async (): Promise<{ success: boolean; error?: strin
       useWeightStore.setState({
         entries: importedData.weightEntries,
       });
+      await flushWeightStorage();
     }
 
     return { success: true };

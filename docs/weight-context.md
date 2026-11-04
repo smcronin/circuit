@@ -1,7 +1,9 @@
 # Prospective weight synchronization
 
-New explicit weight saves queue changes in the existing `weight-storage` store,
-alongside the local entries. Opening the app, hydrating legacy storage, importing
+New explicit weight saves queue changes alongside the local entries. On the web,
+Circuit commits both to IndexedDB (`circuit-weights`); on native it uses
+AsyncStorage. On first use, web reads the existing `weight-storage` snapshot,
+including its pending uploads. The legacy copy is retained. Opening the app, hydrating legacy storage, importing
 a backup, or editing an untracked historical entry does not backfill weights.
 Saving a new entry for a historical selected date is an explicit new save and is
 eligible. Corrections/deletions of records first saved by this version sync too.
@@ -90,11 +92,21 @@ withheld data returns a null count. Invalid/missing/zero weights are rejected,
 never converted to zero. A maximum of 5,000 distinct record IDs plus tombstones
 per owner bounds storage; capacity errors retain the local queue.
 
-The existing local weight store remains device-local; this is prospective upload,
-not cross-device reconciliation. Local storage write failure can prevent offline
-durability; the flush API surfaces it to callers. Multiple browser tabs still
-share the existing local weight-storage semantics. Client-clock skew can affect
+Weight history remains device-local; this is prospective upload,
+not cross-device reconciliation. The log form waits for the local commit before
+closing. If it fails, the form retains the input and offers retry. A failed
+update to the separate profile weight does not undo a saved weigh-in. Web writes
+apply per-record changes inside one IndexedDB transaction so an older tab's upload
+acknowledgement does not replace newer entries or erase another tab's pending edit.
+Client-clock skew can affect
 conflict ordering. Neither a profile switch nor an import reassigns queued records.
+
+For owner-assisted recovery, Profile → Import Data also accepts a local JSON
+file with `format: "circuit-missing-weights-v1"` and an `entries` array of
+up to 100 validated weight records. This format adds only missing IDs/days,
+does not upload historical weights, and does not replace existing profile or
+workout data. Old app versions reject it as an invalid full backup. Keep
+recovery files private and outside the repository.
 
 ## Validation and activation
 

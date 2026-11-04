@@ -21,6 +21,19 @@ interface UserState {
   toggleAudioMute: () => void;
 }
 
+// The weigh-in itself has a separate durable store. Let the form observe
+// errors when refreshing this secondary copy of today's weight in the profile.
+let profileWrite: Promise<void>;
+const profileStorage = {
+  getItem: (key: string) => AsyncStorage.getItem(key),
+  removeItem: (key: string) => AsyncStorage.removeItem(key),
+  setItem: (key: string, value: string) => (profileWrite = AsyncStorage.setItem(key, value)),
+};
+export async function mirrorWeightToProfile(weight: number) {
+  useUserStore.getState().updateProfile({ weight });
+  await profileWrite;
+}
+
 export const useUserStore = create<UserState>()(
   persist(
     (set) => ({
@@ -115,7 +128,7 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: 'user-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => profileStorage),
     }
   )
 );
